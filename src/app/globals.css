@@ -1,0 +1,196 @@
+@import "tailwindcss";
+
+/* Bridewell Classroom — brand tokens exposed to Tailwind 4 via @theme.
+   Source of truth is src/lib/brand/tokens.ts; this file mirrors the values
+   so utility classes (bg-navy-900, text-gold-500, etc.) work in JSX.
+   When you change a value here, change it in tokens.ts too. */
+
+@theme {
+  --color-navy-900: #0d2a4a;
+  --color-navy-700: #143b6b;
+  --color-gold-500: #b58a3c;
+  --color-gold-300: #d4a858;
+  --color-cream-50: #faf6ee;
+  --color-ink-900: #0f1a2e;
+  --color-ink-700: #1f2b44;
+  --color-ink-500: #5a6478;
+  --color-crimson: #8e2a2a;
+
+  /* Engagement state palette (paired with icons + labels in the StatePill component) */
+  --color-state-flowing: #3d8fa8;
+  --color-state-productive: #b58a3c;
+  --color-state-wheel: #d89a2f;
+  --color-state-disengaged: #8a8fa3;
+  --color-state-offtask: #4a5670;
+
+  /* Reason interaction surface tint */
+  --color-reason-tint: rgba(181, 138, 60, 0.08);
+  --color-line-light: rgba(15, 26, 46, 0.12);
+  --color-line-dark: rgba(181, 138, 60, 0.22);
+  --color-zebra: rgba(15, 26, 46, 0.02);
+
+  /* Type families — wired up in app/layout.tsx via next/font */
+  --font-serif: "Source Serif 4", "Source Serif Pro", Georgia, serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Spacing radii */
+  --radius-card: 8px;
+}
+
+:root {
+  color-scheme: light;
+  --surface: var(--color-cream-50);
+  --surface-elev: #ffffff;
+  --surface-strong: var(--color-navy-900);
+  --text: var(--color-ink-900);
+  --text-muted: var(--color-ink-500);
+  --line: var(--color-line-light);
+}
+
+/* Dark mode is OPT-IN (not auto). BRAND.md is explicit: dark mode is for
+   teacher use in dim rooms, not the default register. The default surface
+   is cream-50, the calm light register. Add the data-theme="dark" attribute
+   on <html> (a toggle wires this in the header) to switch. */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: var(--color-navy-900);
+  --surface-elev: var(--color-navy-700);
+  --surface-strong: var(--color-cream-50);
+  --text: var(--color-cream-50);
+  --text-muted: #a8b1c4;
+  --line: var(--color-line-dark);
+}
+
+html, body {
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Section labels — small caps, tracked, sans (BRAND.md §Typography rules) */
+.bw-section-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+/* Display serif headings */
+.bw-display {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+/* AI tutor message text — restrained serif, distinct from chrome */
+.bw-tutor {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+/* Reason interaction surface — gold accent + left-bordered card + tint */
+.bw-reason-surface {
+  background: var(--color-reason-tint);
+  border-left: 3px solid var(--color-gold-500);
+  border-radius: var(--radius-card);
+  padding: 16px 18px;
+  animation: bw-reason-enter 200ms ease-out;
+}
+
+.bw-reason-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-gold-500);
+  margin-bottom: 6px;
+}
+
+@keyframes bw-reason-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bw-pulse {
+  0%, 80%, 100% { opacity: 0.35; transform: scale(0.85); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes bw-fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bw-pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 currentColor; opacity: 0.85; }
+  50% { box-shadow: 0 0 0 4px transparent; opacity: 1; }
+}
+
+@keyframes bw-head-pulse {
+  0%, 100% { transform: translateY(-50%) scale(1); opacity: 1; }
+  50% { transform: translateY(-50%) scale(1.15); opacity: 0.85; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* Card surfaces */
+.bw-card {
+  background: var(--surface-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+}
+
+/* Buttons */
+.bw-btn-primary {
+  background: var(--color-navy-900);
+  color: var(--color-cream-50);
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.bw-btn-primary:hover { background: var(--color-navy-700); }
+
+.bw-btn-secondary {
+  background: transparent;
+  color: var(--text);
+  padding: 9px 15px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.bw-btn-secondary:hover { border-color: var(--color-ink-500); }
+
+.bw-btn-emphasis {
+  background: var(--color-gold-500);
+  color: var(--color-ink-900);
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.bw-btn-emphasis:hover { background: var(--color-gold-300); }

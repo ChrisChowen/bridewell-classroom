@@ -1,0 +1,118 @@
+// Bridewell Classroom — Firestore security rules.
+// v2, 21 May 2026. Aligned with the auth flow + class lobby data model.
+//
+// Principles:
+// - Teachers identified by custom claim `role == 'teacher'` set by an
+//   admin-SDK route the first time they sign in (server-only).
+// - Pupils identified by anonymous Firebase Auth UID stored on a pupil
+//   document.
+// - Server-only writes (engagement snapshots, Reason events, profile
+//   updates) go through the admin SDK which bypasses rules.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthed() { return request.auth != null; }
+    function isTeacher() { return isAuthed() && request.auth.token.role == 'teacher'; }
+    function uid() { return request.auth.uid; }
+
+    // Public lookup table mapping join codes to class IDs, written only by
+    // the admin SDK at class-creation time. Pupils read this anonymously
+    // when joining; nobody writes it directly.
+    match /joinCodes/{code} {
+      allow read: if isAuthed();
+      allow write: if false;
+    }
+
+    match /teachers/{teacherId} {
+      allow read: if isAuthed();
+      allow create, update: if isAuthed() && uid() == teacherId;
+    }
+
+    match /classes/{classId} {
+      allow read: if isAuthed();
+      allow create: if isTeacher();
+      allow update, delete: if isTeacher() && resource.data.teacherId == uid();
+    }
+
+    match /pupils/{pupilId} {
+      // Teacher of the pupil's class reads + writes; the pupil reads their
+      // own record. Anonymous pupils are created by the server via the
+      // admin SDK on /api/classes/join so we don't allow client creates.
+      allow read: if isTeacher() || uid() == pupilId;
+      allow create: if false;
+      allow update: if isTeacher() || uid() == pupilId;
+    }
+
+    match /lessons/{lessonId} {
+      allow read: if isAuthed();
+      allow write: if isTeacher();
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isAuthed();
+      allow create, update: if isTeacher();
+    }
+
+    match /conversations/{conversationId} {
+      // Conversation doc id is `{classId}_{pupilId}`. The pupil's UID is
+      // the second segment when split on '_'. Teachers can read all
+      // conversations (rule is permissive for read; production should
+      // scope to teacher's classes).
+      allow read: if isTeacher() || (isAuthed() && conversationId.matches('.*_' + uid()));
+
+      match /messages/{messageId} {
+        // Server writes via admin SDK; clients never write directly here
+        // — they go through /api/conversation/append which verifies the
+        // ID token and looks up the pupil's classId.
+        allow read: if isTeacher() || (isAuthed() && conversationId.matches('.*_' + uid()));
+        allow write: if false;
+      }
+    }
+
+    match /engagementSnapshots/{snapshotId} {
+      allow read: if isTeacher();
+      allow write: if false; // server-only
+    }
+
+    match /reasonEvents/{eventId} {
+      allow read: if isTeacher() || (isAuthed() && resource.data.pupilId == uid());
+      allow write: if false; // server-only
+    }
+
+    match /interventions/{interventionId} {
+      allow read: if isTeacher() || (isAuthed() && resource.data.pupilId == uid());
+      allow create, update: if isTeacher();
+    }
+
+    match /learnerProfiles/{pupilId} {
+      allow read: if isTeacher() || uid() == pupilId;
+      allow write: if false; // server-only
+    }
+
+    match /safeguardingEvents/{eventId} {
+      // Severe enough that we only let teachers read these — the pupil
+      // never sees their own safeguarding flag. Writes are server-only
+      // (admin SDK) since the classifier raises them.
+      allow read: if isTeacher();
+      allow write: if false;
+    }
+
+    match /allowedTeacherEmails/{email} {
+      // Teachers can read the allowlist (the admin UI lists it for
+      // them). Writes are server-only via /api/admin/allowlist which
+      // also checks the isAdmin flag.
+      allow read: if isTeacher();
+      allow write: if false;
+    }
+
+    match /lessonLibrary/{lessonId} {
+      // Library entries are shared across teachers at the same school.
+      // Teachers can read all entries (the new-class wizard browses
+      // them); writes go through /api/lessons/save-to-library.
+      allow read: if isTeacher();
+      allow write: if false;
+    }
+  }
+}

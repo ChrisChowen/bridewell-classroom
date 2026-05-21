@@ -1,0 +1,212 @@
+// Engagement classifier — Phase 1 module.
+//
+// Reads the last N tutor↔pupil turns plus a small bag of behavioural
+// signals and returns one of five states from the productive-struggle
+// literature with a confidence score. Runs on Gemini 2.5 Pro with a
+// strict response schema; thinking is enabled (the call is async to the
+// chat loop, so latency is forgiven).
+//
+// CLAUDE.md §D. State definitions match `lib/brand/tokens.ts`.
+// Demo-day load-bearing piece: this is the surface the audience question
+// "show me how the dashboard knows a pupil is struggling" lands against.
+
+import "server-only";
+import { callLLM } from "@/lib/ai/llm";
+import type { EngagementState } from "@/lib/brand";
+
+export interface ClassifierSignals {
+  // Recent chat span we're classifying.
+  windowSec: number;
+  avgResponseTimeSec?: number;
+  avgMessageLength?: number;
+  questionRatio?: number;
+  scaffoldUseCount?: number;
+  // Whether the last scaffold ceiling was hit (3+ uses on one tutor turn).
+  scaffoldCeilingHit?: boolean;
+}
+
+export interface ClassifierInput {
+  // Conversation tail — chronological, oldest first. role 'pupil' | 'tutor'.
+  turns: Array<{ role: "pupil" | "tutor"; content: string }>;
+  signals: ClassifierSignals;
+  lessonTitle?: string;
+  lessonSubject?: string;
+  criticalConcepts?: string[];
+  pupilProfile?: string;
+}
+
+// Safeguarding signal: when the classifier reads the recent turns, it
+// also flags anything that suggests the pupil has disclosed something
+// concerning — bullying, self-harm, distress, abuse — so the dashboard
+// can surface it to the teacher immediately. Never shown to the pupil.
+// Severity is conservative: high means "intervene now"; medium means
+// "look at this when you next glance at the dashboard".
+export type SafeguardingSeverity = "none" | "low" | "medium" | "high";
+
+export interface SafeguardingFlag {
+  severity: SafeguardingSeverity;
+  // One-sentence summary of what triggered the flag. Specific enough
+  // for the teacher to read at a glance.
+  summary: string;
+  // The shortest verbatim slice of the pupil's recent messages that
+  // triggered the flag. Lets the teacher see the actual phrase.
+  pupilExcerpt?: string;
+}
+
+export interface ClassifierResult {
+  state: EngagementState;
+  confidence: number; // 0..1
+  rationale: string; // one short sentence; never shown to the pupil
+  // Echo back the signals the model relied on most. Useful for explaining
+  // a classification to the teacher.
+  cues: string[];
+  // Safeguarding signal — see the type above. Always present; severity
+  // "none" means nothing was flagged.
+  safeguarding: SafeguardingFlag;
+  fallbackUsed: boolean;
+}
+
+const SYSTEM = `You read the last several turns of a chat between a Year 7–9 pupil
+and an AI tutor, plus behavioural signals. You return two things in one
+call: an engagement classification AND a safeguarding signal.
+
+(A) Engagement classification — one of five states from the
+productive-struggle literature (Kapur 2008; Chen et al. 2024; Zhang
+et al.). Be conservative: misclassifying "productive_struggle" as
+"wheel_spinning" interrupts a pupil who is learning. Anchor to evidence
+in the turns and signals; do not infer beyond them.
+
+State definitions:
+  - flowing: on-topic, moving forward, brief hesitations only.
+  - productive_struggle: slower, partial answers, willing to keep trying,
+      asking follow-ups, attempting their own examples.
+  - wheel_spinning: repeated scaffold use without producing substance;
+      echoing the tutor; same difficulty recurring.
+  - disengaged: long silences, very short replies, drift off topic.
+  - off_task: messages unrelated to the lesson; clearly not working.
+
+(B) Safeguarding flag — read the pupil's messages for any disclosure
+that a class teacher would want to know about immediately: self-harm,
+bullying, abuse, a parent/home situation that is causing distress, a
+serious eating concern, a peer threat. Be careful — not every off-task
+or low message is safeguarding. The bar is: would a sensible class
+teacher want to see this in the next minute?
+
+Severity:
+  - "none": nothing in the transcript suggests a safeguarding concern.
+  - "low": mild emotional language ("I'm tired"); worth noting but not
+    a concern in itself.
+  - "medium": a teacher should look at this when they next glance at
+    the dashboard (e.g. "I hate everyone in my class"; "I had a really
+    bad weekend").
+  - "high": teacher needs to know immediately — explicit self-harm
+    ideation, a credible threat, a disclosure of abuse, a clear
+    cry-for-help phrase.
+
+For medium/high, include the shortest verbatim pupil excerpt that
+triggered the flag, plus a one-sentence summary. The summary is for
+the teacher's eye; never shown to the pupil. False positives are
+better than misses but be specific.
+
+Output strict JSON only.`;
+
+const SCHEMA = {
+  type: "object",
+  properties: {
+    state: {
+      type: "string",
+      enum: ["flowing", "productive_struggle", "wheel_spinning", "disengaged", "off_task"],
+    },
+    confidence: { type: "number", minimum: 0, maximum: 1 },
+    rationale: { type: "string" },
+    cues: { type: "array", items: { type: "string" }, maxItems: 4 },
+    safeguarding: {
+      type: "object",
+      properties: {
+        severity: { type: "string", enum: ["none", "low", "medium", "high"] },
+        summary: { type: "string" },
+        pupilExcerpt: { type: "string" },
+      },
+      required: ["severity", "summary"],
+    },
+  },
+  required: ["state", "confidence", "rationale", "cues", "safeguarding"],
+} as const;
+
+export async function classifyEngagement(input: ClassifierInput): Promise<ClassifierResult> {
+  const transcript = input.turns
+    .map((t) => `${t.role === "pupil" ? "Pupil" : "Tutor"}: ${t.content}`)
+    .join("\n");
+  const signalLines = [
+    `window_sec: ${input.signals.windowSec}`,
+    input.signals.avgResponseTimeSec !== undefined && `avg_response_time_sec: ${input.signals.avgResponseTimeSec.toFixed(1)}`,
+    input.signals.avgMessageLength !== undefined && `avg_message_length: ${Math.round(input.signals.avgMessageLength)}`,
+    input.signals.questionRatio !== undefined && `question_ratio: ${input.signals.questionRatio.toFixed(2)}`,
+    input.signals.scaffoldUseCount !== undefined && `scaffold_use_count: ${input.signals.scaffoldUseCount}`,
+    input.signals.scaffoldCeilingHit !== undefined && `scaffold_ceiling_hit: ${input.signals.scaffoldCeilingHit}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const userBlock = [
+    input.lessonTitle && `Lesson: ${input.lessonTitle}${input.lessonSubject ? ` (${input.lessonSubject})` : ""}.`,
+    input.criticalConcepts?.length && `Critical concepts: ${input.criticalConcepts.join(", ")}.`,
+    input.pupilProfile && `Pupil profile: ${input.pupilProfile}`,
+    "Transcript (oldest first):",
+    transcript,
+    "Signals:",
+    signalLines,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  const result = await callLLM({
+    use: "classifier",
+    system: SYSTEM,
+    messages: [{ role: "user", content: userBlock }],
+    responseSchema: SCHEMA as unknown as Record<string, unknown>,
+    maxOutputTokens: 2048,
+    temperature: 0.2,
+    // Pro thinks by default; give it room but cap so the call returns
+    // quickly enough for the dashboard refresh cadence.
+    thinkingBudget: 1024,
+  });
+
+  if (result.fallbackUsed || !result.json) {
+    return {
+      state: "flowing",
+      confidence: 0,
+      rationale: result.fallbackUsed
+        ? `Classifier unavailable (${result.text.slice(0, 120)}…)`
+        : `Classifier returned non-JSON output: ${result.text.slice(0, 120)}…`,
+      cues: [],
+      safeguarding: { severity: "none", summary: "" },
+      fallbackUsed: true,
+    };
+  }
+
+  const j = result.json as {
+    state: EngagementState;
+    confidence: number;
+    rationale: string;
+    cues: string[];
+    safeguarding?: {
+      severity?: SafeguardingSeverity;
+      summary?: string;
+      pupilExcerpt?: string;
+    };
+  };
+  const safeguarding: SafeguardingFlag = {
+    severity: j.safeguarding?.severity ?? "none",
+    summary: j.safeguarding?.summary ?? "",
+    pupilExcerpt: j.safeguarding?.pupilExcerpt,
+  };
+  return {
+    state: j.state,
+    confidence: Math.min(1, Math.max(0, j.confidence ?? 0)),
+    rationale: j.rationale,
+    cues: Array.isArray(j.cues) ? j.cues.slice(0, 4) : [],
+    safeguarding,
+    fallbackUsed: false,
+  };
+}

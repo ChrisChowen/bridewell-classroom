@@ -1,0 +1,20 @@
+{
+  "rules": {
+    "liveSessions": {
+      "$sessionId": {
+        ".read": "auth != null",
+        "status": {
+          ".write": "auth != null && auth.token.role === 'teacher'"
+        },
+        "pupils": {
+          "$pupilId": {
+            ".write": "auth != null && (auth.token.role === 'teacher' || auth.uid === $pupilId)"
+          }
+        },
+        "interventions": {
+          ".write": "auth != null && auth.token.role === 'teacher'"
+        }
+      }
+    }
+  }
+}

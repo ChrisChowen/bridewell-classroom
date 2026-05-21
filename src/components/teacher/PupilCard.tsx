@@ -1,0 +1,258 @@
+"use client";
+
+import { useMemo } from "react";
+import { ChevronRight, AlertTriangle, MessageSquare } from "lucide-react";
+import { StatePill } from "@/components/shared/StatePill";
+import { statePill, type EngagementState } from "@/lib/brand";
+import type { LivePupil } from "@/lib/firebase/live";
+
+// Pupil card — the primary teacher surface. Live data only.
+// Shows current state, time since activity, a sparkline of recent
+// engagement states, the pupil's last message excerpt, and a small
+// safeguarding chip when one is raised. Click to open the drill panel
+// with the full trajectory, conversation, and intervention controls.
+
+// Map states to a 0–4 ordinal so the sparkline becomes a real line over
+// "engagement quality" rather than a category strip.
+const STATE_Y: Record<EngagementState, number> = {
+  off_task: 0,
+  disengaged: 1,
+  wheel_spinning: 2,
+  productive_struggle: 3,
+  flowing: 4,
+};
+
+export function PupilCard({
+  pupil,
+  selected,
+  onSelect,
+}: {
+  pupil: LivePupil;
+  selected?: boolean;
+  onSelect: (id: string) => void;
+}) {
+  const ageMs = Date.now() - (pupil.lastActive ?? 0);
+  const safe = pupil.safeguarding;
+  const trajectory = pupil.trajectory ?? [];
+
+  const sparkline = useMemo(() => buildSparklinePath(trajectory), [trajectory]);
+
+  return (
+    <button
+      onClick={() => onSelect(pupil.pupilId)}
+      aria-pressed={selected}
+      className="bw-card"
+      style={{
+        padding: 14,
+        textAlign: "left",
+        background: selected ? "rgba(181,138,60,0.08)" : "var(--surface-elev)",
+        border: `1px solid ${selected ? "var(--color-gold-500)" : "var(--line)"}`,
+        cursor: "pointer",
+        transition: "all 120ms ease",
+        display: "grid",
+        gridTemplateRows: "auto 1fr auto",
+        gap: 10,
+        minHeight: 168,
+      }}
+    >
+      {/* Header row: avatar + name + state pill */}
+      <div className="flex items-center justify-between" style={{ gap: 8 }}>
+        <div className="flex items-center gap-2" style={{ minWidth: 0 }}>
+          <span
+            aria-hidden
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 999,
+              background: "var(--color-navy-900)",
+              color: "var(--color-cream-50)",
+              fontSize: 11,
+              fontWeight: 600,
+              display: "grid",
+              placeItems: "center",
+              flexShrink: 0,
+            }}
+          >
+            {initials(pupil.displayName)}
+          </span>
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 500,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+            title={pupil.displayName}
+          >
+            {pupil.displayName}
+          </span>
+        </div>
+        <StatePill state={pupil.state} size="small" />
+      </div>
+
+      {/* Sparkline */}
+      <div style={{ position: "relative", height: 48 }}>
+        <svg
+          viewBox="0 0 200 48"
+          preserveAspectRatio="none"
+          style={{ width: "100%", height: "100%", display: "block" }}
+          role="img"
+          aria-label={`Engagement trajectory for ${pupil.displayName}`}
+        >
+          {/* Reference bands — flowing/productive at top, wheel/disengaged/off at bottom */}
+          <rect x="0" y="0" width="200" height="14" fill="rgba(61,143,168,0.05)" />
+          <rect x="0" y="34" width="200" height="14" fill="rgba(216,154,47,0.05)" />
+          {sparkline ? (
+            <>
+              <path d={sparkline.area} fill={statePill[pupil.state].colour} opacity="0.18" />
+              <path
+                d={sparkline.line}
+                stroke={statePill[pupil.state].colour}
+                strokeWidth="1.5"
+                fill="none"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+              {sparkline.points.map((p, i) => (
+                <circle
+                  key={i}
+                  cx={p.x}
+                  cy={p.y}
+                  r="1.6"
+                  fill={statePill[p.state].colour}
+                />
+              ))}
+            </>
+          ) : (
+            <text
+              x="100"
+              y="28"
+              textAnchor="middle"
+              fontSize="10"
+              fill="var(--text-muted)"
+              fontFamily="var(--font-sans)"
+            >
+              No classifications yet
+            </text>
+          )}
+        </svg>
+      </div>
+
+      {/* Last message preview + meta row */}
+      <div style={{ display: "grid", gap: 6 }}>
+        {pupil.lastPupilExcerpt ? (
+          <div
+            className="flex items-start gap-2"
+            style={{
+              fontSize: 12,
+              color: "var(--text-muted)",
+              lineHeight: 1.4,
+              maxWidth: "100%",
+            }}
+          >
+            <MessageSquare size={11} style={{ marginTop: 2, flexShrink: 0 }} />
+            <span
+              style={{
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                fontStyle: "italic",
+              }}
+            >
+              &ldquo;{pupil.lastPupilExcerpt}&rdquo;
+            </span>
+          </div>
+        ) : (
+          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>No messages yet.</div>
+        )}
+
+        <div className="flex items-center justify-between" style={{ fontSize: 11, color: "var(--text-muted)" }}>
+          <span title={`Engagement confidence ${(pupil.confidence * 100).toFixed(0)}%`}>
+            {humanAge(ageMs)} ago · {Math.round(pupil.confidence * 100)}%
+          </span>
+          <span className="flex items-center gap-1" style={{ color: "var(--text)" }}>
+            Open <ChevronRight size={11} />
+          </span>
+        </div>
+
+        {safe && (
+          <div
+            role="alert"
+            className="flex items-center gap-2"
+            style={{
+              padding: "6px 8px",
+              background:
+                safe.severity === "high"
+                  ? "rgba(142,42,42,0.10)"
+                  : "rgba(216,154,47,0.12)",
+              color:
+                safe.severity === "high" ? "var(--color-crimson)" : "var(--text)",
+              borderRadius: 6,
+              fontSize: 11,
+              lineHeight: 1.35,
+            }}
+          >
+            <AlertTriangle
+              size={12}
+              color={safe.severity === "high" ? "var(--color-crimson)" : "var(--color-gold-500)"}
+              style={{ flexShrink: 0 }}
+            />
+            <span>
+              <strong style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontSize: 10 }}>
+                Safeguarding · {safe.severity}
+              </strong>{" "}
+              · {safe.summary}
+            </span>
+          </div>
+        )}
+      </div>
+    </button>
+  );
+}
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((n) => n[0]!.toUpperCase())
+    .slice(0, 2)
+    .join("");
+}
+
+function humanAge(ms: number): string {
+  if (!ms || ms < 0) return "just now";
+  const s = Math.floor(ms / 1000);
+  if (s < 5) return "just now";
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  return `${h}h`;
+}
+
+function buildSparklinePath(
+  trajectory: Array<{ state: EngagementState; t: number; confidence: number }>
+): {
+  line: string;
+  area: string;
+  points: Array<{ x: number; y: number; state: EngagementState }>;
+} | null {
+  if (!trajectory.length) return null;
+  const W = 200;
+  const H = 48;
+  const PAD = 4;
+  const n = trajectory.length;
+  const stepX = n > 1 ? (W - PAD * 2) / (n - 1) : 0;
+  const points = trajectory.map((entry, i) => ({
+    x: PAD + i * stepX,
+    y: PAD + (4 - STATE_Y[entry.state]) * ((H - PAD * 2) / 4),
+    state: entry.state,
+  }));
+  const line = points
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+    .join(" ");
+  const area = `${line} L ${points[points.length - 1]!.x.toFixed(1)} ${H} L ${points[0]!.x.toFixed(1)} ${H} Z`;
+  return { line, area, points };
+}

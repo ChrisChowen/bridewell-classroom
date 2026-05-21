@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Production
+.vercel
+
+# Env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Secrets — service account JSON, signing keys, anything that should never
+# leave this machine. Move sensitive files here so they are gitignored.
+secrets/
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS
+.DS_Store
+*.pem
+
+# TS
+*.tsbuildinfo
+next-env.d.ts
+
+# Editor
+.vscode/
+.idea/
+
+# Internal context / planning that lives alongside the repo but isn't
+# part of the public artefact. The brief docs and meeting transcripts
+# under `brief/` and `context/` are working materials, not shipping
+# code — keep them out of the public repo. (Move them back in or open
+# a private repo if you want them version-controlled.)
+brief/
+context/
+KICKOFF.md
+
+# Local agent simulation artefacts and screenshot capture intermediates
+reports/
+*.log
+.claude/
+
