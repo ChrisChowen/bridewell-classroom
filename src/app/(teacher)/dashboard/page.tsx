@@ -20,7 +20,7 @@ import type { ClassRecord, School } from "@/types";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { status, user, displayName, email, signOut } = useAuth();
+  const { status, user, displayName, email } = useAuth();
   const [classes, setClasses] = useState<ClassRecord[] | null>(null);
 
   useEffect(() => {
@@ -80,11 +80,9 @@ export default function DashboardPage() {
                 : "You have no classes yet. Create one to begin."}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={signOut} className="bw-btn-secondary" style={{ fontSize: 13 }}>
-              Sign out
-            </button>
-          </div>
+          {/* Sign out lived here but is now in the UserMenu (top-right
+              user chip), so we don't double up. The hero stays focused
+              on welcoming + the classes list below. */}
         </section>
 
         <div style={{ display: "grid", gap: 18 }}>
@@ -156,10 +154,11 @@ function FirstStepsCard() {
           Set up your first class
         </h2>
         <p style={{ color: "var(--text)", fontSize: 14, lineHeight: 1.55, marginBottom: 14 }}>
-          Click <strong>New class</strong> above. Pick a topic from the UK KS3 syllabus library,
-          write a sentence about what you want pupils to come away with, and the AI drafts a
-          lesson plan you can review and approve. Once approved, you get a six-character
-          join code your pupils type to enter the lesson.
+          Press <strong>New class</strong> in the classes panel below. Pick a topic from
+          the UK KS3 syllabus library, write a sentence about what you want pupils to
+          come away with, and the AI drafts a lesson plan you can review and approve.
+          Once approved, you get a six-character join code your pupils type to enter
+          the lesson.
         </p>
         <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: 6, fontSize: 13, color: "var(--text-muted)" }}>
           <li>· Choose the topic — Biology, English, Mathematics, History.</li>

@@ -129,8 +129,10 @@ function RegisterForm() {
 
   return (
     <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-      <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
-        First time? Create your teacher account. You will be able to set up a class on the next screen.
+      <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55 }}>
+        First time? Create your teacher account. Your school email must be on the
+        Bridewell allowlist — ask your DSL or IT lead if registration is rejected. You
+        will be able to set up a class on the next screen.
       </p>
       <Field label="Full name" value={displayName} onChange={setDisplayName} placeholder="Jane Wells" />
       <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="jane.wells@kesw.org" />

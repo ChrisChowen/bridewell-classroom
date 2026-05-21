@@ -89,14 +89,24 @@ function JoinInner() {
     const urlCode = searchParams.get("code");
     const lastCode = window.localStorage.getItem(LS_CODE);
     const lastName = window.localStorage.getItem(LS_NAME);
+    let activeCode = "";
     if (urlCode) {
       const normalised = normaliseJoinCode(urlCode);
       setJoinCode(normalised);
       setCodeFromUrl(true);
+      activeCode = normalised;
     } else if (lastCode) {
       setJoinCode(lastCode);
+      activeCode = lastCode;
     }
-    if (lastName) setDisplayName(lastName);
+    // Only prefill the cached name when the pupil is rejoining the SAME
+    // class. On shared school iPads the previous pupil's name was
+    // bleeding into the next pupil's join — e.g. period-3 Alex joining
+    // as period-2 Maya — which is the worst possible identity issue
+    // for a classroom tool.
+    if (lastName && activeCode && lastCode && activeCode === lastCode) {
+      setDisplayName(lastName);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

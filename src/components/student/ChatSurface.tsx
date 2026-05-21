@@ -360,7 +360,16 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
       // a finite number ≥ the current step.
       const next = live.currentStepIndex;
       if (typeof next === "number" && Number.isFinite(next) && next >= 0) {
-        setCurrentStepIndex((prev) => (next > prev ? next : prev));
+        setCurrentStepIndex((prev) => {
+          // Reset the scaffold counter when the pupil moves to a new
+          // step — the ceiling is per-concept, not per-session, and
+          // pupils were getting stranded with greyed-out scaffolds
+          // they earned on step 1 still blocking step 2.
+          if (next > prev) {
+            signalsRef.current.scaffoldUseCount = 0;
+          }
+          return next > prev ? next : prev;
+        });
       }
     });
     return unsub;
@@ -467,6 +476,11 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
         searchQueries?: string[];
       };
       const tutorText = data.text || "(no reply)";
+      // Only surface citations when this turn was in Expert mode (or a
+      // one-shot expert override fired by the teacher). Coach mode is
+      // meant to be question-only; stray "Verified · N sources" chips
+      // under a coach turn read as confusing for a Y8.
+      const turnInExpertMode = mode === "expert" || usedExpertOverride;
       setMessages((m) => [
         ...m,
         {
@@ -474,8 +488,8 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
           role: "tutor",
           content: tutorText,
           timestamp: Date.now(),
-          citations: data.citations,
-          searchQueries: data.searchQueries,
+          citations: turnInExpertMode ? data.citations : undefined,
+          searchQueries: turnInExpertMode ? data.searchQueries : undefined,
           meta: { fallback: data.fallbackUsed },
         },
       ]);
@@ -554,12 +568,20 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
 
   return (
     <div style={{ display: "grid", gridTemplateRows: "auto auto 1fr auto", height: "100%" }}>
-      {/* Step indicator — pupil can see where the tutor is in the plan. */}
+      {/* Step indicator — pupil can see where the tutor is in the plan.
+          In extension mode, name the extension explicitly rather than
+          re-showing the final lesson step title (which was confusing
+          the pupil: the bar reads "complete" but the title still names
+          step N). */}
       {lessonPlan && activeStep && stepCount > 1 && (
         <StepProgress
           stepIndex={currentStepIndex}
           stepCount={stepCount}
-          stepTitle={activeStep.title}
+          stepTitle={
+            inExtension && lessonPlan.extension
+              ? lessonPlan.extension.title || "Extension"
+              : activeStep.title
+          }
         />
       )}
 

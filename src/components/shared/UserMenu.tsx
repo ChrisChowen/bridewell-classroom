@@ -9,7 +9,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, LogOut, Sun, Moon, User as UserIcon } from "lucide-react";
+import { LayoutDashboard, LogOut, Sun, Moon } from "lucide-react";
 import { UserChip } from "./UserChip";
 import { useAuth } from "@/lib/firebase/auth-context";
 
@@ -114,7 +114,6 @@ export function UserMenu({
           <MenuHeader name={name} school={school} role={role} />
           <Divider />
           <MenuItem href="/dashboard" icon={<LayoutDashboard size={14} />} label="Dashboard" onClick={() => setOpen(false)} />
-          <MenuItem href="/dashboard#account" icon={<UserIcon size={14} />} label="Account" onClick={() => setOpen(false)} />
           <Divider />
           <MenuButton
             icon={theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
