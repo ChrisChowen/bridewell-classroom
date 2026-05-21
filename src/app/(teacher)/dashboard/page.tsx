@@ -138,7 +138,7 @@ function EngagementWaitingPanel({ classes }: { classes: ClassRecord[] }) {
 function FirstStepsCard() {
   return (
     <section
-      className="bw-card"
+      className="bw-card bw-stack-md"
       style={{
         padding: 0,
         background: "rgba(181,138,60,0.06)",

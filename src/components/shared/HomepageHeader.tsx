@@ -47,10 +47,12 @@ export function HomepageHeader() {
 
   return (
     <header
+      className="bw-pad-fluid"
       style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        gap: 12,
         padding: "20px 40px",
         borderBottom: "1px solid var(--line)",
         position: "sticky",
@@ -109,9 +111,21 @@ export function HomepageHeader() {
           </>
         ) : (
           <>
-            <ThemeToggle />
-            <Link href="/login" className="bw-btn-secondary">Teacher sign in</Link>
-            <Link href="/join" className="bw-btn-primary">Pupil join</Link>
+            <span className="bw-hide-sm"><ThemeToggle /></span>
+            <Link
+              href="/login"
+              className="bw-btn-secondary"
+              style={{ whiteSpace: "nowrap" }}
+            >
+              <span className="bw-hide-sm">Teacher </span>Sign in
+            </Link>
+            <Link
+              href="/join"
+              className="bw-btn-primary"
+              style={{ whiteSpace: "nowrap" }}
+            >
+              <span className="bw-hide-sm">Pupil </span>Join
+            </Link>
           </>
         )}
       </nav>

@@ -189,6 +189,7 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
     <div
       role="dialog"
       aria-modal
+      className="bw-modal-shell"
       style={{
         position: "fixed",
         inset: 0,
@@ -201,7 +202,7 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="bw-card"
+        className="bw-card bw-modal-frame"
         style={{
           width: "100%",
           maxWidth: 760,
@@ -897,7 +898,10 @@ function DescribeStep({
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 160px 1fr", gap: 12 }}>
+      <div
+        className="bw-stack-sm"
+        style={{ display: "grid", gridTemplateColumns: "1fr 160px 1fr", gap: 12 }}
+      >
         <Field label="Class name" value={className} onChange={setClassName} placeholder="Year 8 · Set 2" />
         <label style={{ display: "grid", gap: 4 }}>
           <span className="bw-section-label">Year group</span>
@@ -1260,7 +1264,10 @@ function ReviewStep({
         />
       </Section>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+      <div
+        className="bw-stack-sm"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}
+      >
         <Stat label="Estimated time">{plan.estimatedMinutes} min</Stat>
         <Stat label="Scaffold ceiling">{plan.scaffoldCeiling}</Stat>
         <Stat label="Critical concepts">{plan.criticalConcepts.length}</Stat>
@@ -1540,7 +1547,10 @@ function ChallengeSelect({
     },
   ];
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+    <div
+      className="bw-stack-sm"
+      style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}
+    >
       {options.map((opt) => {
         const active = value === opt.key;
         return (

@@ -568,8 +568,10 @@ export default function ClassDetailPage() {
           </section>
         )}
 
-        {/* Pupil grid + drill panel */}
+        {/* Pupil grid + drill panel. On tablet/mobile the drill panel
+            stacks below the grid via bw-stack-md. */}
         <div
+          className={selected ? "bw-stack-md" : undefined}
           style={{
             display: "grid",
             gridTemplateColumns: selected ? "minmax(0, 1fr) 380px" : "minmax(0, 1fr)",

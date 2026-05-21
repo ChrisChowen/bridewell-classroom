@@ -110,7 +110,7 @@ function Inner() {
     <main
       style={{
         minHeight: "100dvh",
-        padding: "40px 56px",
+        padding: "clamp(20px, 4vw, 40px) clamp(20px, 5vw, 56px)",
         background: "var(--color-navy-900)",
         color: "var(--color-cream-50)",
         display: "grid",
@@ -119,7 +119,10 @@ function Inner() {
         overflow: "hidden",
       }}
     >
-      <header className="flex items-center justify-between" style={{ gap: 24 }}>
+      <header
+        className="flex items-center justify-between"
+        style={{ gap: 24, flexWrap: "wrap" }}
+      >
         <div className="flex items-center gap-3">
           <Crest size={36} />
           <div>

@@ -27,6 +27,7 @@ interface Props {
 export function ClassField({ pupils, fillRatio, marbles, capacity, stepCount }: Props) {
   return (
     <section
+      className="bw-stack-md"
       style={{
         display: "grid",
         gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.4fr)",

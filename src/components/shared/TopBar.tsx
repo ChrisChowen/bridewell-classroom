@@ -23,11 +23,13 @@ export function TopBar({
 }) {
   return (
     <header
+      className="bw-topbar"
       style={{
         display: "grid",
         gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)",
         alignItems: "center",
-        padding: "14px 28px",
+        gap: 12,
+        padding: "14px clamp(14px, 4vw, 28px)",
         borderBottom: "1px solid var(--line)",
         background: "var(--surface)",
         position: "sticky",
@@ -41,7 +43,7 @@ export function TopBar({
           <Wordmark />
         </Link>
       </div>
-      <div style={{ textAlign: "center", minWidth: 0 }}>
+      <div className="bw-topbar-centre" style={{ textAlign: "center", minWidth: 0 }}>
         {lessonContext && (
           <div className="bw-section-label" style={{ marginBottom: 2 }}>{lessonContext}</div>
         )}

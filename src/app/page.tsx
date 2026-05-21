@@ -33,6 +33,7 @@ export default function Landing() {
 function Hero() {
   return (
     <section
+      className="bw-pad-fluid"
       style={{
         maxWidth: 880,
         width: "100%",
@@ -137,6 +138,7 @@ function Hero() {
 function ProductPreview() {
   return (
     <section
+      className="bw-pad-fluid"
       style={{
         maxWidth: 1200,
         width: "100%",
@@ -424,6 +426,7 @@ function PreviewPupilRow({
 function Principles() {
   return (
     <section
+      className="bw-pad-fluid"
       style={{
         maxWidth: 1200,
         width: "100%",
@@ -477,6 +480,7 @@ function TrustBlock() {
       }}
     >
       <div
+        className="bw-pad-fluid"
         style={{
           maxWidth: 980,
           width: "100%",
@@ -546,6 +550,7 @@ function TrustBlock() {
 function Audiences() {
   return (
     <section
+      className="bw-pad-fluid"
       style={{
         maxWidth: 1200,
         width: "100%",
@@ -609,6 +614,7 @@ function Audiences() {
 function SiteFooter() {
   return (
     <footer
+      className="bw-pad-fluid"
       style={{
         marginTop: "auto",
         borderTop: "1px solid var(--line)",

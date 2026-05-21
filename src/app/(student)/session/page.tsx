@@ -130,11 +130,13 @@ export default function SessionPage() {
   return (
     <main style={{ minHeight: "100dvh", display: "grid", gridTemplateRows: "auto 1fr" }}>
       <header
+        className="bw-topbar"
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)",
           alignItems: "center",
-          padding: "12px 20px",
+          gap: 10,
+          padding: "12px clamp(12px, 4vw, 20px)",
           borderBottom: "1px solid var(--line)",
           background: "var(--surface)",
         }}
@@ -159,7 +161,7 @@ export default function SessionPage() {
           </span>
         </Link>
 
-        <div style={{ textAlign: "center", minWidth: 0 }}>
+        <div className="bw-topbar-centre" style={{ textAlign: "center", minWidth: 0 }}>
           <div className="bw-section-label" style={{ marginBottom: 2 }}>
             {className}
           </div>
@@ -178,8 +180,12 @@ export default function SessionPage() {
         </div>
 
         <div className="flex items-center justify-end gap-2">
-          <ThemeToggle />
-          <Link href="/join" className="bw-btn-secondary" style={{ fontSize: 11 }}>
+          <span className="bw-hide-sm"><ThemeToggle /></span>
+          <Link
+            href="/join"
+            className="bw-btn-secondary bw-hide-sm"
+            style={{ fontSize: 11 }}
+          >
             Switch class
           </Link>
           <span
@@ -188,6 +194,10 @@ export default function SessionPage() {
               padding: "6px 12px",
               fontSize: 12,
               color: "var(--text-muted)",
+              maxWidth: "40vw",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
             <strong style={{ color: "var(--text)" }}>{pupilName}</strong>

@@ -312,11 +312,94 @@ select:focus-visible {
   box-shadow: 0 0 0 3px rgba(181, 138, 60, 0.18);
 }
 
-/* Homepage trust block stacks at iPad-portrait and narrower so the
-   secondary cards drop below the headline copy rather than crushing it. */
+/* ── Responsive layer ─────────────────────────────────────────────────
+   Most layouts in this project were drafted for desktop first; these
+   utilities give the worst-offender grids and paddings a sane mobile
+   form without rewriting every inline style. Each class is opt-in:
+   apply to a wrapper element and the media query below kicks in.
+   Use !important here because the inline styles in JSX are higher
+   specificity than ordinary class rules. */
+
+/* Tablet (iPad portrait and smaller) */
 @media (max-width: 880px) {
+  /* Stack any two- or three-column grid that opts in */
+  .bw-stack-md {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  /* Fluid section padding */
+  .bw-pad-fluid {
+    padding-left: clamp(16px, 5vw, 40px) !important;
+    padding-right: clamp(16px, 5vw, 40px) !important;
+  }
   .bw-trust-grid {
     grid-template-columns: 1fr !important;
+  }
+  /* TopBar collapses to two columns on tablet/phone — the centre title
+     hides and the grid reflows to logo + user-menu. */
+  .bw-topbar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) !important;
+  }
+  .bw-topbar-centre {
+    display: none !important;
+  }
+  /* Hide secondary nav labels but keep the elements themselves */
+  .bw-only-icon-md > span:not(:first-child),
+  .bw-only-icon-md .bw-label {
+    display: none !important;
+  }
+}
+
+/* Phone */
+@media (max-width: 640px) {
+  .bw-stack-sm {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .bw-pad-fluid-sm {
+    padding-left: clamp(14px, 5vw, 24px) !important;
+    padding-right: clamp(14px, 5vw, 24px) !important;
+  }
+  /* Wizard modal goes full-bleed on phones */
+  .bw-modal-shell {
+    padding: 0 !important;
+  }
+  .bw-modal-frame {
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    height: 100vh;
+    width: 100vw;
+    border-radius: 0 !important;
+  }
+  /* Mobile-icon-only — collapses label text but keeps the icon */
+  .bw-only-icon > span:not(:first-child),
+  .bw-only-icon .bw-label {
+    display: none !important;
+  }
+  /* Header buttons get smaller on phones */
+  header .bw-btn-primary,
+  header .bw-btn-secondary {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+  }
+  /* Hide entirely on phones — for content that's nice-to-have */
+  .bw-hide-sm {
+    display: none !important;
+  }
+  /* The hero headline scales down naturally via clamp() but the section
+     padding still needs squeezing. */
+  main > section,
+  main > header,
+  main > footer {
+    padding-left: clamp(14px, 5vw, 24px);
+    padding-right: clamp(14px, 5vw, 24px);
+  }
+}
+
+/* Very narrow — sub-phone like Galaxy Fold cover screen */
+@media (max-width: 380px) {
+  .bw-hide-xs {
+    display: none !important;
   }
 }
 

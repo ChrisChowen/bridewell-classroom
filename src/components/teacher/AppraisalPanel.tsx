@@ -152,7 +152,10 @@ export function AppraisalPanel({ classId }: { classId: string }) {
 
       <p style={{ fontSize: 14, lineHeight: 1.55, marginBottom: 14 }}>{appraisal.summary}</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div
+        className="bw-stack-sm"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+      >
         <ColumnHeader title="What worked" items={appraisal.whatWorked} />
         <ColumnHeader title="What to adjust" items={appraisal.whatToAdjust} />
       </div>

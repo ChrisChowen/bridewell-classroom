@@ -58,11 +58,11 @@ export function StateDistribution({ pupils }: { pupils: PupilSummary[] }) {
         })}
       </div>
 
-      {/* Tiles */}
+      {/* Tiles — wrap onto 2 rows on narrow viewports rather than crush */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(5, 1fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
           gap: 10,
           marginTop: 16,
         }}

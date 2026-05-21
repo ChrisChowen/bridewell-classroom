@@ -135,7 +135,10 @@ function RegisterForm() {
       <Field label="Full name" value={displayName} onChange={setDisplayName} placeholder="Jane Wells" />
       <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="jane.wells@kesw.org" />
       <Field label="Password" type="password" value={password} onChange={setPassword} placeholder="At least 8 characters" />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div
+        className="bw-stack-sm"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
+      >
         <label style={{ display: "grid", gap: 4 }}>
           <span className="bw-section-label">School</span>
           <select
