@@ -142,6 +142,32 @@ small slim navy scroll with two gold ribbons at its ends. The face is
 calm. No audience shown — only the scholar. Aspect 1:1.`,
   },
 
+  // Peeking pose for the homepage hero. Like the meme of "Kilroy was
+  // here" — only the very top of the scholar pokes above an invisible
+  // edge. The homepage layers the figure behind the headline so it
+  // reads as the scholar peering over the top of the text.
+  {
+    name: "scholar-peeking",
+    prompt: `${SCHOLAR_BASE}
+
+Pose — the scholar HIDING behind a wall and peeking up over the top
+edge of it. Only the upper half of the head (from about mid-nose
+upward) is visible above an invisible horizontal line at the very
+BOTTOM of the canvas. Both small hands grip the edge of that
+invisible wall — the hands sit just below the eye line, fingertips
+visible like a Kilroy-was-here mark.
+
+The face is just two small navy dots for eyes plus a tiny curve of
+hair, peering upward with calm curiosity. Below the eyes everything
+is hidden — NO mouth, NO chin, NO body, NO robe, NO book, NO candle,
+NO desk, NO scroll. The scholar's whole body is hidden behind the
+wall; we only see eyes and fingertips.
+
+The top three quarters of the canvas is COMPLETELY EMPTY cream
+#FAF6EE. The peeking head + fingertips occupy only the bottom ~25%
+of the canvas, hugging the bottom edge. Aspect 1:1.`,
+  },
+
   // --- House points jar -----------------------------------------------
   // The empty vessel for the whiteboard view. We generate it as one
   // beautiful illustrated artefact (no contents) and animate the

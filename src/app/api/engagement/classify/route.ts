@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { classifyEngagement, type ClassifierInput } from "@/layers/classifier";
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 // POST /api/engagement/classify
 //
@@ -10,6 +11,9 @@ import { classifyEngagement, type ClassifierInput } from "@/layers/classifier";
 // update without polling.
 
 export async function POST(req: Request) {
+  const limited = await enforceRateLimit(req, RATE_LIMITS.engagementClassify);
+  if (limited) return limited;
+
   const body = (await req.json().catch(() => null)) as ClassifierInput | null;
   if (!body || !Array.isArray(body.turns) || !body.signals) {
     return NextResponse.json({ error: "turns and signals required" }, { status: 400 });

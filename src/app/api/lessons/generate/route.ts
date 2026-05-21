@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { generateLessonPlan } from "@/lib/ai/lessonPlanner";
 import { findSyllabus } from "@/lib/syllabi/library";
 import { getAdmin } from "@/lib/firebase/admin";
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 // POST /api/lessons/generate
 //
@@ -28,6 +29,9 @@ interface Body {
 }
 
 export async function POST(req: Request) {
+  const limited = await enforceRateLimit(req, RATE_LIMITS.lessonsGenerate);
+  if (limited) return limited;
+
   const a = getAdmin();
   if (!a.ready) {
     return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });

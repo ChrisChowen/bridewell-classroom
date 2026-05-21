@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye } from "lucide-react";
 import { TopBar } from "@/components/shared/TopBar";
 import { Fleur } from "@/components/shared/Fleur";
 import { ClassesPanel } from "@/components/teacher/ClassesPanel";
@@ -13,7 +11,7 @@ import { subscribeToMyClasses } from "@/lib/firebase/classes";
 import type { ClassRecord, School } from "@/types";
 
 // Teacher dashboard. Honest empty states first — no seeded/demo content
-// on the real surface. A separate /demo route holds the design preview.
+// on the real surface; the teacher only sees what is actually live.
 //
 // The engagement viz (ClassStream / StateDistribution / PupilPanel)
 // appears only when there is a live class with pupils joined. Until
@@ -83,9 +81,6 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/demo" className="bw-btn-secondary" style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <Eye size={12} /> Design preview
-            </Link>
             <button onClick={signOut} className="bw-btn-secondary" style={{ fontSize: 13 }}>
               Sign out
             </button>
@@ -132,11 +127,9 @@ function EngagementWaitingPanel({ classes }: { classes: ClassRecord[] }) {
         pupils start chatting with the tutor.
       </p>
       <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 12 }}>
-        Want to see what a populated dashboard looks like?{" "}
-        <Link href="/demo" style={{ color: "var(--color-navy-700)", textDecoration: "underline" }}>
-          Open the design preview
-        </Link>
-        .
+        Once pupils start joining and chatting, the dashboard will populate live —
+        per-pupil cards, engagement sparklines, and safeguarding flags will appear as
+        they happen.
       </p>
     </section>
   );

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { callLLM, dedupeCitations, type LLMMessage } from "@/lib/ai/llm";
 import { buildTutorSystemPrompt, SCAFFOLD_SYSTEM } from "@/lib/ai/prompts";
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import type { ActivityType, ScaffoldAction, TutorMode } from "@/types";
 
 // POST /api/chat — tutor chat path.
@@ -50,9 +51,22 @@ type Body = {
 };
 
 export async function POST(req: Request) {
+  const limited = await enforceRateLimit(req, RATE_LIMITS.chat);
+  if (limited) return limited;
+
   const body = (await req.json().catch(() => null)) as Body | null;
   if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
     return NextResponse.json({ error: "messages required" }, { status: 400 });
+  }
+
+  // Defensive caps on input. Without these, a long-running chat could
+  // accumulate megabytes and balloon prompt cost.
+  const totalChars = body.messages.reduce((n, m) => n + (m.content?.length ?? 0), 0);
+  if (totalChars > 32_000) {
+    return NextResponse.json(
+      { error: "messages too long", limit: 32000, actual: totalChars },
+      { status: 413 },
+    );
   }
 
   if (body.scaffold) {

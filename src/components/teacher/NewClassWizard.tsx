@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, BookOpen, Sparkles, Check, X, AlertTriangle, RotateCcw, Library, Pencil } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Sparkles, Check, X, AlertTriangle, RotateCcw, Library, Pencil, Search } from "lucide-react";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
 import { SYLLABUS_LIBRARY } from "@/lib/syllabi";
@@ -320,70 +320,290 @@ function Header({ step, onClose }: { step: Step; onClose: () => void }) {
   );
 }
 
+// Subject + year-group filter chips. The library has ~80 topics across
+// 7 subjects and 5 year groups; without filters the teacher has to
+// scroll past everything to find their lesson. Defaults to "All" on both
+// axes so a teacher who knows what they want can still browse.
+type SubjectFilter = SyllabusEntry["subject"] | "All";
+type YearFilter = SyllabusEntry["yearGroup"] | "All";
+
+const ALL_SUBJECTS: SubjectFilter[] = [
+  "All",
+  "Biology",
+  "Chemistry",
+  "Physics",
+  "Mathematics",
+  "English",
+  "History",
+  "Geography",
+];
+const ALL_YEARS: YearFilter[] = ["All", 7, 8, 9, 10, 11];
+
 function PickStep({ syllabus, onPick }: { syllabus: SyllabusEntry | null; onPick: (s: SyllabusEntry) => void }) {
   const entries = SYLLABUS_LIBRARY.entries;
+  const [subject, setSubject] = useState<SubjectFilter>("All");
+  const [year, setYear] = useState<YearFilter>("All");
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return entries.filter((e) => {
+      if (subject !== "All" && e.subject !== subject) return false;
+      if (year !== "All" && e.yearGroup !== year) return false;
+      if (!q) return true;
+      const hay = [
+        e.topic,
+        e.blurb,
+        e.subject,
+        e.keyStage,
+        `year ${e.yearGroup}`,
+        ...e.keyVocabulary,
+        ...e.criticalConcepts,
+      ]
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [entries, subject, year, query]);
+
+  // Group by subject only when no subject filter is active — otherwise a
+  // flat list reads better and matches what the teacher just asked for.
+  const showGrouped = subject === "All";
   const grouped = useMemo(() => {
     const out: Record<string, SyllabusEntry[]> = {};
-    for (const e of entries) {
-      const k = e.subject;
-      (out[k] ??= []).push(e);
-    }
+    for (const e of filtered) (out[e.subject] ??= []).push(e);
     return out;
-  }, [entries]);
+  }, [filtered]);
+  const subjectOrder = ALL_SUBJECTS.filter((s): s is SyllabusEntry["subject"] => s !== "All");
+
   return (
     <div>
-      <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 18 }}>
+      <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14 }}>
         Pick a topic from the UK National Curriculum library. Your school&apos;s scheme of work
         may vary; you can refine in the next step.
       </p>
-      <div style={{ display: "grid", gap: 18 }}>
-        {Object.entries(grouped).map(([subject, list]) => (
-          <section key={subject}>
-            <div className="bw-section-label" style={{ marginBottom: 8 }}>{subject}</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 }}>
-              {list.map((e) => (
-                <button
-                  key={e.id}
-                  onClick={() => onPick(e)}
-                  className="bw-card"
-                  style={{
-                    padding: 14,
-                    textAlign: "left",
-                    background: syllabus?.id === e.id ? "rgba(181,138,60,0.08)" : "var(--surface)",
-                    border: `1px solid ${syllabus?.id === e.id ? "var(--color-gold-500)" : "var(--line)"}`,
-                    cursor: "pointer",
-                    transition: "all 120ms ease",
-                    display: "grid",
-                    gridTemplateColumns: "44px 1fr",
-                    gap: 12,
-                    alignItems: "start",
-                  }}
-                >
-                  <Image
-                    src={subjectMotif(e.subject)}
-                    alt=""
-                    width={44}
-                    height={44}
-                    aria-hidden
-                    style={{ width: 44, height: 44, opacity: 0.95 }}
-                  />
-                  <div style={{ minWidth: 0 }}>
-                    <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
-                      <BookOpen size={12} color="var(--color-gold-500)" />
-                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                        {e.keyStage} · Year {e.yearGroup} · {e.suggestedMinutes} min
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{e.topic}</div>
-                    <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.45 }}>{e.blurb}</div>
-                  </div>
-                </button>
-              ))}
+
+      {/* Search + filters. Sticky so the teacher can scan the long list
+          below without losing the controls. */}
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 2,
+          background: "var(--surface)",
+          paddingBottom: 12,
+          marginBottom: 12,
+          borderBottom: "1px solid var(--line)",
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div style={{ position: "relative" }}>
+          <Search
+            size={14}
+            color="var(--text-muted)"
+            style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}
+            aria-hidden
+          />
+          <input
+            type="search"
+            placeholder="Search topic, vocabulary, concept…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search curriculum library"
+            style={{
+              width: "100%",
+              padding: "10px 12px 10px 34px",
+              borderRadius: 8,
+              border: "1px solid var(--line)",
+              background: "var(--bg)",
+              color: "var(--text)",
+              fontSize: 13,
+              fontFamily: "var(--font-sans)",
+            }}
+          />
+        </div>
+
+        <FilterRow label="Year">
+          {ALL_YEARS.map((y) => (
+            <FilterChip
+              key={String(y)}
+              active={year === y}
+              onClick={() => setYear(y)}
+              label={y === "All" ? "All" : `Y${y}`}
+            />
+          ))}
+        </FilterRow>
+
+        <FilterRow label="Subject">
+          {ALL_SUBJECTS.map((s) => (
+            <FilterChip key={s} active={subject === s} onClick={() => setSubject(s)} label={s} />
+          ))}
+        </FilterRow>
+
+        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+          {filtered.length === entries.length
+            ? `${entries.length} topics`
+            : `${filtered.length} of ${entries.length} topics`}
+          {(subject !== "All" || year !== "All" || query.trim()) && (
+            <>
+              {" · "}
+              <button
+                type="button"
+                onClick={() => {
+                  setSubject("All");
+                  setYear("All");
+                  setQuery("");
+                }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--color-gold-500)",
+                  fontSize: 11,
+                  padding: 0,
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+              >
+                Clear filters
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div
+          style={{
+            padding: 24,
+            border: "1px dashed var(--line)",
+            borderRadius: 8,
+            textAlign: "center",
+            color: "var(--text-muted)",
+            fontSize: 13,
+          }}
+        >
+          No topics match those filters. Try widening the year group or clearing the search.
+        </div>
+      ) : showGrouped ? (
+        <div style={{ display: "grid", gap: 18 }}>
+          {subjectOrder
+            .filter((s) => grouped[s]?.length)
+            .map((s) => (
+              <section key={s}>
+                <div className="bw-section-label" style={{ marginBottom: 8 }}>
+                  {s}
+                  <span style={{ marginLeft: 8, color: "var(--text-muted)", fontWeight: 400 }}>
+                    {grouped[s].length}
+                  </span>
+                </div>
+                <SyllabusCardGrid entries={grouped[s]} syllabus={syllabus} onPick={onPick} />
+              </section>
+            ))}
+        </div>
+      ) : (
+        <SyllabusCardGrid entries={filtered} syllabus={syllabus} onPick={onPick} />
+      )}
+    </div>
+  );
+}
+
+function SyllabusCardGrid({
+  entries,
+  syllabus,
+  onPick,
+}: {
+  entries: SyllabusEntry[];
+  syllabus: SyllabusEntry | null;
+  onPick: (s: SyllabusEntry) => void;
+}) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 }}>
+      {entries.map((e) => (
+        <button
+          key={e.id}
+          onClick={() => onPick(e)}
+          className="bw-card"
+          style={{
+            padding: 14,
+            textAlign: "left",
+            background: syllabus?.id === e.id ? "rgba(181,138,60,0.08)" : "var(--surface)",
+            border: `1px solid ${syllabus?.id === e.id ? "var(--color-gold-500)" : "var(--line)"}`,
+            cursor: "pointer",
+            transition: "all 120ms ease",
+            display: "grid",
+            gridTemplateColumns: "44px 1fr",
+            gap: 12,
+            alignItems: "start",
+          }}
+        >
+          <Image
+            src={subjectMotif(e.subject)}
+            alt=""
+            width={44}
+            height={44}
+            aria-hidden
+            style={{ width: 44, height: 44, opacity: 0.95 }}
+          />
+          <div style={{ minWidth: 0 }}>
+            <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
+              <BookOpen size={12} color="var(--color-gold-500)" />
+              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                {e.keyStage} · Year {e.yearGroup} · {e.suggestedMinutes} min
+              </span>
             </div>
-          </section>
-        ))}
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{e.topic}</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.45 }}>{e.blurb}</div>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center" style={{ gap: 8, flexWrap: "wrap" }}>
+      <span
+        style={{
+          fontSize: 10,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: "var(--text-muted)",
+          fontWeight: 700,
+          minWidth: 56,
+        }}
+      >
+        {label}
+      </span>
+      <div className="flex items-center" style={{ gap: 6, flexWrap: "wrap" }}>
+        {children}
       </div>
     </div>
+  );
+}
+
+function FilterChip({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      style={{
+        padding: "5px 11px",
+        borderRadius: 999,
+        border: `1px solid ${active ? "var(--color-gold-500)" : "var(--line)"}`,
+        background: active ? "rgba(181,138,60,0.12)" : "var(--surface)",
+        color: active ? "var(--text)" : "var(--text-muted)",
+        fontSize: 12,
+        fontWeight: active ? 600 : 500,
+        cursor: "pointer",
+        transition: "all 120ms ease",
+        fontFamily: "var(--font-sans)",
+      }}
+    >
+      {label}
+    </button>
   );
 }
 

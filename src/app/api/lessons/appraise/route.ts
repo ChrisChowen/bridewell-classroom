@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 import { appraiseLesson } from "@/lib/ai/appraiser";
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import type { ClassRecord } from "@/types";
 
 // POST /api/lessons/appraise
@@ -16,6 +17,9 @@ import type { ClassRecord } from "@/types";
 interface Body { classId: string; }
 
 export async function POST(req: Request) {
+  const limited = await enforceRateLimit(req, RATE_LIMITS.lessonsAppraise);
+  if (limited) return limited;
+
   const a = getAdmin();
   if (!a.ready) return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });
 

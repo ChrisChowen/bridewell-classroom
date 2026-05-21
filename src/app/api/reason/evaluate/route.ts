@@ -5,6 +5,7 @@ import {
 } from "@/layers/evaluator";
 import { shapeResponse } from "@/layers/responder";
 import { getAdmin } from "@/lib/firebase/admin";
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 // POST /api/reason/evaluate
 //
@@ -26,6 +27,9 @@ interface Body extends ReasonEvaluatorInput {
 const MAX_TRAJECTORY = 12;
 
 export async function POST(req: Request) {
+  const limited = await enforceRateLimit(req, RATE_LIMITS.reasonEvaluate);
+  if (limited) return limited;
+
   const a = getAdmin();
   if (!a.ready) return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });
 

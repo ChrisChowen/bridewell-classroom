@@ -394,18 +394,15 @@ regression test that the README screenshots are captured against.
 
 ---
 
-## Design preview + classroom display
+## Classroom display
 
-A separate `/demo` route holds a design-preview version of the dashboard against
-seeded data — useful for sense-checking the visual register without a live
-classroom:
-
-<p align="center">
-  <img src="docs/screenshots/04-demo-preview.png" width="900" alt="Design preview of the dashboard against seeded data">
-</p>
-
-The classroom-display mode is a second-screen projector view, intended for the
-front-of-room TV during a lesson:
+The classroom-display mode is the front-of-room projector view. The teacher's
+own dashboard stays on their device; the projector shows a **collective**
+surface for the room — a Harry-Potter-style points jar that fills with gems as
+the class works through the lesson, a breathing "class aura" reflecting the
+overall engagement mix, and a calm moments ticker ("the class is finding
+limiting factors tricky"). **No individual pupil names** are ever surfaced
+here. Open it from the class detail header — *Whiteboard*:
 
 <p align="center">
   <img src="docs/screenshots/21-classroom-display.png" width="900" alt="Classroom display mode for the projector">
@@ -518,7 +515,6 @@ src/
     (student)/session/      — pupil chat surface, closing screen
     (teacher)/dashboard/    — teacher home
     (teacher)/class/[id]/   — focused class view
-    (teacher)/demo/         — seeded design preview
     (display)/classroom/    — second-screen projector view
     api/
       chat                  — coach / expert / scaffold paths

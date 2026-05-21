@@ -353,8 +353,14 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
     const uid = fb.auth.currentUser.uid;
     const unsub = subscribeToPupilSelf(klass.id, uid, (live) => {
       if (!live) return;
-      if (typeof live.currentStepIndex === "number") {
-        setCurrentStepIndex((prev) => Math.max(prev, live.currentStepIndex!));
+      // Guard hard against undefined / NaN: a stale RTDB payload (e.g.
+      // network blip) can deliver a falsy currentStepIndex which the
+      // previous `Math.max(prev, undefined)` coerced to NaN and silently
+      // broke step progression. Only advance when the incoming value is
+      // a finite number ≥ the current step.
+      const next = live.currentStepIndex;
+      if (typeof next === "number" && Number.isFinite(next) && next >= 0) {
+        setCurrentStepIndex((prev) => (next > prev ? next : prev));
       }
     });
     return unsub;
@@ -409,10 +415,19 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
     setError(null);
 
     // Signal capture for the engagement classifier.
+    // The first pupil message is now recorded too: the delta between
+    // the tutor's opening prompt and the pupil's first reply is a real
+    // engagement signal (how long they took to engage). Previously the
+    // guard `s.lastPupilTs >= 0` was always true once lastPupilTs
+    // initialised to 0, so the intent (skip first turn) silently broke;
+    // we drop the guard and key only off lastTutor existing.
     const s = signalsRef.current;
     const lastTutor = [...messages].reverse().find((m) => m.role === "tutor");
-    if (lastTutor && s.lastPupilTs >= 0) {
-      s.pupilResponseTimes.push(now - lastTutor.timestamp);
+    if (lastTutor) {
+      const delta = Math.max(0, now - lastTutor.timestamp);
+      // Cap at 10 minutes — a pupil who walked away mid-lesson shouldn't
+      // poison the average.
+      s.pupilResponseTimes.push(Math.min(delta, 10 * 60 * 1000));
       if (s.pupilResponseTimes.length > 20) s.pupilResponseTimes.shift();
     }
     s.pupilMsgCount += 1;
@@ -1081,51 +1096,77 @@ function StepProgress({
   stepCount: number;
   stepTitle: string;
 }) {
-  const dots = Array.from({ length: stepCount });
+  // Soft 0–100 bar instead of a hard "Step 2 of 4" countdown. The pupil
+  // sees motion as they progress, but never an explicit number that
+  // implies a finish line they're behind on. The single line below
+  // names just the current focus — "Right now: …" — without listing
+  // future phases.
+  //
+  // We treat the bar as continuous within the step too: when the pupil
+  // enters a new step, the fill animates smoothly to the new position
+  // (CSS transition), so it feels like a single progressing line
+  // rather than a jumpy counter.
+  const fillRatio =
+    stepCount <= 1 ? 0.5 : Math.min(1, (stepIndex + 0.5) / stepCount);
   return (
     <div
       style={{
-        padding: "10px 24px",
+        padding: "12px 24px 10px",
         borderBottom: "1px solid var(--line)",
         background: "var(--surface)",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
+        display: "grid",
+        gap: 6,
       }}
+      aria-label={`Lesson progress about ${Math.round(fillRatio * 100)} percent`}
     >
-      <span className="bw-section-label" style={{ color: "var(--color-gold-500)" }}>
-        Step {stepIndex + 1} of {stepCount}
-      </span>
-      <div style={{ display: "flex", gap: 4 }} aria-hidden>
-        {dots.map((_, i) => (
-          <span
-            key={i}
-            style={{
-              width: 16,
-              height: 3,
-              borderRadius: 2,
-              background:
-                i < stepIndex
-                  ? "var(--color-gold-500)"
-                  : i === stepIndex
-                  ? "var(--color-gold-300, var(--color-gold-500))"
-                  : "var(--line)",
-              opacity: i === stepIndex ? 1 : i < stepIndex ? 0.75 : 1,
-            }}
-          />
-        ))}
+      <div className="flex items-center justify-between" style={{ gap: 12 }}>
+        <span
+          style={{
+            fontSize: 10,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "var(--text-muted)",
+            fontWeight: 700,
+          }}
+        >
+          Right now
+        </span>
+        <span
+          style={{
+            fontSize: 13,
+            color: "var(--text)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            flex: 1,
+            textAlign: "left",
+            marginLeft: 14,
+          }}
+        >
+          {stepTitle}
+        </span>
       </div>
-      <span
+      <div
+        aria-hidden
         style={{
-          fontSize: 13,
-          color: "var(--text-muted)",
+          width: "100%",
+          height: 4,
+          borderRadius: 999,
+          background: "var(--line)",
           overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
         }}
       >
-        {stepTitle}
-      </span>
+        <div
+          style={{
+            width: `${fillRatio * 100}%`,
+            height: "100%",
+            background:
+              "linear-gradient(90deg, var(--color-gold-500) 0%, var(--color-gold-300, var(--color-gold-500)) 100%)",
+            transition: "width 1400ms cubic-bezier(0.2, 0.9, 0.2, 1)",
+            borderRadius: 999,
+          }}
+        />
+      </div>
     </div>
   );
 }

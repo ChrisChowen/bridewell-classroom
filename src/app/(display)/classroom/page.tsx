@@ -117,7 +117,21 @@ function Inner() {
                 fontWeight: 600,
               }}
             >
-              Bridewell Classroom · The Field
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                Bridewell Classroom · The Field
+                <span
+                  aria-hidden
+                  title="Live"
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 999,
+                    background: "var(--color-bridewell-red)",
+                    boxShadow: "0 0 12px rgba(227, 6, 19, 0.55)",
+                    animation: "bw-pulse 1.6s ease-in-out infinite",
+                  }}
+                />
+              </span>
             </div>
             <div className="bw-display" style={{ fontSize: 28, lineHeight: 1.1 }}>
               {title}

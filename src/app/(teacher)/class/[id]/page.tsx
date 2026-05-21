@@ -347,9 +347,12 @@ export default function ClassDetailPage() {
         {/* Class header */}
         {klass && (
           <section style={{ marginBottom: 18 }}>
-            <h1 className="bw-display" style={{ fontSize: 24, lineHeight: 1.2 }}>
-              {klass.lessonPlan?.title ?? klass.subject}
-            </h1>
+            <div className="flex items-center" style={{ gap: 12, flexWrap: "wrap" }}>
+              <h1 className="bw-display" style={{ fontSize: 24, lineHeight: 1.2 }}>
+                {klass.lessonPlan?.title ?? klass.subject}
+              </h1>
+              {sessionStatus?.value === "active" && <LiveBadge />}
+            </div>
             <div style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>
               {klass.name} · {roster.length} pupil{roster.length === 1 ? "" : "s"} joined ·{" "}
               {Object.keys(live).length} currently active
@@ -712,4 +715,43 @@ function countByState(items: MergedPupil[]): Record<string, number> {
     counts[it.live.state] = (counts[it.live.state] ?? 0) + 1;
   }
   return counts;
+}
+
+// LIVE badge — heraldic-red broadcast-style indicator. Visible only
+// when the class is active. The red comes from the school crest and
+// is reserved for "this class is live right now" + small heraldic
+// marks; it's never used for alerts or errors.
+function LiveBadge() {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "3px 9px",
+        borderRadius: 999,
+        background: "rgba(227, 6, 19, 0.06)",
+        border: "1px solid rgba(227, 6, 19, 0.30)",
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: "0.22em",
+        textTransform: "uppercase",
+        color: "var(--color-bridewell-red)",
+        fontFamily: "var(--font-mono)",
+      }}
+      aria-label="Lesson is currently live"
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: 999,
+          background: "var(--color-bridewell-red)",
+          animation: "bw-pulse 1.4s ease-in-out infinite",
+        }}
+      />
+      Live
+    </span>
+  );
 }
