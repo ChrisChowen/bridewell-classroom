@@ -173,11 +173,13 @@ no real pupils on 29 May.
 
 ## 8. Persistent pupil accounts + long-term tracking
 
-**State:** pupils are anonymous Firebase Auth users today, keyed by
-class + display name. Each session has no memory of any previous one.
-Chris's steer (post-mobile-testing): "Probably need student accounts
-and a join code for classes to track long term performance for
-students etc. send profiles too."
+> **Status — explicitly deferred past this prototype + the 29 May
+> demo.** Pupil sign-in adds confusion for testing and demoing while
+> giving no benefit to a single-lesson scenario. The anonymous-join
+> model (class code → display name) is the right level of friction
+> for a prototype. Revisit only when (a) the schools are ready to
+> connect their SSO and (b) there's a real cross-session use case
+> behind it.
 
 **Done means:**
 - A pupil has one persistent identity across sessions — most likely

@@ -28,20 +28,35 @@ export interface ResponderOutput {
   emitPatternFlag: boolean;
 }
 
-const ACCEPT_LINES = [
-  "Good — that is the move I was hoping for. Let us keep going.",
-  "Right. That is the kind of answer that tells me you have it.",
-  "Yes, that lands. Onward.",
+// Concept-aware accept lines. Generic praise tells the pupil "you did
+// well"; concept-aware praise tells them WHY — which is what reinforces
+// the learning moment. The {concept} token is substituted with the
+// concept the Reason fired on (e.g. "chlorophyll absorbs light").
+const ACCEPT_TEMPLATES = [
+  "Right — you've shown that {concept}. Let's build on that.",
+  "Yes, that's the move. You're using {concept} correctly. Onward.",
+  "Good. You've put {concept} into your own words. Keep going.",
 ];
 
+function pickAcceptLine(concept: string): string {
+  const template = ACCEPT_TEMPLATES[Math.floor(Math.random() * ACCEPT_TEMPLATES.length)];
+  // Concept might be a long phrase ("Light as a limiting factor"); lower-case
+  // the first character so it reads naturally mid-sentence ("you've shown
+  // that light as a limiting factor"). The tutor's BASE register is calm
+  // and lowercase-conversational.
+  const inflected = concept
+    ? concept.charAt(0).toLowerCase() + concept.slice(1)
+    : "the idea";
+  return template.replace("{concept}", inflected);
+}
+
 export function shapeResponse(input: ResponderInput): ResponderOutput {
-  const { evaluation } = input;
+  const { evaluation, concept } = input;
   switch (evaluation.branch) {
     case "accept":
       return {
         branch: "accept",
-        tutorTurn:
-          ACCEPT_LINES[Math.floor(Math.random() * ACCEPT_LINES.length)],
+        tutorTurn: pickAcceptLine(concept),
         emitPatternFlag: false,
       };
     case "soft_challenge":

@@ -81,19 +81,36 @@ et al.). Be conservative: misclassifying "productive_struggle" as
 "wheel_spinning" interrupts a pupil who is learning. Anchor to evidence
 in the turns and signals; do not infer beyond them.
 
-State definitions:
 State definitions — read these carefully. Correctness is NOT engagement.
 A pupil giving terse one-word correct answers without elaborating, asking
 follow-ups, or showing their working is NOT flowing — they are
 disengaged. A flowing pupil engages with substance.
 
-  - flowing: on-topic AND engaged with substance — writes more than
-      asked, elaborates unprompted, asks follow-up questions, brings
-      their own examples. Brief hesitations are fine. One-word correct
-      answers are NOT flowing on their own.
-  - productive_struggle: slower, partial answers, willing to keep
-      trying, asking follow-ups, attempting their own examples,
-      reasoning aloud about what they aren't sure about.
+CRITICAL DISTINCTION — flowing vs productive_struggle. Both are
+substantive. The difference is *certainty*:
+
+  - flowing = substantive + confident. The pupil sounds like they
+      already know it. They state, connect, generalise. Hedging words
+      ("maybe", "I think", "wait, is it…", "I'm not sure but…")
+      should push you toward productive_struggle, NOT flowing.
+  - productive_struggle = substantive + reasoning-aloud. The pupil is
+      actively thinking, attempting partial answers, second-guessing
+      themselves, asking "is this right?", or going back to revise an
+      earlier idea. They are *visibly working*. This is the most
+      learning-rich state and the one Kapur 2008 specifically
+      privileges. If in doubt between flowing and
+      productive_struggle, choose productive_struggle — it is the
+      learning state, not flowing.
+
+State list:
+
+  - flowing: substantive + confident. Writes more than asked,
+      elaborates unprompted, generalises, brings their own examples
+      without hedging. One-word answers are NEVER flowing.
+  - productive_struggle: substantive + uncertain. Slower, partial
+      answers, hedges ("I think", "maybe"), revises mid-thought, asks
+      follow-up questions about their own reasoning, takes
+      thinking-time pauses, attempts examples even if imperfect.
   - wheel_spinning: repeated scaffold use without producing substance;
       echoing the tutor; same difficulty recurring; presses for hints
       rather than thinking.
@@ -102,6 +119,10 @@ disengaged. A flowing pupil engages with substance.
       asking again. Terse correct answers without elaboration belong
       here, NOT in flowing.
   - off_task: messages unrelated to the lesson; clearly not working.
+
+A useful counterfactual: a pupil who SOUNDS LIKE THEY ALREADY KNEW
+THIS is flowing. A pupil who SOUNDS LIKE THEY ARE FIGURING IT OUT
+RIGHT NOW is productive_struggle. The system rewards the latter.
 
 (B) Safeguarding flag — read the pupil's messages for any disclosure
 that a class teacher would want to know about immediately: self-harm,

@@ -1,0 +1,548 @@
+{
+  "reportSource": "sim-1779356283337.json",
+  "lessonTitle": "Photosynthesis: The Role of Light",
+  "criticalConcepts": [
+    "Chlorophyll absorbs light energy",
+    "Light as a limiting factor",
+    "Photosynthesis produces glucose for energy"
+  ],
+  "total": 30,
+  "averagePassCount": 4.3,
+  "pct": {
+    "coaches": 90,
+    "no_answer_giveaway": 73,
+    "anchors": 57,
+    "short": 53,
+    "calm": 90,
+    "addresses": 67
+  },
+  "worst5": [
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "The sun?",
+      "tutorTurn": "The red car reflects red light and absorbs all other colours.",
+      "score": {
+        "coaches": 0,
+        "no_answer_giveaway": 0,
+        "anchors": 0,
+        "short": 0,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor turn fails to address the pupil's previous turn and introduces an unrelated analogy."
+      },
+      "total": 1
+    },
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "The sun?",
+      "tutorTurn": "Red cars bounce red light back to our eyes and soak up all the other colours.",
+      "score": {
+        "coaches": 0,
+        "no_answer_giveaway": 0,
+        "anchors": 0,
+        "short": 0,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor's turn does not address the pupil's previous turn and introduces a new, unrelated concept."
+      },
+      "total": 1
+    },
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "This is boring.",
+      "tutorTurn": "I hear you. Sometimes new topics can feel a bit challenging at first. But I think you'll find it quite interesting once we get into it.\n\nLet's try this: Imagine you have a green T-shirt. What do you think makes that T-shirt appear green to your eyes?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 0,
+        "calm": 0,
+        "addresses": 0,
+        "note": "The tutor's turn is too long, uses buddy framing, and does not anchor to the lesson topic or address the pupil's previous turn directly."
+      },
+      "total": 2
+    },
+    {
+      "pupil": "Bertie Lawson",
+      "pupilTurn": "Ok.",
+      "tutorTurn": "You're doing well to think this through. If the red car is reflecting red light, what do you think it's doing with the other colours of light that are part of white light?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 0,
+        "addresses": 0,
+        "note": "The tutor's turn fails to anchor to the lesson's critical concepts and uses a buddy-style framing."
+      },
+      "total": 3
+    },
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "Can we do this later?",
+      "tutorTurn": "I'm here to help you understand this now.\n\nLet's think about the colour of other things. What makes a red apple red, or a blue sky blue?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 0,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor fails to address the pupil's request to do this later and does not anchor to the lesson topic."
+      },
+      "total": 3
+    }
+  ],
+  "all": [
+    {
+      "pupil": "Bertie Lawson",
+      "pupilTurn": "Yeah, I guess. Ok.",
+      "tutorTurn": "That's a good start. What do you think makes them green?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor's turn does not anchor to the lesson topic or critical concepts, nor does it directly address the pupil's previous turn."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Bertie Lawson",
+      "pupilTurn": "I don't know.",
+      "tutorTurn": "That's perfectly fine. Let's think about it together. What do you notice about the colours of other things around us? For example, why does a red car look red?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 0,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor's turn is too long and does not anchor to the lesson's critical concepts."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Bertie Lawson",
+      "pupilTurn": "Dunno.",
+      "tutorTurn": "Think about light. How does light interact with the car to make it appear red?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor's turn fails to anchor to the lesson topic of photosynthesis, instead asking a question about color perception."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Bertie Lawson",
+      "pupilTurn": "Yeah.",
+      "tutorTurn": "You're on the right track thinking about light. When light hits an object, some colours are absorbed and some are reflected. The colour we see is the colour that is reflected.\n\nSo, if a red car looks red, what does that tell us about how it interacts with red light?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 0,
+        "anchors": 1,
+        "short": 0,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor gives away information about light absorption and reflection before asking a question."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Bertie Lawson",
+      "pupilTurn": "Uhm... I don't know.",
+      "tutorTurn": "Let's go back to the idea of absorption and reflection. If the red car appears red, it means it is reflecting red light. What do you think is happening to the other colours of light, like blue or green, when they hit the red car?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 0,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor turn is too long and does not directly address the pupil's stated confusion about the lesson topic."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Bertie Lawson",
+      "pupilTurn": "Ok.",
+      "tutorTurn": "You're doing well to think this through. If the red car is reflecting red light, what do you think it's doing with the other colours of light that are part of white light?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 0,
+        "addresses": 0,
+        "note": "The tutor's turn fails to anchor to the lesson's critical concepts and uses a buddy-style framing."
+      },
+      "total": 3
+    },
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "Did you see the match yesterday?",
+      "tutorTurn": "We're here to focus on why leaves are green. Can you tell me what you think makes leaves green?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor successfully redirects the pupil to the lesson topic while asking a coaching question."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "This is boring.",
+      "tutorTurn": "I understand you might find this a bit dry, but understanding why leaves are green is key to understanding how plants make their own food.\n\nWhat do you think is inside leaves that gives them their colour?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 0,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The turn is too long and contains two distinct thoughts, failing the 'short' criterion."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "Can we do this later?",
+      "tutorTurn": "I'm here to help you understand this now.\n\nLet's think about the colour of other things. What makes a red apple red, or a blue sky blue?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 0,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor fails to address the pupil's request to do this later and does not anchor to the lesson topic."
+      },
+      "total": 3
+    },
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "Did you see the match yesterday?",
+      "tutorTurn": "I'm going to bring you back to our topic. We're discussing why leaves are green.\n\nCould you tell me what you think gives leaves their green colour?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor does not address the pupil's off-topic comment directly, but instead pivots back to the lesson topic with a coaching question."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "This is boring.",
+      "tutorTurn": "I hear you. Sometimes new topics can feel a bit challenging at first. But I think you'll find it quite interesting once we get into it.\n\nLet's try this: Imagine you have a green T-shirt. What do you think makes that T-shirt appear green to your eyes?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 0,
+        "calm": 0,
+        "addresses": 0,
+        "note": "The tutor's turn is too long, uses buddy framing, and does not anchor to the lesson topic or address the pupil's previous turn directly."
+      },
+      "total": 2
+    },
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "Can we do this later?",
+      "tutorTurn": "I'm here to help you understand this now.\n\nLet's think about the colour of other things. What makes a red apple red, or a blue sky blue?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor's turn fails to anchor to the lesson topic or critical concepts, instead asking a general question about color."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Marcus Holt",
+      "pupilTurn": "It's because of chlorophyll! Plants use it to photosynthesise, and it's a green pigment, so it reflects green light whilst absorbing the other colours for energy.",
+      "tutorTurn": "That's a great start. You're right that chlorophyll is key.\n\nYou mentioned that chlorophyll absorbs other colours for energy. Can you tell me a bit more about what kind of energy it's absorbing?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor effectively coaches the pupil by asking a follow-up question that encourages deeper thinking about the type of energy absorbed by chlorophyll."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Marcus Holt",
+      "pupilTurn": "It's absorbing light energy from the sun, which it then converts into chemical energy to make food for the plant. That's why photosynthesis is so important!",
+      "tutorTurn": "Excellent! You've hit on a very important point about light energy being converted into chemical energy.\n\nThinking about that conversion, what part of a solar panel might be similar to chlorophyll in a plant?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor effectively coaches by asking a comparative question that extends the pupil's thinking about energy conversion."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Marcus Holt",
+      "pupilTurn": "Well, a solar panel has photovoltaic cells, doesn't it? They're the bits that capture the sunlight and turn it into electricity, which is kind of like the plant's food!",
+      "tutorTurn": "That's a very good comparison. The photovoltaic cells in a solar panel are indeed like chlorophyll, in that they both capture energy from light.\n\nWhat happens to the electricity that a solar panel generates? Where does it go or what is it used for?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 0,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor gives away the answer by explicitly stating the comparison between photovoltaic cells and chlorophyll, which the pupil was meant to deduce."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Marcus Holt",
+      "pupilTurn": "The electricity from a solar panel usually goes into the national grid or is used to power homes and buildings directly. Some people even have batteries to store the excess electricity for later!",
+      "tutorTurn": "You're right, batteries can store that excess electricity.\n\nIf we think of the glucose a plant makes as being like a charged battery, how does the light energy connect to the glucose?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor effectively uses an analogy to connect the pupil's prior knowledge to the critical concept of glucose as stored energy from light."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Marcus Holt",
+      "pupilTurn": "The light energy is used to *charge* the glucose, like a battery! The plant takes the energy from the sun and stores it in the glucose molecules for later, so it can use it to grow or do other things.",
+      "tutorTurn": "That's a very clear way to put it. The light energy charges the glucose, just like a battery.\n\nSo, to bring it back to our original question, how does chlorophyll's role in absorbing light energy explain why leaves appear green?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 0,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor's turn is too long and contains two distinct thoughts, making it fail the 'short' criterion."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Marcus Holt",
+      "pupilTurn": "Chlorophyll absorbs all the other colours of light, but it reflects green light, which is why leaves look green to us. It's pretty cool how our eyes pick up on that reflected light!",
+      "tutorTurn": "Precisely! You've clearly understood how chlorophyll's absorption of light energy, and its reflection of green light, explains the colour of leaves. Well done.",
+      "score": {
+        "coaches": 0,
+        "no_answer_giveaway": 0,
+        "anchors": 1,
+        "short": 1,
+        "calm": 0,
+        "addresses": 1,
+        "note": "The tutor turn fails to coach the pupil, instead giving an explanation and using an exclamation mark."
+      },
+      "total": 3
+    },
+    {
+      "pupil": "Priya Adesina",
+      "pupilTurn": "Um, I think it's because of... like, a chemical inside them? My mum has these plants, and she calls it chlorophyll? Is that right?",
+      "tutorTurn": "You're absolutely right, chlorophyll is the chemical inside plants that makes them green.\n\nDo you know what job chlorophyll does in the plant?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 0,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor gives away the answer to the pupil's initial question by confirming chlorophyll is the chemical that makes plants green."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Priya Adesina",
+      "pupilTurn": "Wait, let me think about that for a second. So, it makes them green... but what does it *do*? I remember learning about plants, and how they make their own food, right? So, maybe the chlorophyll helps with that? Like, it's part of the making food thing.",
+      "tutorTurn": "That's a very good connection. Chlorophyll is indeed essential for plants to make their own food.\n\nCan you tell me what a plant needs to make its food? Think about what a plant takes in from its surroundings.",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 0,
+        "anchors": 1,
+        "short": 0,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor gives away the answer by confirming chlorophyll is essential for making food, which the pupil was meant to deduce."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Priya Adesina",
+      "pupilTurn": "Okay, so to make food... hmm. Well, plants are in the soil, so they must need water, right? And, um, I know they need sunlight, like, to grow. And there's also, like, air. So, water, sunlight, and air. Is that all?",
+      "tutorTurn": "You've listed some key ingredients there: water, sunlight, and air.\n\nLet's focus on the sunlight for a moment. How do you think sunlight helps the plant make food? What does the plant get from the sun?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor effectively coaches the pupil by asking a focused question about sunlight's role in food production, directly addressing the pupil's previous turn and anchoring to a critical concept."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Priya Adesina",
+      "pupilTurn": "Okay, so to make food... hmm. Well, plants are in the soil, so they must need water, right? And, um, I know they need sunlight, like, to grow. And there's also, like, air. So, water, sunlight, and air. Is that all?",
+      "tutorTurn": "Right, so what does the plant actually gain from the sun's rays?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor's question effectively coaches the pupil to think more deeply about the role of sunlight in photosynthesis."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Priya Adesina",
+      "pupilTurn": "Hmm, okay. So the sun... it's bright, it's warm. I guess the plant gets energy from the sun? Like, to power the food-making process?",
+      "tutorTurn": "That's an excellent way to put it. The plant does get energy from the sun.\n\nNow, thinking back to chlorophyll, and knowing that it makes the leaves green, how do you think chlorophyll and the sun's energy are connected? What role might chlorophyll play in capturing that energy?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 0,
+        "anchors": 1,
+        "short": 0,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor gives away the answer by confirming the plant gets energy from the sun, which the pupil was meant to work out."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Priya Adesina",
+      "pupilTurn": "Hmm, okay. So the sun... it's bright, it's warm. I guess the plant gets energy from the sun? Like, to power the food-making process?",
+      "tutorTurn": "Consider what chlorophyll does with the sunlight it absorbs.",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor effectively coaches the pupil by directing their attention to the role of chlorophyll, which is a critical concept."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "I don't know.",
+      "tutorTurn": "That's perfectly all right. Let's think about it together.\n\nWhat do you think makes anything have a particular colour? For example, what makes a red car look red?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 0,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor's turn is too long and does not anchor to the lesson's critical concepts."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "I don't know.",
+      "tutorTurn": "Consider what happens when light interacts with an object.",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor's question is too generic and doesn't anchor to the lesson's critical concepts or directly address the pupil's 'I don't know' in a helpful way for this specific topic."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "The sun?",
+      "tutorTurn": "The sun is certainly a source of light. When sunlight, which contains all the colours of the rainbow, hits an object, some of those colours are absorbed by the object, and some are reflected.\n\nThinking about our red car, which colours do you think the car is reflecting, and which is it absorbing?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 0,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor turn is too long and introduces a new analogy (the red car) that is not directly related to the lesson's critical concepts about photosynthesis."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "The sun?",
+      "tutorTurn": "The red car reflects red light and absorbs all other colours.",
+      "score": {
+        "coaches": 0,
+        "no_answer_giveaway": 0,
+        "anchors": 0,
+        "short": 0,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor turn fails to address the pupil's previous turn and introduces an unrelated analogy."
+      },
+      "total": 1
+    },
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "The sun?",
+      "tutorTurn": "Red cars bounce red light back to our eyes and soak up all the other colours.",
+      "score": {
+        "coaches": 0,
+        "no_answer_giveaway": 0,
+        "anchors": 0,
+        "short": 0,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor's turn does not address the pupil's previous turn and introduces a new, unrelated concept."
+      },
+      "total": 1
+    },
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "I don't know.",
+      "tutorTurn": "That's quite alright. Let's simplify. Imagine you have a red ball. When white light, which contains all colours, shines on it, the ball appears red.\n\nWhat colour of light do you think the red ball is sending back to your eyes for you to see it as red?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 0,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor's turn is too long and does not anchor to the lesson's critical concepts, instead introducing a new analogy."
+      },
+      "total": 4
+    }
+  ]
+}

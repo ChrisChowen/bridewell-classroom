@@ -87,6 +87,25 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
     lastClassifiedAt: 0,
     msgsSinceClassify: 0,
     lastPupilExcerpt: "",
+    // ── Reason trigger book-keeping ──────────────────────────────────
+    // The two non-scaffold triggers (topic_boundary, lesson_design)
+    // need their own counters so they fire at the right cadence rather
+    // than on every turn.
+    //
+    // substantiveFlowingTurnsSinceReason: number of pupil replies that
+    // were both classified `flowing` (or assumed-flowing while we wait
+    // for the next classifier tick) AND substantive (≥ 30 chars or
+    // contains a clause-marker). When this hits 4 we fire a
+    // topic_boundary Reason — gives the high attainer a natural moment
+    // to be probed.
+    substantiveFlowingTurnsSinceReason: 0,
+    // criticalConceptExplained: classes of critical-concept that the
+    // tutor has just named in its turn. When the lesson plan marks
+    // these as critical AND the tutor mentions one, the next pupil
+    // turn triggers a `lesson_design` Reason — letting the system
+    // probe whether the explanation landed.
+    criticalConceptJustExplained: null as string | null,
+    pupilTurnsSinceCriticalMention: 0,
   });
 
   // Mode is set by the lesson plan; the teacher can override for ONE
@@ -493,6 +512,59 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
           meta: { fallback: data.fallbackUsed },
         },
       ]);
+      // ── Reason trigger book-keeping ──────────────────────────────
+      // Two missing triggers, now wired:
+      //
+      //   topic_boundary: when the pupil has produced N substantive
+      //     replies in a row, fire Reason as a natural pause-point.
+      //     Was checked by `dress-rehearsal` agent — without this, a
+      //     flowing pupil never sees the gold card on stage.
+      //
+      //   lesson_design: when the tutor just named one of the lesson's
+      //     critical concepts, mark it. The NEXT pupil reply triggers
+      //     Reason — we probe whether the explanation landed.
+      //
+      // Both are best-effort heuristics; they fire at most once per
+      // class because reasonCard self-guards against re-entry.
+      const tutorLower = tutorText.toLowerCase();
+      const concepts =
+        lessonPlan?.criticalConcepts ?? activeStep?.criticalConcepts ?? [];
+      const namedConcept =
+        concepts.find((c) => c && tutorLower.includes(c.toLowerCase().slice(0, 14))) ?? null;
+      if (namedConcept) {
+        signalsRef.current.criticalConceptJustExplained = namedConcept;
+        signalsRef.current.pupilTurnsSinceCriticalMention = 0;
+      }
+
+      const wasSubstantive = text.length >= 30 || /[,;:]|[a-z]\s+(because|so|but|and)\s+/i.test(text);
+      if (wasSubstantive) {
+        signalsRef.current.substantiveFlowingTurnsSinceReason += 1;
+      }
+
+      // lesson_design — fire one turn after the tutor named the
+      // concept, so the pupil has the explanation fresh in mind.
+      if (
+        signalsRef.current.criticalConceptJustExplained &&
+        signalsRef.current.pupilTurnsSinceCriticalMention >= 1
+      ) {
+        const c = signalsRef.current.criticalConceptJustExplained;
+        signalsRef.current.criticalConceptJustExplained = null;
+        signalsRef.current.pupilTurnsSinceCriticalMention = 0;
+        fireReasonRef.current?.("lesson_design");
+        // Mark anchor for telemetry — useful when reading the report.
+        void appendTurn("tutor", `[reason-anchor:lesson_design:${c}]`, { reasonAnchor: true });
+      } else if (signalsRef.current.criticalConceptJustExplained) {
+        signalsRef.current.pupilTurnsSinceCriticalMention += 1;
+      }
+
+      // topic_boundary — fire after 4 substantive flowing replies in a
+      // row. Threshold tuned to give a class of ~6 pupils ~one Reason
+      // moment each over an 8-turn lesson without crowding.
+      if (signalsRef.current.substantiveFlowingTurnsSinceReason >= 4) {
+        signalsRef.current.substantiveFlowingTurnsSinceReason = 0;
+        fireReasonRef.current?.("topic_boundary");
+      }
+
       void appendTurn("tutor", tutorText, {
         fallback: data.fallbackUsed,
         citationCount: data.citations?.length,
