@@ -44,22 +44,37 @@ export async function POST(req: Request) {
   const { a, decoded } = ctx;
 
   const body = (await req.json().catch(() => null)) as { email?: string; isAdmin?: boolean } | null;
-  const email = body?.email?.toLowerCase().trim();
-  if (!email || !email.includes("@")) {
-    return NextResponse.json({ error: "Valid email required" }, { status: 400 });
+  const raw = body?.email?.toLowerCase().trim();
+  if (!raw || !raw.includes("@")) {
+    return NextResponse.json({ error: "Valid email or *@domain required" }, { status: 400 });
   }
 
-  await a.db.collection("allowedTeacherEmails").doc(email).set(
+  // Two accepted shapes: exact email "jane@kesw.org", or domain
+  // wildcard "*@kesw.org" — whitelists the whole staff domain in one
+  // entry so a school admin doesn't have to add every teacher.
+  const isWildcard = raw.startsWith("*@");
+  if (isWildcard) {
+    const domain = raw.slice(2);
+    if (!domain || domain.includes("@") || !domain.includes(".")) {
+      return NextResponse.json(
+        { error: "Domain wildcard must look like *@example.com" },
+        { status: 400 }
+      );
+    }
+  }
+
+  await a.db.collection("allowedTeacherEmails").doc(raw).set(
     {
-      email,
+      email: raw,
       addedAt: Date.now(),
       addedBy: decoded.uid,
       isAdmin: body?.isAdmin === true,
+      ...(isWildcard ? { wildcard: true, domain: raw.slice(2) } : {}),
     },
     { merge: true }
   );
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, kind: isWildcard ? "domain" : "email" });
 }
 
 export async function GET(req: Request) {

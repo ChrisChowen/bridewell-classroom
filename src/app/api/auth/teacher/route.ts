@@ -51,10 +51,29 @@ export async function POST(req: Request) {
   // first teacher to register (they become the founding admin). This
   // means the first deploy doesn't need manual setup. After that, every
   // new teacher must be added by an existing admin.
+  //
+  // The allowlist supports two entry shapes:
+  //   1. Exact email — doc id IS the email (e.g. jane@kesw.org)
+  //   2. Domain wildcard — doc id is "*@<domain>" (e.g. "*@kesw.org")
+  //      letting a school whitelist its entire staff domain without
+  //      enumerating every teacher.
   const allowlistSnap = await a.db.collection("allowedTeacherEmails").limit(1).get();
   if (!allowlistSnap.empty) {
-    const allowedDoc = await a.db.collection("allowedTeacherEmails").doc(email).get();
-    if (!allowedDoc.exists) {
+    const exactDoc = await a.db.collection("allowedTeacherEmails").doc(email).get();
+    let allowed = exactDoc.exists;
+    if (!allowed) {
+      // Try the domain wildcard.
+      const at = email.lastIndexOf("@");
+      if (at > 0) {
+        const domain = email.slice(at + 1);
+        const wildcardDoc = await a.db
+          .collection("allowedTeacherEmails")
+          .doc(`*@${domain}`)
+          .get();
+        allowed = wildcardDoc.exists;
+      }
+    }
+    if (!allowed) {
       return NextResponse.json(
         {
           error:
