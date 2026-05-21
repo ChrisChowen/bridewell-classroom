@@ -95,6 +95,32 @@ export default function SessionPage() {
     };
   }, [user, status, router]);
 
+  // Live subscription to the class doc so mid-lesson plan edits
+  // propagate to the pupil without a refresh. The classifier-driven
+  // currentStepIndex stays where it is (no rewind); the tutor picks
+  // up the new step content on the next turn.
+  useEffect(() => {
+    if (!klass?.id) return;
+    let cancelled = false;
+    (async () => {
+      const fb = getFirebase();
+      if (!fb.ready || !fb.db) return;
+      const { doc, onSnapshot } = await import("firebase/firestore");
+      const unsub = onSnapshot(doc(fb.db, "classes", klass.id), (snap) => {
+        if (cancelled || !snap.exists()) return;
+        const next = { id: snap.id, ...(snap.data() as Omit<ClassRecord, "id">) };
+        setKlass(next);
+      });
+      return () => {
+        cancelled = true;
+        unsub();
+      };
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [klass?.id]);
+
   const lessonTitle =
     klass?.lessonPlan?.title ?? klass?.subject ?? demoLesson.title;
   const className = klass?.name ?? demoLesson.className;

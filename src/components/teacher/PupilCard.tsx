@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ChevronRight, AlertTriangle, MessageSquare, CloudOff } from "lucide-react";
+import { ChevronRight, AlertTriangle, MessageSquare, CloudOff, Zap } from "lucide-react";
 import { StatePill } from "@/components/shared/StatePill";
 import { statePill, type EngagementState } from "@/lib/brand";
 import type { LivePupil } from "@/lib/firebase/live";
@@ -25,15 +25,24 @@ const STATE_Y: Record<EngagementState, number> = {
 export function PupilCard({
   pupil,
   selected,
+  stepCount,
   onSelect,
 }: {
   pupil: LivePupil;
   selected?: boolean;
+  // Total steps in the lesson plan — drives the progress dots. Optional
+  // because the dashboard may render before the plan loads.
+  stepCount?: number;
   onSelect: (id: string) => void;
 }) {
   const ageMs = Date.now() - (pupil.lastActive ?? 0);
   const safe = pupil.safeguarding;
   const trajectory = pupil.trajectory ?? [];
+  // Optimistic "currently typing" dot: pupil sent a message since the
+  // last snapshot. We hold the dot for 30s after their last message.
+  const lastMsgMs = pupil.lastMessageAt ? Date.now() - pupil.lastMessageAt : Infinity;
+  const recentlyActive = lastMsgMs < 30_000;
+  const stepIndex = pupil.currentStepIndex ?? 0;
 
   const sparkline = useMemo(() => buildSparklinePath(trajectory), [trajectory]);
 
@@ -87,9 +96,55 @@ export function PupilCard({
           >
             {pupil.displayName}
           </span>
+          {recentlyActive && (
+            <span
+              aria-label="Pupil sent a message in the last 30s"
+              title="Sent a message just now"
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 999,
+                background: "var(--color-gold-500)",
+                animation: "bw-pulse 1.4s ease-in-out infinite",
+                flexShrink: 0,
+              }}
+            />
+          )}
         </div>
         <StatePill state={pupil.state} size="small" />
       </div>
+
+      {/* Step progress strip — quiet, sits between header and sparkline. */}
+      {stepCount && stepCount > 1 && (
+        <div className="flex items-center gap-2" style={{ marginTop: -2 }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              color: "var(--text-muted)",
+              textTransform: "uppercase",
+            }}
+          >
+            {stepIndex + 1}/{stepCount}
+          </span>
+          <div style={{ display: "flex", gap: 3, flex: 1 }} aria-hidden>
+            {Array.from({ length: stepCount }).map((_, i) => (
+              <span
+                key={i}
+                style={{
+                  flex: 1,
+                  height: 2,
+                  borderRadius: 1,
+                  background:
+                    i <= stepIndex ? "var(--color-gold-500)" : "var(--line)",
+                  opacity: i === stepIndex ? 1 : i < stepIndex ? 0.7 : 1,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Sparkline */}
       <div style={{ position: "relative", height: 48 }}>
@@ -171,6 +226,19 @@ export function PupilCard({
         <div className="flex items-center justify-between" style={{ fontSize: 11, color: "var(--text-muted)" }}>
           <span title={`Engagement confidence ${(pupil.confidence * 100).toFixed(0)}%`}>
             {humanAge(ageMs)} ago · {Math.round(pupil.confidence * 100)}%
+            {pupil.classifierTier === "flash" && !pupil.classifierFallback && (
+              <span
+                title="Last classification from the Flash-tier first pass — confident enough not to need the Pro tiebreaker."
+                style={{
+                  marginLeft: 6,
+                  color: "var(--text-muted)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                }}
+              >
+                <Zap size={10} />
+              </span>
+            )}
             {pupil.classifierFallback && (
               <span
                 title="The classifier was unavailable for the most recent snapshot — this state is not reliable."

@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Copy, Check, BookOpen, ChevronDown, ChevronRight, Pause, Play, Flag, StopCircle } from "lucide-react";
+import { ArrowLeft, Copy, Check, BookOpen, ChevronDown, ChevronRight, Pause, Play, Flag, StopCircle, MonitorPlay } from "lucide-react";
 import { TopBar } from "@/components/shared/TopBar";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
 import { subscribeToLiveClass, subscribeToSessionStatus, type LivePupil, type SessionStatus } from "@/lib/firebase/live";
 import { PupilCard } from "@/components/teacher/PupilCard";
+import { StepTimeline } from "@/components/teacher/StepTimeline";
 import { LivePupilPanel } from "@/components/teacher/LivePupilPanel";
 import { AppraisalPanel } from "@/components/teacher/AppraisalPanel";
 import { ACTIVITIES } from "@/lib/ai/activities";
@@ -211,32 +212,50 @@ export default function ClassDetailPage() {
               </>
             )}
             {klass && (
-              <button
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(klass.joinCode);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 1500);
-                  } catch {
-                    /* noop */
-                  }
-                }}
-                className="bw-card"
-                style={{
-                  padding: "6px 10px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  cursor: "pointer",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 13,
-                  letterSpacing: "0.1em",
-                  background: "var(--surface)",
-                }}
-              >
-                <span>{klass.joinCode}</span>
-                {copied ? <Check size={11} color="var(--color-gold-500)" /> : <Copy size={11} color="var(--text-muted)" />}
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    const params = new URLSearchParams({
+                      classId: klass.id,
+                      title: klass.lessonPlan?.title ?? klass.subject,
+                      steps: String(klass.lessonPlan?.sequence?.length ?? 1),
+                      class: klass.name,
+                    });
+                    window.open(`/classroom?${params.toString()}`, "bw-whiteboard", "noopener");
+                  }}
+                  className="bw-btn-secondary"
+                  style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
+                  title="Open the whiteboard / projector view in a new window"
+                >
+                  <MonitorPlay size={12} /> Whiteboard
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(klass.joinCode);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1500);
+                    } catch {
+                      /* noop */
+                    }
+                  }}
+                  className="bw-card"
+                  style={{
+                    padding: "6px 10px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    cursor: "pointer",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 13,
+                    letterSpacing: "0.1em",
+                    background: "var(--surface)",
+                  }}
+                >
+                  <span>{klass.joinCode}</span>
+                  {copied ? <Check size={11} color="var(--color-gold-500)" /> : <Copy size={11} color="var(--text-muted)" />}
+                </button>
+              </>
             )}
             <button onClick={signOut} className="bw-btn-secondary" style={{ fontSize: 12 }}>
               Sign out
@@ -371,10 +390,25 @@ export default function ClassDetailPage() {
                   ))}
                 </ol>
                 <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                  Editing the lesson plan after pupils have joined is Phase 3 work; create a new class to change the plan.
+                  Edits to the lesson plan propagate to pupils on their next tutor turn. Pupils
+                  already past a step are not rewound; pupils inserted into a new step pick it up
+                  from the next reply.
                 </p>
               </div>
             )}
+          </section>
+        )}
+
+        {/* Step timeline — bird's-eye view of where the class is in the plan */}
+        {klass?.lessonPlan?.sequence && klass.lessonPlan.sequence.length > 1 && Object.keys(live).length > 0 && (
+          <section className="bw-card" style={{ padding: 14, marginBottom: 18 }}>
+            <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
+              <span className="bw-section-label">Class progress through the plan</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                Dots are pupils; each step shows who is currently inside it.
+              </span>
+            </div>
+            <StepTimeline sequence={klass.lessonPlan.sequence} pupils={Object.values(live)} />
           </section>
         )}
 
@@ -418,6 +452,7 @@ export default function ClassDetailPage() {
                       key={p.id}
                       pupil={p.live}
                       selected={selectedId === p.id}
+                      stepCount={klass?.lessonPlan?.sequence?.length}
                       onSelect={(id) => setSelectedId(selectedId === id ? null : id)}
                     />
                   ) : (

@@ -34,10 +34,26 @@ export interface LivePupil {
   trajectory: Array<{ state: EngagementState; t: number; confidence: number }>;
   lastPupilExcerpt?: string | null;
   scaffoldUsesRecent?: number;
+  // Step the pupil is currently inside, by index into the lesson plan's
+  // `sequence`. Advances when the classifier sustains a high-confidence
+  // engaged read across consecutive snapshots.
+  currentStepIndex?: number;
+  // Internal counter — consecutive snapshots at engaged + high
+  // confidence. Resets to 0 on advance, and on any disengaged read.
+  sustainedHighStreak?: number;
+  // Optimistic between-snapshot signals — the pupil client bumps these
+  // on every message so the dashboard shows movement before the next
+  // classifier snapshot lands. Server overwrites them on snapshot.
+  liveMessageCount?: number;
+  lastMessageAt?: number;
   // True if the most recent classifier call fell back (LLM unavailable
   // or malformed JSON). Dashboard surfaces this as a degraded
   // indicator so the teacher knows the signal is not real.
   classifierFallback?: boolean;
+  // Which classifier tier produced this snapshot ("flash" = cheap
+  // first pass, "pro" = Pro tiebreaker or always-Pro for sensitive
+  // turns). Lets the dashboard show provenance.
+  classifierTier?: "flash" | "pro";
   safeguarding?: {
     severity: "low" | "medium" | "high";
     summary: string;
@@ -107,6 +123,43 @@ export async function acknowledgeIntervention(
   // Mark consumed so a refresh doesn't replay. We just remove the
   // intervention node; the audit trail lives in Firestore.
   await remove(ref(fb.rtdb, `liveSessions/${classId}/interventions/${pupilId}/${interventionId}`));
+}
+
+// Subscribe to a single pupil's live entry — used by the pupil's own
+// session to read currentStepIndex (set by the engagement-run route as
+// the classifier advances them through the plan).
+export function subscribeToPupilSelf(
+  classId: string,
+  pupilId: string,
+  onUpdate: (live: Partial<LivePupil> | null) => void
+): () => void {
+  const fb = getFirebase();
+  if (!fb.ready || !fb.rtdb) return () => {};
+  const r = ref(fb.rtdb, `liveSessions/${classId}/pupils/${pupilId}`);
+  const listener = onValue(r, (snap) => onUpdate(snap.val() as Partial<LivePupil> | null));
+  return () => off(r, "value", listener);
+}
+
+// Optimistic per-message bump. The pupil client calls this every time
+// they send a message so the dashboard cards move between classifier
+// snapshots. We only touch the two fields the dashboard reads as a
+// "movement" hint — we do not synthesise an engagement state, which
+// would otherwise risk masking the real classifier signal.
+export async function bumpPupilLiveMessage(classId: string, pupilId: string) {
+  const fb = getFirebase();
+  if (!fb.ready || !fb.rtdb) return;
+  const { runTransaction } = await import("firebase/database");
+  const r = ref(fb.rtdb, `liveSessions/${classId}/pupils/${pupilId}`);
+  await runTransaction(r, (current) => {
+    const c = (current ?? {}) as Partial<LivePupil>;
+    return {
+      ...c,
+      liveMessageCount: (c.liveMessageCount ?? 0) + 1,
+      lastMessageAt: Date.now(),
+    };
+  }).catch(() => {
+    /* non-fatal — the next snapshot will resync */
+  });
 }
 
 // Re-exports so callers don't reach into firebase/database directly.

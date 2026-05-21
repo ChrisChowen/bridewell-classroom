@@ -64,6 +64,11 @@ export interface ClassifierResult {
   // "none" means nothing was flagged.
   safeguarding: SafeguardingFlag;
   fallbackUsed: boolean;
+  // Which classifier tier produced this result. "flash" = first-pass
+  // Flash call accepted on its own; "pro" = Pro tiebreaker or always-
+  // Pro (safeguarding-relevant turns). Surfaced to the dashboard for
+  // signal provenance.
+  tier: "flash" | "pro";
 }
 
 const SYSTEM = `You read the last several turns of a chat between a Year 7–9 pupil
@@ -173,17 +178,46 @@ export async function classifyEngagement(input: ClassifierInput): Promise<Classi
     .filter(Boolean)
     .join("\n\n");
 
-  const result = await callLLM({
-    use: "classifier",
+  // First-pass on Flash. ~80% of classifications are unambiguous
+  // (clearly flowing or clearly off-task) and Flash handles them at a
+  // fraction of the Pro cost. We escalate to Pro when:
+  //   - Flash confidence is below 0.55 (it's not sure)
+  //   - Flash flagged safeguarding above "low" (high stakes, Pro should re-read)
+  //   - Flash returned non-JSON or fell back entirely
+  const flash = await callLLM({
+    use: "classifierFlash",
     system: SYSTEM,
     messages: [{ role: "user", content: userBlock }],
     responseSchema: SCHEMA as unknown as Record<string, unknown>,
-    maxOutputTokens: 2048,
+    maxOutputTokens: 1024,
     temperature: 0.2,
+    thinkingBudget: 0,
+  });
+
+  let result = flash;
+  let tier: "flash" | "pro" = "flash";
+  const flashJson = parseClassifier(flash);
+  const flashUncertain =
+    !flashJson ||
+    (flashJson.confidence ?? 0) < 0.55 ||
+    (flashJson.safeguarding?.severity === "medium" ||
+      flashJson.safeguarding?.severity === "high") ||
+    flash.fallbackUsed;
+
+  if (flashUncertain) {
     // Pro thinks by default; give it room but cap so the call returns
     // quickly enough for the dashboard refresh cadence.
-    thinkingBudget: 1024,
-  });
+    result = await callLLM({
+      use: "classifier",
+      system: SYSTEM,
+      messages: [{ role: "user", content: userBlock }],
+      responseSchema: SCHEMA as unknown as Record<string, unknown>,
+      maxOutputTokens: 2048,
+      temperature: 0.2,
+      thinkingBudget: 1024,
+    });
+    tier = "pro";
+  }
 
   if (result.fallbackUsed || !result.json) {
     // Do NOT default to flowing — that would silently render this
@@ -194,6 +228,7 @@ export async function classifyEngagement(input: ClassifierInput): Promise<Classi
     // degraded indicator.
     console.warn("CLASSIFIER_FALLBACK", {
       fallback: result.fallbackUsed,
+      tier,
       text: result.text.slice(0, 120),
     });
     return {
@@ -205,6 +240,7 @@ export async function classifyEngagement(input: ClassifierInput): Promise<Classi
       cues: ["classifier_fallback"],
       safeguarding: { severity: "none", summary: "" },
       fallbackUsed: true,
+      tier,
     };
   }
 
@@ -231,5 +267,20 @@ export async function classifyEngagement(input: ClassifierInput): Promise<Classi
     cues: Array.isArray(j.cues) ? j.cues.slice(0, 4) : [],
     safeguarding,
     fallbackUsed: false,
+    tier,
+  };
+}
+
+// Helper: pull the typed JSON object out of an LLM result without
+// throwing. Used by the Flash-tier first pass to decide whether to
+// escalate to Pro.
+function parseClassifier(r: { json?: unknown }): {
+  confidence?: number;
+  safeguarding?: { severity?: SafeguardingSeverity };
+} | null {
+  if (!r.json || typeof r.json !== "object") return null;
+  return r.json as {
+    confidence?: number;
+    safeguarding?: { severity?: SafeguardingSeverity };
   };
 }

@@ -3,6 +3,8 @@
 > A teaching instrument for the Bridewell schools — an in-lesson AI tutor for pupils,
 > with a live engagement dashboard and intervention surface for teachers.
 
+**Live demo:** _add the Vercel URL here once deployed — see [Deploy](#deploy)._
+
 <p align="center">
   <img src="docs/screenshots/01-landing.png" width="820" alt="Bridewell Classroom landing page">
 </p>
@@ -42,7 +44,7 @@ produces evidence of understanding without surfacing a verdict to the pupil.
 </p>
 
 The teacher dashboard above shows a **simulated class of six pupil agents** (each
-driven by a Gemini persona — productive struggler, wheel-spinner, flowing, off-task,
+driven by an LLM persona — productive struggler, wheel-spinner, flowing, off-task,
 disengaged, safeguarding-disclosure) running against the live system. Read the cards:
 
 - **Tom Reeves** — `wheel_spinning` — pressed three scaffolds and gave terse echoes.
@@ -95,7 +97,7 @@ asks for a paraphrase, novel example, counterfactual, or teach-back:
   <img src="docs/screenshots/18-pupil-after-reason.png" width="720" alt="Reason interaction inline in the pupil's chat">
 </p>
 
-The response goes to the evaluator (real Gemini Pro structured output). It returns one
+The response goes to the evaluator (a real LLM call against a structured-output schema). It returns one
 of three branches — accept and move on, soft-challenge with a follow-up targeting the
 weakest segment, or quietly log a pattern flag for the teacher dashboard. **The pupil
 never sees a confidence score** — the framing stays generative ("can you say more?"),
@@ -140,7 +142,7 @@ library — then write a sentence about what they want pupils to come away with:
 </tr>
 </table>
 
-Gemini 2.5 Pro drafts a structured lesson plan with 2–5 steps, each running a
+A reasoning-tier LLM call drafts a structured lesson plan with 2–5 steps, each running a
 different **activity** drawn from a catalogue of nine (Socratic, retrieval quiz,
 prediction, sort-or-match, worked example with gaps, role-play, teach-back, exam-style
 practice, creative application). A real classroom lesson is not 45 minutes of pure
@@ -189,7 +191,7 @@ own rationale + cues, the recent conversation, and **five intervention actions**
 - **Send a teacher hint** — types a sentence; lands in the pupil's chat as a distinct
   teacher-coloured message within seconds via RTDB
 - **Switch to Expert for one turn** — with a written rationale the pupil sees; the
-  next tutor reply runs in grounded Expert mode (Google Search citations) before
+  next tutor reply runs in grounded Expert mode (search-backed citations) before
   dropping back to coach
 - **Pair with a flowing pupil** — gentle banner asking the pupil to compare with a
   named peer
@@ -202,7 +204,7 @@ sufficient.
 
 ### After the lesson
 
-The teacher ends the class. Gemini Pro reads the engagement outcomes + Reason events
+The teacher ends the class. A reasoning-tier LLM reads the engagement outcomes + Reason events
 + a sample of pupil conversations and writes an **appraisal of the plan** — what
 worked, what to adjust, a 1–5 rating. One click saves the plan + appraisal to the
 school's shared library:
@@ -251,19 +253,17 @@ system gets better with use.
 
 ### LLM provider
 
-Tutor + scaffolding run on **Gemini 2.5 Flash** with thinking disabled for fast
-turns. Expert mode adds **Google Search grounding** so factual answers cite real
-sources. The engagement classifier, Reason evaluator, lesson-plan generator,
-class-end consolidation, and post-class appraisal run on **Gemini 2.5 Pro** with
-strict `responseSchema` for structured JSON.
-
-The architecture is provider-agnostic. Every LLM call goes through a single typed
-entry point in `src/lib/ai/llm.ts`. Gemini is used here because it was the model
-available for testing during the challenge — a production deployment would point at
-whichever managed and guardrailed model the schools have a contract with (e.g. the
-existing Bridewell AI / Unified Projects stack, or the school's institutional
-ChatGPT). Swapping providers is a single-file change; prompts, schemas, fallbacks,
-and grounding behaviour are portable across them.
+The architecture is deliberately provider-agnostic. Every model call goes through
+a single typed entry point in `src/lib/ai/llm.ts`, with named keys for each job
+(`tutor`, `scaffold`, `classifierFlash`, `classifier`, `reasonEvaluator`,
+`profileUpdater`). The current build maps those keys to a fast tier (tutor +
+scaffolding + first-pass classifier) and a reasoning tier (classifier
+tiebreaker, Reason evaluator, lesson planner, consolidation, appraisal). A
+production deployment would point each key at whichever managed and guardrailed
+model the schools have a contract with — for Bridewell that is the existing
+Bridewell AI / Unified Projects stack. Swapping providers is a single-file
+change; prompts, structured-output schemas, fallbacks, and grounding behaviour
+are portable across them.
 
 ### Brand
 
@@ -290,7 +290,7 @@ Four layers, each a named module under `src/layers/`:
   explained it.
 - **prompts.ts** — four templates (paraphrase, novel example, counterfactual,
   teach-back) with a subject-weighted selector that avoids back-to-back repeats.
-- **evaluator.ts** — Gemini Pro + responseSchema. Returns confidence, branch
+- **evaluator.ts** — reasoning-tier LLM + responseSchema. Returns confidence, branch
   (accept / soft_challenge / pattern_flag), rationale, weakest segment, and a
   drafted soft-challenge follow-up.
 - **responder.ts** — pure function. Picks the next tutor turn based on the branch.
@@ -347,10 +347,11 @@ colleagues did that worked.
 ## Agent simulation harness
 
 `scripts/simulate-class.mjs` is a real QA tool. Spawns N pupil agents driven by
-Gemini Flash with persona system prompts (productive struggler, wheel-spinner,
-flowing, disengaged, off-task, safeguarding-disclosure) and runs them through a
-real lesson against the live API. The teacher can sign in and inspect the
-resulting class as though it were a real session.
+the same fast-tier LLM as the tutor, each with a persona system prompt
+(productive struggler, wheel-spinner, flowing, disengaged, off-task,
+safeguarding-disclosure), and runs them through a real lesson against the live
+API. The teacher can sign in and inspect the resulting class as though it were
+a real session.
 
 Most recent sim, 6 personas × 6 turns:
 
@@ -363,7 +364,7 @@ Most recent sim, 6 personas × 6 turns:
 | Marcus Holt (flowing) | flowing | **flowing 95%** ✓ |
 | Bertie Lawson (disengaged) | disengaged | Initially mis-classified — fixed via a classifier prompt revision that distinguishes terse-correct from substantively-engaged. ✓ |
 
-The sim drives real Gemini calls, persists conversations to Firestore, raises real
+The sim drives real LLM calls, persists conversations to Firestore, raises real
 safeguarding events, and produces a JSON report under `reports/`. It's the
 regression test that the README screenshots are captured against.
 
@@ -394,9 +395,12 @@ front-of-room TV during a lesson:
 - **Firebase** — Firestore (persistent), Realtime Database (live state), Auth
   (teacher email/password with allowlist; pupil anonymous), Admin SDK for
   privileged writes
-- **Gemini API** — `@google/genai`. Flash for tutor + scaffolding; Pro with
-  `responseSchema` for classifier, Reason evaluator, lesson planner, appraiser;
-  image generation for the heraldic motifs
+- **LLM provider** — abstracted behind `src/lib/ai/llm.ts`. A fast tier runs the
+  tutor, scaffolding generators, and the first-pass classifier; a reasoning tier
+  runs the classifier tiebreaker, Reason evaluator, lesson planner, appraiser, and
+  consolidator (with `responseSchema` for structured JSON, and search grounding
+  for Expert mode). Heraldic brand artwork is generated through the same
+  abstraction
 - **Lucide** icons · **next/font** for Source Serif 4 + Inter + JetBrains Mono ·
   brand tokens in `src/lib/brand/`
 - **Playwright** for the screenshot capture pipeline · **sharp** for image
@@ -444,6 +448,44 @@ SIM_EMAIL=... SIM_PASSWORD=... SIM_CLASS_ID=... SIM_JOIN_CODE=... \
 
 ---
 
+## Deploy
+
+The app is a Next.js project with server-side API routes. The natural deploy
+target is **Vercel** (Firebase App Hosting would also work; it requires the
+Firebase project on the Blaze plan).
+
+```bash
+# One-time
+npx vercel link            # link this dir to a Vercel project
+npx vercel env add \       # add each var as Production + Preview + Development:
+  NEXT_PUBLIC_FIREBASE_API_KEY
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID
+  NEXT_PUBLIC_FIREBASE_DATABASE_URL
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+  NEXT_PUBLIC_FIREBASE_APP_ID
+  GEMINI_API_KEY             # or whichever LLM provider key
+  FIREBASE_ADMIN_CREDENTIALS  # the contents of secrets/firebase-admin.json
+                              # (single line, JSON-stringified)
+
+# Push to production
+npx vercel --prod
+```
+
+Once deployed, paste the URL into the *Live demo* line at the top of this
+README so stakeholders can open it.
+
+Before opening the URL publicly:
+- Confirm the Firestore + RTDB security rules are deployed
+  (`firebase deploy --only firestore:rules,database`).
+- Confirm the teacher email allowlist (`allowedTeacherEmails` collection in
+  Firestore) so registration is gated.
+- Consider rotating the LLM API key after the demo period — public demos are
+  rate-limit targets.
+
+---
+
 ## Repo layout
 
 ```
@@ -483,13 +525,13 @@ src/
   layers/
     trigger.ts              — Reason trigger logic
     prompts.ts              — Reason prompt library + selector
-    evaluator.ts            — Reason evaluator (Pro + responseSchema)
+    evaluator.ts            — Reason evaluator (responseSchema)
     responder.ts            — branching logic
-    classifier.ts           — engagement classifier (Pro + responseSchema)
+    classifier.ts           — engagement classifier with Flash → Pro tiebreaker
   lib/
     ai/
-      llm.ts                — typed Gemini client (grounding, structured JSON)
-      models.ts             — model IDs in one place
+      llm.ts                — typed LLM client (grounding, structured JSON)
+      models.ts             — provider-agnostic model-key map
       prompts.ts            — system-prompt builder for the tutor
       activities.ts         — activity catalogue + per-activity tutor instructions
       lessonPlanner.ts      — generate a structured plan from syllabus + intent
@@ -501,7 +543,7 @@ src/
   types/                    — domain types (one file)
 scripts/
   simulate-class.mjs            — agent simulation harness (the QA tool)
-  generate-images.mjs           — Gemini brand illustration generator
+  generate-images.mjs           — LLM-driven heraldic brand illustration generator
   capture-screenshots.mjs       — main Playwright capture for the README
   capture-end-states.mjs        — capture closing, appraisal, classroom display
   enable-auth-providers.mjs     — one-time Firebase Identity setup
@@ -512,26 +554,22 @@ scripts/
 
 ## Status
 
-**21 May 2026.** Live build, against a real Firebase project, against real Gemini
+**21 May 2026.** Live build, against a real Firebase project, against real LLM
 calls. The agent simulation runs end-to-end. The flows in this README are
 exercised by the screenshot pipeline, so this README is also a regression suite.
 
-What's deferred to the final week before 29 May:
-
-- **Step progression** — the tutor should advance to the next step in the lesson
-  plan when classifier confidence sustains > 0.7. The signal is already there;
-  the advance-logic isn't yet stitched.
-- **Optimistic dashboard updates** — cheap signal-only updates between Pro
-  classifications would make the dashboard feel more alive at large class sizes.
-- **Classifier cost optimisation** — Pro on every classification scales but isn't
-  cheap. A Flash-tier classifier with Pro as a tiebreaker is one swap away.
-- **Voice I/O** — ElevenLabs + Web Speech are in the plan; not built.
-- **Homework** — a lesson-plan flavour with retroactive marking.
-
 What landed during the build week:
 
-- AI-led lesson setup, end-to-end (wizard + Gemini Pro generator + teacher
+- AI-led lesson setup, end-to-end (wizard + reasoning-tier plan generator + teacher
   review/edit/approve)
+- Step progression — classifier confidence > 0.7 sustained over consecutive
+  snapshots advances the pupil through the plan; surfaced on the pupil's chat
+  header and on the teacher card as a gold progress strip; the timeline panel
+  shows the whole class at once
+- Flash → Pro tiebreaker on the classifier — the cheap first pass runs Flash;
+  Pro escalates only when Flash is uncertain (<0.55) or flags safeguarding
+- Optimistic dashboard signals — pupil-side bumps mean cards visibly move
+  between classifier snapshots
 - Activity types — nine of them — woven through the lesson plan so a 45-minute
   lesson isn't pure Socratic questioning
 - Live engagement classifier with structured JSON output (+ safeguarding signal
@@ -562,6 +600,8 @@ What landed during the build week:
   [DfE programmes of study](https://www.gov.uk/government/publications/national-curriculum-in-england-science-programmes-of-study).
 - Bridewell crest: Bridewell Royal Hospital arms (1553), reproduced from the
   prior Bridewell prototype.
-- Heraldic motifs (`public/img/motif-*.png`): generated through Gemini
-  `gemini-2.5-flash-image` against a tightly-constrained brand prompt and
-  post-processed with `sharp` to remove the cream background.
+- Heraldic motifs (`public/img/motif-*.png`) and the Bridewell Scholar mascot
+  (`public/img/scholar-*.png`): generated through the project's image-generation
+  abstraction against a tightly-constrained brand prompt with explicit hex
+  codes, post-processed with `sharp` to chroma-key the cream background to
+  transparent.

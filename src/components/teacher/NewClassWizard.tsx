@@ -507,7 +507,7 @@ function DescribeStep({
       </div>
       {generating && (
         <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "right" }}>
-          Gemini 2.5 Pro is thinking through pacing, critical concepts and likely misconceptions — about fifteen seconds.
+          The lesson planner is thinking through pacing, critical concepts and likely misconceptions — about fifteen seconds.
         </div>
       )}
     </div>

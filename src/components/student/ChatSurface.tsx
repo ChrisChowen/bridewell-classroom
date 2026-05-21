@@ -7,12 +7,14 @@ import { demoLesson, demoTutorOpening } from "@/lib/demo/data";
 import { getFirebase } from "@/lib/firebase/client";
 import {
   acknowledgeIntervention,
+  bumpPupilLiveMessage,
   subscribeToPupilInterventions,
+  subscribeToPupilSelf,
   subscribeToSessionStatus,
   type SessionStatus,
 } from "@/lib/firebase/live";
 
-// Chat surface — calls /api/chat which fronts the Gemini tutor.
+// Chat surface — calls /api/chat which fronts the tutor LLM.
 // Coach mode is the default; Expert mode (teacher-toggled in production)
 // enables Google Search grounding so factual answers cite real sources.
 //
@@ -67,6 +69,10 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
   const [pairWith, setPairWith] = useState<string | null>(null);
   const [pausedByTeacher, setPausedByTeacher] = useState(false);
   const [expertNextTurn, setExpertNextTurn] = useState<string | null>(null); // rationale
+  // Current step the pupil is inside — mirrored from RTDB by the
+  // engagement-run route as the classifier sustains a high-confidence
+  // read. Starts at 0 and only ever moves forward.
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Signals tracked locally so the engagement classifier has real numbers
@@ -100,11 +106,12 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonPlan?.id]);
 
-  // The pupil starts on step 0. Step progression is Phase 2 — the
-  // classifier + lesson plan together will advance the pupil. For now,
-  // the tutor stays anchored to step 0's activity, which is enough to
-  // demo non-Socratic activities end-to-end.
-  const activeStep = lessonPlan?.sequence?.[0];
+  // The active step the tutor is anchored to. Driven by
+  // currentStepIndex which the engagement-run route advances when the
+  // classifier confirms sustained understanding.
+  const activeStep =
+    lessonPlan?.sequence?.[currentStepIndex] ?? lessonPlan?.sequence?.[0];
+  const stepCount = lessonPlan?.sequence?.length ?? 0;
 
   const lessonForApi = lessonPlan
     ? {
@@ -314,6 +321,24 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
     return unsub;
   }, [klass]);
 
+  // Self-subscription to read the live currentStepIndex set by the
+  // engagement-run route. This is how the pupil moves through the
+  // lesson plan without the teacher having to drive it.
+  useEffect(() => {
+    if (!klass) return;
+    const fb = getFirebase();
+    if (!fb.ready || !fb.auth.currentUser) return;
+    const uid = fb.auth.currentUser.uid;
+    const unsub = subscribeToPupilSelf(klass.id, uid, (live) => {
+      if (!live) return;
+      if (typeof live.currentStepIndex === "number") {
+        setCurrentStepIndex((prev) => Math.max(prev, live.currentStepIndex!));
+      }
+    });
+    return unsub;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [klass]);
+
   // Per-pupil intervention subscription.
   useEffect(() => {
     if (!klass) return;
@@ -377,6 +402,14 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
 
     // Persist the pupil turn.
     void appendTurn("pupil", text);
+    // Optimistic dashboard bump — moves the pupil's card on the
+    // teacher's view between classifier snapshots.
+    if (klass) {
+      const fb = getFirebase();
+      if (fb.ready && fb.auth.currentUser) {
+        void bumpPupilLiveMessage(klass.id, fb.auth.currentUser.uid);
+      }
+    }
 
     try {
       const res = await fetch("/api/chat", {
@@ -482,7 +515,16 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
   }
 
   return (
-    <div style={{ display: "grid", gridTemplateRows: "auto 1fr auto", height: "100%" }}>
+    <div style={{ display: "grid", gridTemplateRows: "auto auto 1fr auto", height: "100%" }}>
+      {/* Step indicator — pupil can see where the tutor is in the plan. */}
+      {lessonPlan && activeStep && stepCount > 1 && (
+        <StepProgress
+          stepIndex={currentStepIndex}
+          stepCount={stepCount}
+          stepTitle={activeStep.title}
+        />
+      )}
+
       {/* Live banners — teacher actions visible to the pupil */}
       {(sessionStatus || pairWith || expertNextTurn || pausedByTeacher) && (
         <div
@@ -1003,6 +1045,64 @@ function ReasonInline({
           {busy ? "Sending…" : "Submit"}
         </button>
       </div>
+    </div>
+  );
+}
+
+function StepProgress({
+  stepIndex,
+  stepCount,
+  stepTitle,
+}: {
+  stepIndex: number;
+  stepCount: number;
+  stepTitle: string;
+}) {
+  const dots = Array.from({ length: stepCount });
+  return (
+    <div
+      style={{
+        padding: "10px 24px",
+        borderBottom: "1px solid var(--line)",
+        background: "var(--surface)",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+      }}
+    >
+      <span className="bw-section-label" style={{ color: "var(--color-gold-500)" }}>
+        Step {stepIndex + 1} of {stepCount}
+      </span>
+      <div style={{ display: "flex", gap: 4 }} aria-hidden>
+        {dots.map((_, i) => (
+          <span
+            key={i}
+            style={{
+              width: 16,
+              height: 3,
+              borderRadius: 2,
+              background:
+                i < stepIndex
+                  ? "var(--color-gold-500)"
+                  : i === stepIndex
+                  ? "var(--color-gold-300, var(--color-gold-500))"
+                  : "var(--line)",
+              opacity: i === stepIndex ? 1 : i < stepIndex ? 0.75 : 1,
+            }}
+          />
+        ))}
+      </div>
+      <span
+        style={{
+          fontSize: 13,
+          color: "var(--text-muted)",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {stepTitle}
+      </span>
     </div>
   );
 }

@@ -15,6 +15,12 @@
 export const MODELS = {
   tutor: "gemini-2.5-flash",
   scaffold: "gemini-2.5-flash",
+  // Two classifier keys: a cheap Flash-tier first pass and a Pro
+  // tiebreaker we only call when Flash's confidence is below threshold
+  // or its safeguarding signal disagrees with its engagement state.
+  // Saves ~80% on classifier spend in steady-state classes while
+  // preserving Pro-grade accuracy on the calls that matter.
+  classifierFlash: "gemini-2.5-flash",
   classifier: "gemini-2.5-pro",
   reasonEvaluator: "gemini-2.5-pro",
   profileUpdater: "gemini-2.5-pro",

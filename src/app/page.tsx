@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Crest } from "@/components/shared/Crest";
 import { Fleur } from "@/components/shared/Fleur";
+import { Scholar } from "@/components/shared/Scholar";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 // Public homepage. Audiences in order of likely first contact:
@@ -55,23 +55,36 @@ export default function Landing() {
           maxWidth: 1180,
           width: "100%",
           margin: "0 auto",
-          padding: "64px 40px 32px",
+          padding: "72px 40px 36px",
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1.4fr) minmax(0, 1fr)",
-          gap: 56,
+          gridTemplateColumns: "minmax(0, 1.55fr) minmax(0, 1fr)",
+          gap: 48,
           alignItems: "center",
         }}
       >
-        <div>
-          <div className="flex items-center gap-2" style={{ marginBottom: 22 }}>
+        <div style={{ position: "relative" }}>
+          {/* Small heraldic flourish behind the meta line — flair, not focal */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              top: -18,
+              left: -34,
+              opacity: 0.18,
+              pointerEvents: "none",
+            }}
+          >
+            <Fleur size={52} />
+          </div>
+          <div className="flex items-center gap-2" style={{ marginBottom: 22, position: "relative" }}>
             <Fleur size={14} />
             <span className="bw-section-label">A Bridewell AI product · since 1553</span>
           </div>
           <h1
             className="bw-display"
             style={{
-              fontSize: 54,
-              lineHeight: 1.05,
+              fontSize: 56,
+              lineHeight: 1.04,
               letterSpacing: "-0.015em",
               maxWidth: 640,
               marginBottom: 22,
@@ -110,27 +123,25 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Bridewell heraldic motif — flat, on-brand, transparent */}
+        {/* The Bridewell Scholar — small mascot, reading. Brand-aligned,
+            sits to the right of the headline without dominating it. */}
         <div
           aria-hidden
           style={{
             justifySelf: "center",
             position: "relative",
-            width: "100%",
-            maxWidth: 320,
-            aspectRatio: "1 / 1",
             display: "grid",
             placeItems: "center",
           }}
         >
-          <Image
-            src="/img/motif-fleur-arch.png"
-            alt=""
-            width={280}
-            height={280}
-            style={{ width: "100%", height: "auto", maxWidth: 280 }}
-            priority
-          />
+          <Scholar size={300} pose="reading" />
+          {/* Two small fleur accents floating near the scholar — flair */}
+          <div style={{ position: "absolute", top: 12, right: 8, opacity: 0.55 }}>
+            <Fleur size={16} />
+          </div>
+          <div style={{ position: "absolute", bottom: 24, left: 0, opacity: 0.4 }}>
+            <Fleur size={12} />
+          </div>
         </div>
       </section>
 
@@ -248,7 +259,7 @@ const audienceCards = [
 const pillars = [
   {
     title: "A coaching tutor, not an answer machine",
-    body: "Real Gemini calls in coach mode by default. Hint, Rephrase, and Simplify scaffold the tutor’s prior turn, not the pupil’s thinking.",
+    body: "Real LLM calls in coach mode by default. Hint, Rephrase, and Simplify scaffold the tutor’s prior turn, not the pupil’s thinking.",
   },
   {
     title: "Engagement read in pattern",

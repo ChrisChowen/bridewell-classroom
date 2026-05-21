@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 import { classifyEngagement, type ClassifierInput } from "@/layers/classifier";
-import type { EngagementSnapshot } from "@/types";
+import type { EngagementSnapshot, ClassRecord } from "@/types";
 
 // POST /api/engagement/run
 //
@@ -56,14 +56,36 @@ export async function POST(req: Request) {
   }
   const pupil = pupilSnap.data() as { classId: string; displayName: string };
 
-  // Run the classifier.
+  // Audit #10: verify the class hasn't been deleted mid-session before
+  // we write the live mirror — otherwise we'd resurrect a stale class.
+  const classExists = (await a.db.collection("classes").doc(pupil.classId).get()).exists;
+  if (!classExists) {
+    return NextResponse.json({ error: "Class no longer exists" }, { status: 404 });
+  }
+
+  // Audit #14: whitelist client-supplied lesson metadata before it
+  // reaches the LLM prompt. Long titles or non-printable characters
+  // would otherwise be a prompt-injection vector.
+  function clean(s: string | undefined, max = 200): string | undefined {
+    if (!s) return undefined;
+    const ascii = s.normalize("NFKC").replace(/[\x00-\x1f\x7f]/g, "").trim();
+    return ascii.length > max ? ascii.slice(0, max) : ascii;
+  }
+  const sanitised = {
+    lessonTitle: clean(body.lessonTitle, 160),
+    lessonSubject: clean(body.lessonSubject, 80),
+    criticalConcepts: body.criticalConcepts?.slice(0, 12).map((c) => clean(c, 120)!).filter(Boolean),
+    pupilProfile: clean(body.pupilProfile, 600),
+  };
+
+  // Run the classifier with sanitised inputs.
   const result = await classifyEngagement({
     turns: body.turns,
     signals: body.signals,
-    lessonTitle: body.lessonTitle,
-    lessonSubject: body.lessonSubject,
-    criticalConcepts: body.criticalConcepts,
-    pupilProfile: body.pupilProfile,
+    lessonTitle: sanitised.lessonTitle,
+    lessonSubject: sanitised.lessonSubject,
+    criticalConcepts: sanitised.criticalConcepts,
+    pupilProfile: sanitised.pupilProfile,
   });
 
   const now = Date.now();
@@ -87,37 +109,83 @@ export async function POST(req: Request) {
   await a.db.collection("engagementSnapshots").add(snapshot);
 
   // 2. Mirror latest state + a short trajectory to RTDB so the dashboard
-  //    re-renders without polling.
+  //    re-renders without polling. Also update the step-progression
+  //    streak and (if the streak threshold is met) advance the pupil to
+  //    the next step in their lesson plan.
   const liveRef = a.rtdb.ref(`liveSessions/${pupil.classId}/pupils/${decoded.uid}`);
-  const existing = (await liveRef.get()).val() as {
-    trajectory?: Array<{ state: string; t: number; confidence: number }>;
-  } | null;
-  const nextTrajectory = [
-    ...((existing?.trajectory ?? []) as Array<{ state: string; t: number; confidence: number }>),
-    { state: result.state, t: now, confidence: result.confidence },
-  ].slice(-MAX_TRAJECTORY);
 
-  await liveRef.set({
-    pupilId: decoded.uid,
-    displayName: pupil.displayName,
-    state: result.state,
-    confidence: result.confidence,
-    rationale: result.rationale,
-    cues: result.cues,
-    lastActive: now,
-    trajectory: nextTrajectory,
-    lastPupilExcerpt: body.lastPupilExcerpt?.slice(0, 240) ?? null,
-    scaffoldUsesRecent: body.signals.scaffoldUseCount ?? 0,
-    classifierFallback: result.fallbackUsed ?? false,
-    safeguarding:
-      result.safeguarding.severity !== "none"
-        ? {
-            severity: result.safeguarding.severity,
-            summary: result.safeguarding.summary,
-            pupilExcerpt: result.safeguarding.pupilExcerpt ?? null,
-            ts: now,
-          }
-        : null,
+  // Read the lesson plan's step count so we don't overshoot. Cheap
+  // here because we're already touching the class for safeguarding.
+  let sequenceLength = 1;
+  try {
+    const classSnap = await a.db.collection("classes").doc(pupil.classId).get();
+    const cls = classSnap.data() as ClassRecord | undefined;
+    sequenceLength = cls?.lessonPlan?.sequence?.length ?? 1;
+  } catch {
+    /* keep default — we never block on this */
+  }
+  const ENGAGED: ReadonlyArray<string> = ["flowing", "productive_struggle"];
+  const HIGH_CONF = 0.7;
+  const STREAK_TO_ADVANCE = 2;
+  const isEngaged = ENGAGED.includes(result.state) && result.confidence > HIGH_CONF;
+
+  // Audit #3: collapse the read-modify-write of the trajectory into a
+  // single transaction so two near-simultaneous classifier calls can't
+  // overwrite each other's snapshots. The transaction body is pure: it
+  // reads the current value, computes the next one, and the RTDB
+  // server retries until the commit lands without a conflict.
+  let nextStepIndex = 0;
+  let advanced = false;
+  await liveRef.transaction((current) => {
+    const c = (current ?? {}) as {
+      trajectory?: Array<{ state: string; t: number; confidence: number }>;
+      currentStepIndex?: number;
+      sustainedHighStreak?: number;
+    };
+    const trajectory = [
+      ...((c.trajectory ?? []) as Array<{ state: string; t: number; confidence: number }>),
+      { state: result.state, t: now, confidence: result.confidence },
+    ].slice(-MAX_TRAJECTORY);
+    const prevStreak = c.sustainedHighStreak ?? 0;
+    const nextStreak = isEngaged ? prevStreak + 1 : 0;
+    const prevStepIndex = c.currentStepIndex ?? 0;
+    let stepIndex = prevStepIndex;
+    let didAdvance = false;
+    if (nextStreak >= STREAK_TO_ADVANCE && prevStepIndex < sequenceLength - 1) {
+      stepIndex = prevStepIndex + 1;
+      didAdvance = true;
+    }
+    nextStepIndex = stepIndex;
+    advanced = didAdvance;
+    return {
+      pupilId: decoded.uid,
+      displayName: pupil.displayName,
+      state: result.state,
+      confidence: result.confidence,
+      rationale: result.rationale,
+      cues: result.cues,
+      lastActive: now,
+      trajectory,
+      lastPupilExcerpt: body.lastPupilExcerpt?.slice(0, 240) ?? null,
+      scaffoldUsesRecent: body.signals.scaffoldUseCount ?? 0,
+      currentStepIndex: stepIndex,
+      sustainedHighStreak: didAdvance ? 0 : nextStreak,
+      // Reset the optimistic counters now that a full snapshot has
+      // landed — they exist to fill the gap between classifications.
+      liveMessageCount: 0,
+      lastMessageAt: now,
+      classifierFallback: result.fallbackUsed ?? false,
+      classifierTier: result.tier ?? "pro",
+      safeguarding:
+        result.safeguarding.severity !== "none"
+          ? {
+              severity: result.safeguarding.severity,
+              summary: result.safeguarding.summary,
+              pupilExcerpt: result.safeguarding.pupilExcerpt ?? null,
+              ts: now,
+            }
+          : null,
+    };
   });
 
   // 3. If safeguarding fired at medium+, write a permanent event for the
@@ -139,5 +207,8 @@ export async function POST(req: Request) {
     state: result.state,
     confidence: result.confidence,
     safeguarding: result.safeguarding,
+    currentStepIndex: nextStepIndex,
+    stepAdvanced: advanced,
+    classifierTier: result.tier ?? "pro",
   });
 }
