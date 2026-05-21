@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, BookOpen, Sparkles, Check, X, AlertTriangle, RotateCcw, Library } from "lucide-react";
 import { useAuth } from "@/lib/firebase/auth-context";
@@ -301,16 +302,30 @@ function PickStep({ syllabus, onPick }: { syllabus: SyllabusEntry | null; onPick
                     border: `1px solid ${syllabus?.id === e.id ? "var(--color-gold-500)" : "var(--line)"}`,
                     cursor: "pointer",
                     transition: "all 120ms ease",
+                    display: "grid",
+                    gridTemplateColumns: "44px 1fr",
+                    gap: 12,
+                    alignItems: "start",
                   }}
                 >
-                  <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
-                    <BookOpen size={12} color="var(--color-gold-500)" />
-                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                      {e.keyStage} · Year {e.yearGroup} · {e.suggestedMinutes} min
-                    </span>
+                  <Image
+                    src={subjectMotif(e.subject)}
+                    alt=""
+                    width={44}
+                    height={44}
+                    aria-hidden
+                    style={{ width: 44, height: 44, opacity: 0.95 }}
+                  />
+                  <div style={{ minWidth: 0 }}>
+                    <div className="flex items-center gap-2" style={{ marginBottom: 6 }}>
+                      <BookOpen size={12} color="var(--color-gold-500)" />
+                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                        {e.keyStage} · Year {e.yearGroup} · {e.suggestedMinutes} min
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{e.topic}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.45 }}>{e.blurb}</div>
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{e.topic}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.45 }}>{e.blurb}</div>
                 </button>
               ))}
             </div>
@@ -497,6 +512,24 @@ function DescribeStep({
       )}
     </div>
   );
+}
+
+function subjectMotif(subject: SyllabusEntry["subject"]): string {
+  switch (subject) {
+    case "Biology":
+    case "Chemistry":
+    case "Physics":
+      return "/img/motif-biology.png";
+    case "English":
+      return "/img/motif-english.png";
+    case "Mathematics":
+      return "/img/motif-mathematics.png";
+    case "History":
+    case "Geography":
+      return "/img/motif-history.png";
+    default:
+      return "/img/motif-open-book.png";
+  }
 }
 
 function examplePlaceholder(s: SyllabusEntry) {

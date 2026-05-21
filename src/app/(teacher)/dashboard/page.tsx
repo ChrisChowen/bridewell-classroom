@@ -180,16 +180,17 @@ function FirstStepsCard() {
         style={{
           position: "relative",
           minHeight: 220,
-          background: "var(--surface)",
-          borderLeft: "1px solid var(--line)",
+          display: "grid",
+          placeItems: "center",
+          padding: 24,
         }}
       >
         <Image
-          src="/img/empty-classes.png"
+          src="/img/motif-open-book.png"
           alt=""
-          fill
-          sizes="(max-width: 1024px) 100vw, 320px"
-          style={{ objectFit: "cover" }}
+          width={180}
+          height={180}
+          style={{ width: "100%", maxWidth: 180, height: "auto", opacity: 0.95 }}
         />
       </div>
     </section>

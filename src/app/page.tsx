@@ -110,28 +110,25 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Editorial illustration — quiet, on-brand, generated via Gemini */}
+        {/* Bridewell heraldic motif — flat, on-brand, transparent */}
         <div
           aria-hidden
           style={{
             justifySelf: "center",
             position: "relative",
             width: "100%",
-            maxWidth: 420,
+            maxWidth: 320,
             aspectRatio: "1 / 1",
-            borderRadius: 12,
-            overflow: "hidden",
-            background: "var(--surface-elev)",
-            border: "1px solid var(--line)",
-            boxShadow: "0 12px 32px rgba(13,42,74,0.10)",
+            display: "grid",
+            placeItems: "center",
           }}
         >
           <Image
-            src="/img/hero-classroom.png"
+            src="/img/motif-fleur-arch.png"
             alt=""
-            fill
-            sizes="(max-width: 1024px) 100vw, 420px"
-            style={{ objectFit: "cover" }}
+            width={280}
+            height={280}
+            style={{ width: "100%", height: "auto", maxWidth: 280 }}
             priority
           />
         </div>
