@@ -52,6 +52,17 @@ export function getAdmin(): AdminBundle {
     process.env.GCLOUD_PROJECT ??
     process.env.GOOGLE_CLOUD_PROJECT;
 
+  // On GCP (Cloud Run / Cloud Functions), $K_SERVICE / $FUNCTION_TARGET
+  // are set. In that environment we never want to read a local
+  // secrets/ file even if the build bundled an env path pointing at
+  // one — secrets/** is in the .firebaserc ignore list, so the file
+  // doesn't exist in the deployed image and readFileSync would throw.
+  // ADC is the right path in production.
+  const onGcp =
+    !!process.env.K_SERVICE ||
+    !!process.env.FUNCTION_TARGET ||
+    !!process.env.GOOGLE_CLOUD_PROJECT_NUMBER;
+
   let credential: ReturnType<typeof cert> | null = null;
   try {
     if (inlineJson) {
@@ -59,16 +70,23 @@ export function getAdmin(): AdminBundle {
         ? inlineJson
         : Buffer.from(inlineJson, "base64").toString("utf8");
       credential = cert(JSON.parse(decoded));
-    } else if (filePath) {
+    } else if (filePath && !onGcp) {
       const abs = resolve(process.cwd(), filePath);
       const sa = JSON.parse(readFileSync(abs, "utf8"));
       credential = cert(sa);
     }
   } catch (err) {
-    return {
-      ready: false,
-      reason: `Failed to load service account: ${err instanceof Error ? err.message : String(err)}`,
-    };
+    // If we were asked to read a file and it didn't work, fall through
+    // to ADC rather than fail — that lets a deploy with a stale env
+    // path still work via ADC on GCP.
+    if (onGcp) {
+      credential = null;
+    } else {
+      return {
+        ready: false,
+        reason: `Failed to load service account: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
   }
 
   try {
