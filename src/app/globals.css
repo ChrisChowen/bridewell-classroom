@@ -319,3 +319,38 @@ select:focus-visible {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Paper-cut mascot artwork — the Gemini-generated PNGs have soft alpha
+   edges (chroma-key fringes) that read as a dirty halo against navy. In
+   dark mode we sit them on a cream disc, which hides the fringe inside
+   the backdrop and keeps the original ink colours legible. Light mode
+   leaves the artwork untouched. */
+.bw-scholar-frame {
+  display: inline-block;
+}
+[data-theme="dark"] .bw-scholar-frame {
+  background: radial-gradient(
+    circle at 50% 55%,
+    var(--color-cream-50) 55%,
+    rgba(244, 235, 218, 0.85) 72%,
+    transparent 86%
+  );
+  border-radius: 999px;
+  padding: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* The peeking scholar on the hero pokes over the headline — a full disc
+   would look odd. We give it a softer radial fade that protects the
+   visible portion without covering the headline. */
+.bw-scholar-peeking {
+  display: inline-block;
+}
+[data-theme="dark"] .bw-scholar-peeking {
+  background: radial-gradient(
+    ellipse 60% 70% at 50% 40%,
+    rgba(244, 235, 218, 0.95) 30%,
+    rgba(244, 235, 218, 0.6) 55%,
+    transparent 78%
+  );
+}

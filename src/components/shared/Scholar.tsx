@@ -28,14 +28,19 @@ export function Scholar({
   pose?: Pose;
   title?: string;
 }) {
+  // bw-scholar-frame gives a cream disc backdrop in dark mode so the
+  // chroma-key fringe doesn't read as halo against navy. Light mode
+  // leaves the artwork bare.
   return (
-    <Image
-      src={POSE_SRC[pose]}
-      alt={title}
-      width={size}
-      height={size}
-      style={{ width: size, height: "auto", display: "block" }}
-      priority={pose === "reading"}
-    />
+    <span className="bw-scholar-frame">
+      <Image
+        src={POSE_SRC[pose]}
+        alt={title}
+        width={size}
+        height={size}
+        style={{ width: size, height: "auto", display: "block" }}
+        priority={pose === "reading"}
+      />
+    </span>
   );
 }

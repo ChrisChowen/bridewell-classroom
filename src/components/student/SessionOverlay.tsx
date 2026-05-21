@@ -99,6 +99,7 @@ export function SessionOverlay({ status, teacherName, lessonTitle, wrapUpNote }:
       >
         <div
           aria-hidden
+          className="bw-scholar-frame"
           style={{
             margin: "0 auto 12px",
             width: 132,

@@ -235,6 +235,7 @@ export default function ClassDetailPage() {
                       title: klass.lessonPlan?.title ?? klass.subject,
                       steps: String(klass.lessonPlan?.sequence?.length ?? 1),
                       class: klass.name,
+                      code: klass.joinCode,
                     });
                     window.open(`/classroom?${params.toString()}`, "bw-whiteboard", "noopener");
                   }}

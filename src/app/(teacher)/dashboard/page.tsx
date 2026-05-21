@@ -178,13 +178,15 @@ function FirstStepsCard() {
           padding: 24,
         }}
       >
-        <Image
-          src="/img/motif-open-book.png"
-          alt=""
-          width={180}
-          height={180}
-          style={{ width: "100%", maxWidth: 180, height: "auto", opacity: 0.95 }}
-        />
+        <span className="bw-scholar-frame">
+          <Image
+            src="/img/motif-open-book.png"
+            alt=""
+            width={180}
+            height={180}
+            style={{ width: "100%", maxWidth: 180, height: "auto", opacity: 0.95 }}
+          />
+        </span>
       </div>
     </section>
   );

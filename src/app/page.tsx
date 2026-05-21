@@ -104,12 +104,16 @@ function Hero() {
       </div>
 
       {/* Peeking scholar — sits ABOVE the headline so it reads as poking
-          over the top of the words rather than as a piece of clipart. */}
+          over the top of the words rather than as a piece of clipart.
+          bw-scholar-peeking applies a soft cream radial-fade in dark
+          mode so the chroma-key fringe doesn't show against navy. */}
       <div
         aria-hidden
+        className="bw-scholar-peeking"
         style={{
           position: "relative",
-          width: "100%",
+          width: "fit-content",
+          margin: "0 auto",
           display: "grid",
           placeItems: "center",
           marginBottom: -10,
@@ -676,8 +680,23 @@ function SiteFooter() {
             Barrow Hills · Longacre
           </span>
         </span>
-        <span style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>
-          v0.1
+        <span className="flex items-center" style={{ gap: 16 }}>
+          <a
+            href="https://github.com/ChrisChowen/bridewell-classroom"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: "inherit",
+              textDecoration: "none",
+              borderBottom: "1px dotted var(--line)",
+              paddingBottom: 1,
+            }}
+          >
+            Source on GitHub
+          </a>
+          <span style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>
+            v0.1
+          </span>
         </span>
       </div>
 

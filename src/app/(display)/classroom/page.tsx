@@ -18,8 +18,12 @@ import { signInAnonymously } from "firebase/auth";
 // the room feel like a single working group — not a surveillance
 // surface.
 //
-// URL contract:  /classroom?classId=<id>&title=<lesson title>&steps=<N>
+// URL contract:
+//   /classroom?classId=<id>&title=<lesson title>&steps=<N>&class=<name>&code=<joinCode>
 // The class detail page generates this link with a one-click button.
+// The join code is shown prominently on screen so latecomers can join
+// without needing the teacher to dictate it — pupils read it off the
+// projector.
 //
 // What is deliberately ABSENT:
 //   - Pupil names (the teacher's dashboard has those; the room doesn't)
@@ -42,9 +46,20 @@ function Inner() {
   const stepsParam = params.get("steps");
   const stepCount = stepsParam ? Math.max(1, parseInt(stepsParam, 10) || 1) : 4;
   const className = params.get("class") ?? "";
+  const joinCode = (params.get("code") ?? "").toUpperCase();
 
   const [live, setLive] = useState<LiveClass | null>(null);
   const [tickIndex, setTickIndex] = useState(0);
+  const [origin, setOrigin] = useState("");
+
+  // Build a host-relative URL the projector can display. Computed
+  // client-side so it picks up the actual deploy host (web.app, custom
+  // domain, or localhost during development) without a hardcode.
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.host);
+    }
+  }, []);
 
   useEffect(() => {
     if (!classId) return;
@@ -104,7 +119,7 @@ function Inner() {
         overflow: "hidden",
       }}
     >
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between" style={{ gap: 24 }}>
         <div className="flex items-center gap-3">
           <Crest size={36} />
           <div>
@@ -141,7 +156,11 @@ function Inner() {
             )}
           </div>
         </div>
-        <ClassClock />
+
+        <div className="flex items-center gap-4">
+          <JoinPanel joinCode={joinCode} origin={origin} connected={pupils.length} />
+          <ClassClock />
+        </div>
       </header>
 
       <ClassField
@@ -229,6 +248,105 @@ function NoClass() {
         </p>
       </div>
     </main>
+  );
+}
+
+// Join panel — top-right of the projector. The join code is read off
+// the screen by latecomers, so it must be legible from across the room
+// (≈36pt body, monospace). The connected count sits subtly below so
+// the teacher can see at a glance whether the whole class is in.
+function JoinPanel({
+  joinCode,
+  origin,
+  connected,
+}: {
+  joinCode: string;
+  origin: string;
+  connected: number;
+}) {
+  if (!joinCode) return null;
+  return (
+    <div
+      style={{
+        padding: "12px 18px",
+        borderRadius: 14,
+        background: "rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255,255,255,0.16)",
+        boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset",
+        textAlign: "right",
+        minWidth: 220,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          opacity: 0.65,
+          fontWeight: 600,
+          marginBottom: 4,
+        }}
+      >
+        Join the lesson
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 32,
+          fontWeight: 700,
+          letterSpacing: "0.16em",
+          color: "var(--color-gold-500)",
+          lineHeight: 1,
+        }}
+      >
+        {joinCode}
+      </div>
+      {origin && (
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            opacity: 0.6,
+            marginTop: 6,
+            letterSpacing: "0.04em",
+          }}
+        >
+          {origin}/j/{joinCode}
+        </div>
+      )}
+      <div
+        className="flex items-center"
+        style={{
+          marginTop: 10,
+          paddingTop: 8,
+          borderTop: "1px solid rgba(255,255,255,0.12)",
+          justifyContent: "flex-end",
+          gap: 8,
+          fontSize: 12,
+          opacity: 0.85,
+        }}
+      >
+        <span
+          aria-hidden
+          style={{
+            width: 7,
+            height: 7,
+            borderRadius: 999,
+            background:
+              connected > 0 ? "var(--color-state-flowing)" : "rgba(255,255,255,0.3)",
+            boxShadow:
+              connected > 0
+                ? "0 0 8px rgba(61,143,168,0.55)"
+                : "none",
+            transition: "background 200ms ease",
+          }}
+        />
+        <span>
+          <strong style={{ fontWeight: 600 }}>{connected}</strong>{" "}
+          {connected === 1 ? "pupil" : "pupils"} connected
+        </span>
+      </div>
+    </div>
   );
 }
 
