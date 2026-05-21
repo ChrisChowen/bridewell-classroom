@@ -4,7 +4,11 @@ import { ref, onValue, off, push, set, remove } from "firebase/database";
 import { getFirebase } from "./client";
 import type { EngagementState } from "@/lib/brand";
 
-export type SessionStatusValue = "active" | "paused" | "wrap_up" | "ended";
+// "not_started" is the default state of a fresh class: pupils can have
+// joined and be sitting in the lobby, but the chat is locked until the
+// teacher hits "Start class". Pupils see a calm overlay; the teacher
+// gets a clear primary action.
+export type SessionStatusValue = "not_started" | "active" | "paused" | "wrap_up" | "ended";
 
 export interface SessionStatus {
   value: SessionStatusValue;

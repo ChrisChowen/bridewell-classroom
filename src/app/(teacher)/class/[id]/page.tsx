@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Copy, Check, BookOpen, ChevronDown, ChevronRight, Pause, Play, Flag, StopCircle, MonitorPlay } from "lucide-react";
+import { ArrowLeft, Copy, Check, BookOpen, ChevronDown, ChevronRight, Pause, Play, Flag, StopCircle, MonitorPlay, Link2 } from "lucide-react";
 import { TopBar } from "@/components/shared/TopBar";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
@@ -37,6 +37,7 @@ export default function ClassDetailPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sort, setSort] = useState<SortKey>("attention");
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(null);
@@ -107,7 +108,7 @@ export default function ClassDetailPage() {
     return unsub;
   }, [classId]);
 
-  async function fireClassControl(type: "pause" | "resume" | "wrap_up" | "end", text?: string) {
+  async function fireClassControl(type: "start" | "pause" | "resume" | "wrap_up" | "end", text?: string) {
     if (!classId || !klass) return;
     setClassCtrlBusy(type);
     try {
@@ -165,11 +166,21 @@ export default function ClassDetailPage() {
             {/* Class-wide controls */}
             {klass && sessionStatus?.value !== "ended" && (
               <>
-                {sessionStatus?.value === "paused" ? (
+                {!sessionStatus || sessionStatus.value === "not_started" ? (
+                  <button
+                    onClick={() => fireClassControl("start")}
+                    disabled={classCtrlBusy === "start"}
+                    className="bw-btn-emphasis"
+                    style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
+                    title="Unlock pupils' chat and start the lesson"
+                  >
+                    <Play size={12} /> Start class
+                  </button>
+                ) : sessionStatus.value === "paused" ? (
                   <button
                     onClick={() => fireClassControl("resume")}
                     disabled={classCtrlBusy === "resume"}
-                    className="bw-btn-secondary"
+                    className="bw-btn-emphasis"
                     style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
                     title="Resume the class"
                   >
@@ -186,28 +197,33 @@ export default function ClassDetailPage() {
                     <Pause size={12} /> Pause class
                   </button>
                 )}
-                <button
-                  onClick={() => fireClassControl("wrap_up", "Five minutes left — round off what you have.")}
-                  disabled={classCtrlBusy === "wrap_up" || sessionStatus?.value === "wrap_up"}
-                  className="bw-btn-secondary"
-                  style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
-                  title="Call for the class to wrap up — pupils will be nudged to summarise"
-                >
-                  <Flag size={12} /> Wrap-up
-                </button>
-                <button
-                  onClick={() => {
-                    if (confirm("End the class? Pupils will see a closing screen and can't reply further.")) {
-                      fireClassControl("end");
-                    }
-                  }}
-                  disabled={classCtrlBusy === "end"}
-                  className="bw-btn-secondary"
-                  style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6, color: "var(--color-crimson)" }}
-                  title="End the lesson for everyone"
-                >
-                  <StopCircle size={12} /> End class
-                </button>
+                {sessionStatus &&
+                  (sessionStatus.value === "active" || sessionStatus.value === "wrap_up") && (
+                    <button
+                      onClick={() => fireClassControl("wrap_up", "Five minutes left — round off what you have.")}
+                      disabled={classCtrlBusy === "wrap_up" || sessionStatus?.value === "wrap_up"}
+                      className="bw-btn-secondary"
+                      style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
+                      title="Call for the class to wrap up — pupils will be nudged to summarise"
+                    >
+                      <Flag size={12} /> Wrap-up
+                    </button>
+                  )}
+                {sessionStatus && sessionStatus.value !== "not_started" && (
+                  <button
+                    onClick={() => {
+                      if (confirm("End the class? Pupils will see a closing screen and can't reply further.")) {
+                        fireClassControl("end");
+                      }
+                    }}
+                    disabled={classCtrlBusy === "end"}
+                    className="bw-btn-secondary"
+                    style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6, color: "var(--color-crimson)" }}
+                    title="End the lesson for everyone"
+                  >
+                    <StopCircle size={12} /> End class
+                  </button>
+                )}
               </>
             )}
             {klass && (
@@ -231,6 +247,34 @@ export default function ClassDetailPage() {
                 <button
                   onClick={async () => {
                     try {
+                      const origin =
+                        typeof window !== "undefined" ? window.location.origin : "";
+                      await navigator.clipboard.writeText(
+                        `${origin}/j/${encodeURIComponent(klass.joinCode)}`
+                      );
+                      setLinkCopied(true);
+                      setTimeout(() => setLinkCopied(false), 1500);
+                    } catch {
+                      /* noop */
+                    }
+                  }}
+                  className="bw-btn-secondary"
+                  style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
+                  title="Copy a join link pupils can open in one tap"
+                >
+                  {linkCopied ? (
+                    <>
+                      <Check size={12} color="var(--color-gold-500)" /> Link copied
+                    </>
+                  ) : (
+                    <>
+                      <Link2 size={12} /> Copy join link
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
                       await navigator.clipboard.writeText(klass.joinCode);
                       setCopied(true);
                       setTimeout(() => setCopied(false), 1500);
@@ -250,6 +294,7 @@ export default function ClassDetailPage() {
                     letterSpacing: "0.1em",
                     background: "var(--surface)",
                   }}
+                  title="Copy the six-character code"
                 >
                   <span>{klass.joinCode}</span>
                   {copied ? <Check size={11} color="var(--color-gold-500)" /> : <Copy size={11} color="var(--text-muted)" />}
@@ -266,28 +311,30 @@ export default function ClassDetailPage() {
         {sessionStatus?.value === "ended" && <AppraisalPanel classId={classId} />}
 
         {/* Class status banner */}
-        {sessionStatus && sessionStatus.value !== "active" && (
+        {(!sessionStatus || sessionStatus.value !== "active") && (
           <div
             style={{
               padding: "8px 14px",
               marginBottom: 16,
               borderRadius: 8,
               background:
-                sessionStatus.value === "ended"
+                sessionStatus?.value === "ended"
                   ? "rgba(142,42,42,0.08)"
                   : "rgba(216,154,47,0.10)",
               borderLeft: `3px solid ${
-                sessionStatus.value === "ended" ? "var(--color-crimson)" : "var(--color-gold-500)"
+                sessionStatus?.value === "ended" ? "var(--color-crimson)" : "var(--color-gold-500)"
               }`,
               fontSize: 12,
               color: "var(--text)",
             }}
           >
-            {sessionStatus.value === "paused" && "Class paused. Pupils cannot reply until you resume."}
-            {sessionStatus.value === "wrap_up" && (
+            {(!sessionStatus || sessionStatus.value === "not_started") &&
+              "Class is in the lobby — pupils can join but the chat is locked until you press Start class."}
+            {sessionStatus?.value === "paused" && "Class paused. Pupils' chat is locked until you resume."}
+            {sessionStatus?.value === "wrap_up" && (
               <>Wrap-up called. {sessionStatus.wrapUpNote && <em>&ldquo;{sessionStatus.wrapUpNote}&rdquo;</em>}</>
             )}
-            {sessionStatus.value === "ended" && "Lesson ended. Pupils have seen the closing screen."}
+            {sessionStatus?.value === "ended" && "Lesson ended. Pupils have seen the closing screen."}
           </div>
         )}
 

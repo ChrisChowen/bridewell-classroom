@@ -58,3 +58,10 @@ reports/
 *.log
 .claude/
 
+# Firebase Hosting build intermediates — generated during `firebase deploy`
+.firebase/
+
+# Style-exploration outputs from `node scripts/explore-styles.mjs`.
+# Useful locally for picking a style; not part of the shipping artefact.
+public/img/explore/
+

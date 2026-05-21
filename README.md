@@ -3,7 +3,9 @@
 > A teaching instrument for the Bridewell schools — an in-lesson AI tutor for pupils,
 > with a live engagement dashboard and intervention surface for teachers.
 
-**Live demo:** _add the Vercel URL here once deployed — see [Deploy](#deploy)._
+**Live demo:** **[bridewell-classroom.web.app](https://bridewell-classroom.web.app)** —
+open `/j/<class-code>` from a phone or laptop to join a class with one tap, or sign
+in as a teacher to spin up your own.
 
 <p align="center">
   <img src="docs/screenshots/01-landing.png" width="820" alt="Bridewell Classroom landing page">
@@ -66,10 +68,20 @@ six-character join code teachers display on the board.
 ## The pupil flow
 
 The pupil joins with a six-character class code — no email needed, anonymous Firebase
-Auth:
+Auth. The teacher can also share a one-tap link (`/j/<CODE>`) which pre-fills the code
+and asks only for a name; pupils who join from the same browser later are rejoined to
+their existing session automatically:
 
 <p align="center">
-  <img src="docs/screenshots/03-join.png" width="380" alt="Pupil join screen">
+  <img src="docs/screenshots/03-join.png" width="380" alt="Pupil join screen with URL-prefilled class code">
+</p>
+
+Pupils land in a **lobby** — chat locked until the teacher hits *Start class*. This
+prevents the classic chaos where half the class types away before the teacher is ready,
+and gives a calm sightline at the start of the lesson:
+
+<p align="center">
+  <img src="docs/screenshots/13b-pupil-lobby.png" width="640" alt="Pupil lobby — chat locked until teacher starts the class">
 </p>
 
 The tutor opens with the lesson plan's first step. The pupil chats in **coach mode** —
@@ -163,12 +175,24 @@ ready for the projector:
 
 ### Watch the class
 
-Per-pupil cards with sparklines + last message + state pill. Sort by attention.
-Class-wide controls in the header (pause / wrap-up / end). The lesson plan is one
-click away in the accordion:
+The plan view is the dashboard's centre of gravity — each step shows the count of
+pupils currently inside it, with a state-coloured dot per pupil. The extension brief
+(above-syllabus stretch) sits below the main sequence for pupils who finish early:
 
 <p align="center">
-  <img src="docs/screenshots/11-class-detail-plan.png" width="900" alt="Class detail with the lesson plan accordion open">
+  <img src="docs/screenshots/11-class-detail-plan.png" width="900" alt="Class detail — plan view with per-step pupil tokens and extension brief">
+</p>
+
+Per-pupil cards live underneath, with sparklines, last-message excerpt, and state
+pill. Class-wide controls in the header: **Start class** (until the teacher hits this,
+the pupils sit in the lobby), **Pause**, **Wrap-up**, **End class**, **Whiteboard**
+(opens the projector view in a new window), and **Copy join link**. When the teacher
+pauses, a full overlay lands on the pupil's chat — they're prompted to look up, not to
+keep typing into a frozen conversation:
+
+<p align="center">
+  <img src="docs/screenshots/16a-pupil-paused.png" width="640" alt="Pupil paused overlay">
+  <img src="docs/screenshots/18b-pupil-wrap-up.png" width="640" alt="Pupil wrap-up overlay">
 </p>
 
 When a pupil has a safeguarding flag, it shows as a crimson chip on the card itself
@@ -450,33 +474,31 @@ SIM_EMAIL=... SIM_PASSWORD=... SIM_CLASS_ID=... SIM_JOIN_CODE=... \
 
 ## Deploy
 
-The app is a Next.js project with server-side API routes. The natural deploy
-target is **Vercel** (Firebase App Hosting would also work; it requires the
-Firebase project on the Blaze plan).
+The app is a Next.js project with server-side API routes. We deploy via
+**Firebase Hosting** with the web-frameworks integration, which packages
+the Next.js app onto Cloud Functions (2nd gen) automatically. The Firebase
+project must be on the Blaze plan with the Cloud Functions, Cloud Build,
+Artifact Registry, Cloud Run, Eventarc, and Pub/Sub APIs enabled (the
+Firebase CLI prompts to enable these on first deploy).
 
 ```bash
-# One-time
-npx vercel link            # link this dir to a Vercel project
-npx vercel env add \       # add each var as Production + Preview + Development:
-  NEXT_PUBLIC_FIREBASE_API_KEY
-  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-  NEXT_PUBLIC_FIREBASE_PROJECT_ID
-  NEXT_PUBLIC_FIREBASE_DATABASE_URL
-  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-  NEXT_PUBLIC_FIREBASE_APP_ID
-  GEMINI_API_KEY             # or whichever LLM provider key
-  FIREBASE_ADMIN_CREDENTIALS  # the contents of secrets/firebase-admin.json
-                              # (single line, JSON-stringified)
+# One-time, on a fresh machine
+firebase login
+firebase use bridewell-classroom
+firebase experiments:enable webframeworks
 
-# Push to production
-npx vercel --prod
+# Push the current branch
+firebase deploy --only hosting
+
+# Or include rules + indexes
+firebase deploy --only hosting,firestore:rules,firestore:indexes,database
 ```
 
-Once deployed, paste the URL into the *Live demo* line at the top of this
-README so stakeholders can open it.
+The first deploy can take ~5 minutes (image build + function create + CDN
+release). Subsequent deploys are ~2 minutes.
 
 Before opening the URL publicly:
+
 - Confirm the Firestore + RTDB security rules are deployed
   (`firebase deploy --only firestore:rules,database`).
 - Confirm the teacher email allowlist (`allowedTeacherEmails` collection in

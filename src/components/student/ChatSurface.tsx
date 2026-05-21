@@ -97,7 +97,12 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
   const sessionEnded = sessionStatus?.value === "ended";
   const sessionWrapUp = sessionStatus?.value === "wrap_up";
   const sessionPaused = sessionStatus?.value === "paused";
-  const inputDisabled = pending || pausedByTeacher || sessionEnded || sessionPaused;
+  // A missing status doc means the teacher hasn't started the class
+  // yet — pupils are in the lobby. Chat input stays locked until they
+  // do, regardless of how the pupil got here.
+  const sessionNotStarted = !sessionStatus || sessionStatus.value === "not_started";
+  const inputDisabled =
+    pending || pausedByTeacher || sessionEnded || sessionPaused || sessionNotStarted;
 
   // Reset the opening turn when the lesson plan changes (joining a
   // different class).

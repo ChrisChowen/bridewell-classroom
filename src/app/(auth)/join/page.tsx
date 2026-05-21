@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Wordmark } from "@/components/shared/Wordmark";
 import { useAuth } from "@/lib/firebase/auth-context";
@@ -22,7 +22,16 @@ interface CurrentClass {
 }
 
 export default function JoinPage() {
+  return (
+    <Suspense fallback={null}>
+      <JoinInner />
+    </Suspense>
+  );
+}
+
+function JoinInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { signInPupil, status } = useAuth();
   const [joinCode, setJoinCode] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -32,6 +41,11 @@ export default function JoinPage() {
   const [step, setStep] = useState<"form" | "joined">("form");
   const [joinedClass, setJoinedClass] = useState<{ name: string; subject: string } | null>(null);
   const [currentClass, setCurrentClass] = useState<CurrentClass | null>(null);
+  // True when the join code came from the URL — we surface a small
+  // affordance ("from your teacher's link") and skip-focus the code
+  // input so the pupil lands directly on the name field.
+  const [codeFromUrl, setCodeFromUrl] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
 
   // If the pupil is already signed in and in a class, fetch that class so
   // we can show "you are currently in X — enter a new code to switch".
@@ -66,14 +80,33 @@ export default function JoinPage() {
     };
   }, [status]);
 
-  // Restore last code + name so a returning pupil doesn't retype them.
+  // URL ?code=... takes precedence over localStorage (the teacher just
+  // shared a direct link to THIS class). When the URL carries a code,
+  // we skip-focus the code input and land the cursor on the name field
+  // so the pupil only has one thing to type.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const c = window.localStorage.getItem(LS_CODE);
-    const n = window.localStorage.getItem(LS_NAME);
-    if (c) setJoinCode(c);
-    if (n) setDisplayName(n);
+    const urlCode = searchParams.get("code");
+    const lastCode = window.localStorage.getItem(LS_CODE);
+    const lastName = window.localStorage.getItem(LS_NAME);
+    if (urlCode) {
+      const normalised = normaliseJoinCode(urlCode);
+      setJoinCode(normalised);
+      setCodeFromUrl(true);
+    } else if (lastCode) {
+      setJoinCode(lastCode);
+    }
+    if (lastName) setDisplayName(lastName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // When the code came from the URL, autofocus the name input as soon
+  // as it's mounted — saves the pupil a tap on mobile.
+  useEffect(() => {
+    if (codeFromUrl && nameInputRef.current && !displayName) {
+      nameInputRef.current.focus();
+    }
+  }, [codeFromUrl, displayName]);
 
   // NOTE — we deliberately do NOT auto-redirect a signed-in pupil to
   // /session. If they came back to /join, they probably want to switch
@@ -139,6 +172,8 @@ export default function JoinPage() {
             <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 14 }}>
               {currentClass
                 ? `You are currently in ${currentClass.name} (${currentClass.subject}). Enter a new code to switch, or carry on with your lesson.`
+                : codeFromUrl
+                ? "Class code filled in from your teacher's link. Type your name to join."
                 : "Your teacher will give you a six-character code. Enter your name to join."}
             </p>
             {currentClass && (
@@ -172,17 +207,28 @@ export default function JoinPage() {
                 <input
                   type="text"
                   value={joinCode}
-                  onChange={(e) => setJoinCode(normaliseJoinCode(e.target.value))}
+                  onChange={(e) => {
+                    setJoinCode(normaliseJoinCode(e.target.value));
+                    setCodeFromUrl(false);
+                  }}
                   placeholder="e.g. PHO-Y8B"
                   required
-                  autoFocus
+                  autoFocus={!codeFromUrl}
                   inputMode="text"
-                  style={{ ...inputStyle, fontFamily: "var(--font-mono)", letterSpacing: "0.12em", fontSize: 16, textTransform: "uppercase" }}
+                  style={{
+                    ...inputStyle,
+                    fontFamily: "var(--font-mono)",
+                    letterSpacing: "0.12em",
+                    fontSize: 16,
+                    textTransform: "uppercase",
+                    background: codeFromUrl ? "rgba(181,138,60,0.06)" : "var(--surface)",
+                  }}
                 />
               </label>
               <label style={{ display: "grid", gap: 4 }}>
                 <span className="bw-section-label">Your name</span>
                 <input
+                  ref={nameInputRef}
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}

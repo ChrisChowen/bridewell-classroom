@@ -30,7 +30,8 @@ interface Body {
     | "mark_reviewed"
     | "wrap_up"
     | "end"
-    | "resume";
+    | "resume"
+    | "start";
   text?: string;
   rationale?: string;
   pairWith?: string; // displayName of the partner pupil
@@ -67,10 +68,17 @@ export async function POST(req: Request) {
   const now = Date.now();
 
   // Class-wide status updates.
-  if (body.type === "wrap_up" || body.type === "end" || body.type === "resume" || body.type === "pause") {
+  if (
+    body.type === "wrap_up" ||
+    body.type === "end" ||
+    body.type === "resume" ||
+    body.type === "pause" ||
+    body.type === "start"
+  ) {
     const statusMap = {
       pause: "paused",
       resume: "active",
+      start: "active",
       wrap_up: "wrap_up",
       end: "ended",
     } as const;

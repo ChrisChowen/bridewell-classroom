@@ -84,8 +84,9 @@ try {
     await page.waitForTimeout(300);
     await shot(page, "02b-register");
 
-    await page.goto(`${BASE}/join`);
+    await page.goto(`${BASE}/join?code=${encodeURIComponent(SIM_JOIN_CODE ?? "ABC-123")}`);
     await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(400);
     await shot(page, "03-join");
 
     await page.goto(`${BASE}/demo`);
@@ -222,7 +223,19 @@ try {
     await pPage.click('button:has-text("Join lesson")');
     await pPage.waitForURL("**/session", { timeout: 20_000 });
     await pPage.waitForLoadState("networkidle");
-    await pPage.waitForTimeout(1500);
+    await pPage.waitForTimeout(2500);
+
+    // Pupil first sees the lobby overlay — class hasn't been started.
+    // We capture that BEFORE firing the start intervention.
+    await shot(pPage, "13b-pupil-lobby", { fullPage: false });
+
+    // Teacher starts the class so the chat unlocks.
+    await adminRtdb.ref(`liveSessions/${created.testClassId}/status`).set({
+      value: "active",
+      ts: Date.now(),
+      wrapUpNote: null,
+    });
+    await pPage.waitForTimeout(1200);
     await shot(pPage, "14-pupil-session-start");
 
     // Capture the pupil's anon UID so we can clean it up.
@@ -261,6 +274,18 @@ try {
     await pPage.waitForTimeout(1200);
     await shot(pPage, "16-pupil-conversation-deep", { fullPage: false });
 
+    // Briefly drop the class into "paused" and capture the overlay,
+    // then back to "active" so the rest of the flow continues.
+    await adminRtdb.ref(`liveSessions/${created.testClassId}/status`).set({
+      value: "paused", ts: Date.now(), wrapUpNote: null,
+    });
+    await pPage.waitForTimeout(1600);
+    await shot(pPage, "16a-pupil-paused", { fullPage: false });
+    await adminRtdb.ref(`liveSessions/${created.testClassId}/status`).set({
+      value: "active", ts: Date.now(), wrapUpNote: null,
+    });
+    await pPage.waitForTimeout(600);
+
     // Press scaffold buttons until the ceiling (3 by default) fires Reason.
     for (let i = 0; i < 3; i++) {
       const scaffoldBtns = ["I need a hint", "Say that differently", "Use simpler words"];
@@ -282,6 +307,15 @@ try {
     await pPage.click('.bw-reason-surface button:has-text("Submit")');
     await pPage.waitForTimeout(8000); // evaluator + responder
     await shot(pPage, "18-pupil-after-reason", { fullPage: false });
+
+    // Capture the wrap-up overlay before the lesson ends.
+    await adminRtdb.ref(`liveSessions/${created.testClassId}/status`).set({
+      value: "wrap_up",
+      ts: Date.now(),
+      wrapUpNote: "Five minutes left — round off what you have.",
+    });
+    await pPage.waitForTimeout(1500);
+    await shot(pPage, "18b-pupil-wrap-up", { fullPage: false });
 
     // ====================================================
     // PART 4 — End the class; capture closing screen + appraisal

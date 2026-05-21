@@ -26,36 +26,41 @@ const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 const outDir = resolve(__dirname, "../public/img");
 mkdirSync(outDir, { recursive: true });
 
-// The brand block. Repeated verbatim into every prompt so style stays
-// consistent across the set.
+// The brand block. Repeated verbatim into every prompt so the style
+// stays consistent across the whole asset set. We are committed to a
+// paper-cut / cut-out illustration register — selected against four
+// alternatives during the explore-styles.mjs pass on 22 May 2026.
 const BRAND = `
-Heraldic motif in the Bridewell visual language.
+Brand illustration in the Bridewell visual language.
 
-Style — vector flat illustration, two-tone, no gradients, no 3D, no
-shadows, no photographic textures. The execution should look like it
-was drawn by a heraldic designer for a 16th century school crest — but
-rendered crisply and cleanly, like a modern logo lockup. Crisp edges,
-deliberate negative space, calligraphic linework. Bilateral or
-near-bilateral symmetry where appropriate.
+Style — tactile cut-paper / collage illustration. The subject is built
+from layered flat shapes with crisp clean edges and a single matte
+surface per shape. NO gradients, NO photographic textures, NO sketch
+lines, NO outlines beyond the silhouette of each shape, NO 3D shading.
+The illustration should feel like a beautifully composed paper relief
+viewed straight on — each shape its own piece of cut card, layered
+just enough to read as depth without casting any soft shadow. Modern
+but serious in register, school-appropriate, not whimsical.
 
 Palette — ONLY use these three colours. Do not add red, green, purple,
-or any other accents:
-  - deep royal navy #0D2A4A as the dominant fill or outline
-  - warm Bridewell gold #B58A3C for highlights and accents
+teal, or any other accents:
+  - deep royal navy #0D2A4A as the dominant shape colour
+  - warm Bridewell gold #B58A3C for one or two highlight shapes
   - soft cream #FAF6EE as the background
 
-Composition — the subject is centred, simple, iconic. No people, no
-faces, no animals. No marketing language or text in the image. No
-patterns or repeating ornaments. The mark should read clearly at 64px
-as well as 512px.
+Composition — the subject is centred and reads as one calm mark. No
+text or letters in the image. No surrounding furniture, no decorative
+border, no patterned background. No animals. The subject should read
+clearly at 64px as well as 512px.
 
 Avoid — pixel art, watercolour, sketchy hand-drawn lines, photographic
 realism, neon, glow effects, isometric 3D, magazine illustration vibes,
 stock-photo people, generic SaaS gradients, anything that screams "AI
-generated illustration".
+generated illustration". No rounded-rectangle "app icon" tile or card
+behind the figure.
 
-Render with a clean cream #FAF6EE background. The background should be
-flat with no shading, so it can be cleanly removed afterwards.
+Render with a single completely flat cream #FAF6EE background, no
+shading at all, so it can be chroma-keyed cleanly to transparent.
 `;
 
 // Mascot block — same palette and silhouette rules, but the subject is

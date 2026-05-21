@@ -10,6 +10,7 @@ import { ClosingScreen } from "@/components/student/ClosingScreen";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
 import { subscribeToSessionStatus, type SessionStatus } from "@/lib/firebase/live";
+import { SessionOverlay } from "@/components/student/SessionOverlay";
 import { demoLesson } from "@/lib/demo/data";
 import type { ClassRecord, PupilRecord } from "@/types";
 
@@ -223,7 +224,21 @@ export default function SessionPage() {
           </div>
         )}
         {(loadState === "ready" || loadState === "preview") && (
-          sessionStatus?.value === "ended" ? <ClosingScreen /> : <ChatSurface klass={klass ?? undefined} />
+          sessionStatus?.value === "ended" ? (
+            <ClosingScreen />
+          ) : (
+            <div style={{ position: "relative", display: "grid", gridTemplateRows: "1fr", height: "100%" }}>
+              <ChatSurface klass={klass ?? undefined} />
+              {/* Lobby / paused / wrap-up overlay. A missing status doc
+                  is treated as "not_started" — the teacher hasn't hit
+                  Start class yet, so the chat stays locked. */}
+              <SessionOverlay
+                status={sessionStatus?.value ?? "not_started"}
+                lessonTitle={lessonTitle}
+                wrapUpNote={sessionStatus?.wrapUpNote ?? undefined}
+              />
+            </div>
+          )
         )}
       </div>
     </main>

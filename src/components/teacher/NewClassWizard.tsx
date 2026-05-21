@@ -856,8 +856,10 @@ function DoneStep({
       <div className="bw-card" style={{ padding: 18, background: "rgba(181,138,60,0.08)", marginBottom: 18, borderLeft: "3px solid var(--color-gold-500)" }}>
         <div className="bw-section-label" style={{ marginBottom: 6 }}>Pupil join code</div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 32, letterSpacing: "0.12em", fontWeight: 600 }}>{joinCode}</div>
-        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>
-          Pupils type this at /join. Project it on the board for the class.
+        <ShareJoinLink joinCode={joinCode} />
+        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 12 }}>
+          Pupils type the code at /join, or open the link directly and just type their name.
+          Project the code on the board for the class.
         </div>
       </div>
       <button onClick={onOpenDashboard} className="bw-btn-primary" style={{ fontSize: 13 }}>
@@ -1160,6 +1162,63 @@ function ExtensionEditor({
           style={inputStyle}
         />
       </label>
+    </div>
+  );
+}
+
+// Copyable short URL pupils can open in one tap from any device. The
+// resolver at /j/[code] redirects into /join?code=, which pre-fills the
+// class code and focuses the name input.
+function ShareJoinLink({ joinCode }: { joinCode: string }) {
+  const [copied, setCopied] = useState(false);
+  const url = (() => {
+    if (typeof window === "undefined") return `/j/${joinCode}`;
+    return `${window.location.origin}/j/${joinCode}`;
+  })();
+  return (
+    <div
+      style={{
+        marginTop: 14,
+        padding: "10px 12px",
+        background: "var(--surface-elev)",
+        border: "1px solid var(--line)",
+        borderRadius: 8,
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 12,
+          color: "var(--text-muted)",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          flex: 1,
+          textAlign: "left",
+        }}
+        title={url}
+      >
+        {url}
+      </div>
+      <button
+        type="button"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(url);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          } catch {
+            /* noop */
+          }
+        }}
+        className="bw-btn-secondary"
+        style={{ fontSize: 12 }}
+      >
+        {copied ? "Copied" : "Copy link"}
+      </button>
     </div>
   );
 }
