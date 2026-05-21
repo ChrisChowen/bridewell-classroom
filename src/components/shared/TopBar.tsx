@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Wordmark } from "./Wordmark";
-import { UserChip } from "./UserChip";
-import { ThemeToggle } from "./ThemeToggle";
+import { UserMenu } from "./UserMenu";
 
 type School = "KESW" | "Barrow Hills" | "Longacre";
 
@@ -63,8 +62,7 @@ export function TopBar({
         )}
       </div>
       <div className="flex items-center justify-end gap-2">
-        <ThemeToggle />
-        <UserChip name={teacher} school={school} role={role} />
+        <UserMenu name={teacher} school={school} role={role} />
       </div>
     </header>
   );

@@ -320,6 +320,40 @@ select:focus-visible {
   }
 }
 
+/* Account-menu items: subtle hover to indicate clickability. */
+.bw-menu-item:hover {
+  background: rgba(181, 138, 60, 0.10);
+}
+.bw-menu-item:focus-visible {
+  outline: 2px solid var(--color-gold-500);
+  outline-offset: -2px;
+}
+
+/* AI-generated intent suggestion chips in the new-class wizard. */
+.bw-suggestion-chip:hover {
+  background: rgba(181, 138, 60, 0.08);
+  border-color: var(--color-gold-500);
+}
+
+/* Syllabus picker cards — subtle lift on hover so it feels tactile. */
+.bw-syllabus-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-gold-500) !important;
+  box-shadow: 0 4px 14px rgba(181, 138, 60, 0.10);
+}
+
+@keyframes bw-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+@keyframes bw-bubble-rise {
+  0%   { transform: translateY(0) scale(0.4); opacity: 0; }
+  10%  { opacity: 0.55; }
+  90%  { opacity: 0.55; }
+  100% { transform: translateY(-260px) scale(1); opacity: 0; }
+}
+
 /* Paper-cut mascot artwork — the Gemini-generated PNGs have soft alpha
    edges (chroma-key fringes) that read as a dirty halo against navy. In
    dark mode we sit them on a cream disc, which hides the fringe inside

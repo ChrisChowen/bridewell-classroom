@@ -3,9 +3,11 @@
 > A teaching instrument for the Bridewell schools — an in-lesson AI tutor for pupils,
 > with a live engagement dashboard and intervention surface for teachers.
 
-**Live demo:** **[bridewell-classroom.web.app](https://bridewell-classroom.web.app)** —
-open `/j/<class-code>` from a phone or laptop to join a class with one tap, or sign
-in as a teacher to spin up your own.
+**Live demo:** **[bridewell-classroom.web.app](https://bridewell-classroom.web.app)**
+
+Pupils open `/j/ABC-123` (substituting their teacher's six-character class code) from
+any phone or laptop to join a class with one tap. Teachers sign in to build a lesson
+and run it.
 
 <p align="center">
   <img src="docs/screenshots/01-landing.png" width="820" alt="Bridewell Classroom landing page">
@@ -68,7 +70,7 @@ six-character join code teachers display on the board.
 ## The pupil flow
 
 The pupil joins with a six-character class code — no email needed, anonymous Firebase
-Auth. The teacher can also share a one-tap link (`/j/<CODE>`) which pre-fills the code
+Auth. The teacher can also share a one-tap link (`/j/ABC-123`) which pre-fills the code
 and asks only for a name; pupils who join from the same browser later are rejoined to
 their existing session automatically:
 

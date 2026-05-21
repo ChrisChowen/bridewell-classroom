@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Crest } from "@/components/shared/Crest";
 import { Fleur } from "@/components/shared/Fleur";
-import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { HomepageHeader } from "@/components/shared/HomepageHeader";
 
 // Public homepage. Read by three audiences in order of likely visit:
 //   1. Pupils joining a lesson — biggest CTA, top of fold.
@@ -17,7 +17,7 @@ import { ThemeToggle } from "@/components/shared/ThemeToggle";
 export default function Landing() {
   return (
     <main style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
-      <SiteHeader />
+      <HomepageHeader />
       <Hero />
       <ProductPreview />
       <Principles />
@@ -25,58 +25,6 @@ export default function Landing() {
       <Audiences />
       <SiteFooter />
     </main>
-  );
-}
-
-// ── Header ────────────────────────────────────────────────────────────
-
-function SiteHeader() {
-  return (
-    <header
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "20px 40px",
-        borderBottom: "1px solid var(--line)",
-        position: "sticky",
-        top: 0,
-        background: "var(--bg)",
-        zIndex: 10,
-        backdropFilter: "saturate(140%) blur(6px)",
-      }}
-    >
-      <Link
-        href="/"
-        className="flex items-center gap-3"
-        aria-label="Bridewell Classroom — home"
-        style={{ textDecoration: "none", color: "inherit" }}
-      >
-        <Crest size={32} />
-        <div className="flex items-baseline gap-3">
-          <span className="bw-display" style={{ fontSize: 18 }}>Bridewell</span>
-          <span
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: 10,
-              fontWeight: 600,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              color: "var(--text-muted)",
-              paddingLeft: 12,
-              borderLeft: "1px solid var(--line)",
-            }}
-          >
-            Classroom
-          </span>
-        </div>
-      </Link>
-      <nav className="flex items-center gap-2">
-        <ThemeToggle />
-        <Link href="/login" className="bw-btn-secondary">Teacher sign in</Link>
-        <Link href="/join" className="bw-btn-primary">Pupil join</Link>
-      </nav>
-    </header>
   );
 }
 
