@@ -43,6 +43,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "name, subject, school required" }, { status: 400 });
   }
 
+  // Lesson plans are written to Firestore as a single doc; bound the
+  // size well below the 1MB Firestore document limit. Anything bigger
+  // is almost certainly an error or abuse (image payloads, very long
+  // pasted contexts).
+  if (body.lessonPlan) {
+    const planSize = JSON.stringify(body.lessonPlan).length;
+    if (planSize > 256_000) {
+      return NextResponse.json(
+        { error: `Lesson plan too large (${Math.round(planSize / 1024)}KB; max 256KB)` },
+        { status: 400 }
+      );
+    }
+  }
+
   // If a lesson plan was provided, stamp the approval metadata.
   const lessonPlan: LessonPlan | undefined = body.lessonPlan
     ? {

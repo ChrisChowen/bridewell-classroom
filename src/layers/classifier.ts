@@ -77,12 +77,25 @@ et al.). Be conservative: misclassifying "productive_struggle" as
 in the turns and signals; do not infer beyond them.
 
 State definitions:
-  - flowing: on-topic, moving forward, brief hesitations only.
-  - productive_struggle: slower, partial answers, willing to keep trying,
-      asking follow-ups, attempting their own examples.
+State definitions — read these carefully. Correctness is NOT engagement.
+A pupil giving terse one-word correct answers without elaborating, asking
+follow-ups, or showing their working is NOT flowing — they are
+disengaged. A flowing pupil engages with substance.
+
+  - flowing: on-topic AND engaged with substance — writes more than
+      asked, elaborates unprompted, asks follow-up questions, brings
+      their own examples. Brief hesitations are fine. One-word correct
+      answers are NOT flowing on their own.
+  - productive_struggle: slower, partial answers, willing to keep
+      trying, asking follow-ups, attempting their own examples,
+      reasoning aloud about what they aren't sure about.
   - wheel_spinning: repeated scaffold use without producing substance;
-      echoing the tutor; same difficulty recurring.
-  - disengaged: long silences, very short replies, drift off topic.
+      echoing the tutor; same difficulty recurring; presses for hints
+      rather than thinking.
+  - disengaged: very short replies (one or two words), long silences,
+      drifting off topic, doing the minimum to keep the tutor from
+      asking again. Terse correct answers without elaboration belong
+      here, NOT in flowing.
   - off_task: messages unrelated to the lesson; clearly not working.
 
 (B) Safeguarding flag — read the pupil's messages for any disclosure
@@ -173,13 +186,23 @@ export async function classifyEngagement(input: ClassifierInput): Promise<Classi
   });
 
   if (result.fallbackUsed || !result.json) {
+    // Do NOT default to flowing — that would silently render this
+    // pupil as "doing well" on the teacher dashboard when in fact the
+    // classifier is offline. We return productive_struggle with low
+    // confidence so the dashboard does NOT falsely reassure the
+    // teacher, plus the fallback flag the live mirror surfaces as a
+    // degraded indicator.
+    console.warn("CLASSIFIER_FALLBACK", {
+      fallback: result.fallbackUsed,
+      text: result.text.slice(0, 120),
+    });
     return {
-      state: "flowing",
-      confidence: 0,
+      state: "productive_struggle",
+      confidence: 0.1,
       rationale: result.fallbackUsed
         ? `Classifier unavailable (${result.text.slice(0, 120)}…)`
         : `Classifier returned non-JSON output: ${result.text.slice(0, 120)}…`,
-      cues: [],
+      cues: ["classifier_fallback"],
       safeguarding: { severity: "none", summary: "" },
       fallbackUsed: true,
     };

@@ -108,6 +108,7 @@ export async function POST(req: Request) {
     trajectory: nextTrajectory,
     lastPupilExcerpt: body.lastPupilExcerpt?.slice(0, 240) ?? null,
     scaffoldUsesRecent: body.signals.scaffoldUseCount ?? 0,
+    classifierFallback: result.fallbackUsed ?? false,
     safeguarding:
       result.safeguarding.severity !== "none"
         ? {

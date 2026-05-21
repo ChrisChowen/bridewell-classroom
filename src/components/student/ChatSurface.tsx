@@ -138,6 +138,11 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
   const fireReason = useCallback(
     async (trigger: "scaffolding_ceiling" | "topic_boundary" | "lesson_design") => {
       if (!klass || !activeStep) return;
+      // Guard re-entry — if a Reason card is already pending (or
+      // sessionStorage holds one from a recent refresh), do not fire a
+      // second one.
+      if (reasonCard) return;
+      if (typeof window !== "undefined" && window.sessionStorage.getItem("bw-reason-card")) return;
       const fb = getFirebase();
       if (!fb.ready || !fb.auth.currentUser) return;
       const concept =
@@ -161,20 +166,43 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
         });
         const data = await res.json();
         if (res.ok) {
-          setReasonCard({
+          const card = {
             eventId: data.eventId,
             promptType: data.promptType,
             promptText: data.promptText,
             concept,
-          });
+          };
+          setReasonCard(card);
           setReasonLastType(data.promptType);
+          // Persist so a page refresh doesn't lose the eventId binding
+          // — without this, the evaluator call would create an orphan
+          // pending event and a duplicate answered event.
+          if (typeof window !== "undefined") {
+            window.sessionStorage.setItem("bw-reason-card", JSON.stringify(card));
+          }
         }
       } catch {
         /* non-fatal */
       }
     },
-    [klass, activeStep, lessonPlan, messages, reasonLastType]
+    [klass, activeStep, lessonPlan, messages, reasonLastType, reasonCard]
   );
+
+  // Rehydrate a pending Reason card from sessionStorage on mount so a
+  // refreshed pupil session resumes against the same event id.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (reasonCard) return;
+    const raw = window.sessionStorage.getItem("bw-reason-card");
+    if (!raw) return;
+    try {
+      const card = JSON.parse(raw);
+      if (card?.eventId && card?.promptType) setReasonCard(card);
+    } catch {
+      window.sessionStorage.removeItem("bw-reason-card");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fireReasonRef = useRef(fireReason);
   useEffect(() => {
@@ -385,7 +413,12 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
         citationCount: data.citations?.length,
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Network error");
+      // Roll back the optimistic pupil message — otherwise it sits in
+      // the UI without a tutor reply and the teacher's drill panel
+      // shows an incomplete conversation.
+      setMessages((m) => m.filter((msg) => msg.id !== pupilMsg.id));
+      setInput(text); // restore the input so the pupil can try again
+      setError(e instanceof Error ? `Couldn't send — ${e.message}. Try again.` : "Couldn't send. Try again.");
     } finally {
       setPending(false);
       // Drop the one-turn Expert override after the turn.
@@ -515,7 +548,12 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
           <ReasonInline
             promptType={reasonCard.promptType}
             promptText={reasonCard.promptText}
-            onClose={() => setReasonCard(null)}
+            onClose={() => {
+              setReasonCard(null);
+              if (typeof window !== "undefined") {
+                window.sessionStorage.removeItem("bw-reason-card");
+              }
+            }}
             onSubmit={async (text) => {
               const fb = getFirebase();
               if (!fb.ready || !fb.auth.currentUser) {
@@ -567,6 +605,9 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
                 /* non-fatal */
               }
               setReasonCard(null);
+              if (typeof window !== "undefined") {
+                window.sessionStorage.removeItem("bw-reason-card");
+              }
               // After a Reason answer, reset the scaffold counter for
               // this concept — the pupil has shown what they have, so
               // they get a fresh allowance for the next step.

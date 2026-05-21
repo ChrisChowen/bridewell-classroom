@@ -101,6 +101,13 @@ export async function POST(req: Request) {
     if (!body.pupilId) {
       return NextResponse.json({ error: "pupilId required for this intervention type" }, { status: 400 });
     }
+    // Verify the pupil is in this class — class ownership alone isn't
+    // enough, since a teacher could otherwise act on pupils outside
+    // their classroom by spoofing a pupilId.
+    const pupilSnap = await a.db.collection("pupils").doc(body.pupilId).get();
+    if (!pupilSnap.exists || (pupilSnap.data() as { classId?: string }).classId !== body.classId) {
+      return NextResponse.json({ error: "That pupil is not in this class" }, { status: 403 });
+    }
     if (body.type === "mark_reviewed") {
       // Clears the safeguarding flag (if any) on the pupil's live mirror.
       await a.rtdb.ref(`liveSessions/${body.classId}/pupils/${body.pupilId}/safeguarding`).set(null);

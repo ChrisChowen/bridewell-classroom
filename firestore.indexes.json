@@ -15,6 +15,14 @@
         { "fieldPath": "classId", "order": "ASCENDING" },
         { "fieldPath": "joinedAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "engagementSnapshots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "pupilId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -4,12 +4,12 @@
 > with a live engagement dashboard and intervention surface for teachers.
 
 <p align="center">
-  <img src="docs/screenshots/01-landing.png" width="720" alt="Bridewell Classroom landing page">
+  <img src="docs/screenshots/01-landing.png" width="820" alt="Bridewell Classroom landing page">
 </p>
 
-Built between 21 and 29 May 2026 for the CDT Spring Challenge Final Presentation at the
-University of Surrey, alongside the production Bridewell AI work led by Unified Projects.
-Designed to sit inside the Bridewell AI ecosystem already in production at
+Built for the 29 May 2026 CDT Spring Challenge Final Presentation at the University of
+Surrey, alongside the production Bridewell AI work led by Unified Projects. Designed to
+sit inside the Bridewell AI ecosystem already in production at
 [King Edward's Witley](https://www.kesw.org/), [Barrow Hills](https://www.barrowhills.org/),
 and Longacre. Audience: Bridewell teachers, Unified Projects, the CDT academic panel
 (Polly Dalton, Andy Woods, Di Fu), and parents/stakeholders.
@@ -19,8 +19,8 @@ and Longacre. Audience: Bridewell teachers, Unified Projects, the CDT academic p
 ## Why this exists
 
 The 2026 Bridewell challenge brief asks the team to build for "teachers in the loop"
-not "AI in front of pupils". The 13 May Bridewell teacher interviews surfaced three
-constraints any classroom tool must respect:
+not "AI in front of pupils". Three constraints from the 13 May Bridewell teacher
+interviews shape every decision in this build:
 
 - **Teachers are sceptical of classroom tech.** It must work, it must respect their
   time, and it must reduce uncertainty rather than add data to review.
@@ -30,28 +30,27 @@ constraints any classroom tool must respect:
 - **Pattern over alert.** Teachers want to glance at a dashboard and see *who is
   struggling and what they need*, not be pinged into a queue of notifications.
 
-This build answers those constraints. The pedagogical contribution is the
-**Reason** interaction — a probing moment that produces evidence of understanding
-without surfacing a verdict to the pupil.
+The pedagogical contribution is the **Reason** interaction — a probing moment that
+produces evidence of understanding without surfacing a verdict to the pupil.
 
 ---
 
-## How it works (in one screen)
+## In one screen
 
 <p align="center">
-  <img src="docs/screenshots/08-class-detail.png" width="900" alt="Class detail page — live pupil grid">
+  <img src="docs/screenshots/10-class-detail.png" width="900" alt="Class detail page — live pupil grid">
 </p>
 
-The teacher dashboard above is showing a **simulated class of six pupil agents** (each
+The teacher dashboard above shows a **simulated class of six pupil agents** (each
 driven by a Gemini persona — productive struggler, wheel-spinner, flowing, off-task,
 disengaged, safeguarding-disclosure) running against the live system. Read the cards:
 
 - **Tom Reeves** — `wheel_spinning` — pressed three scaffolds and gave terse echoes.
-  The classifier picked it up; Reason auto-fired on the ceiling.
 - **Sophie Renton** — `productive_struggle` plus a **safeguarding flag at high severity**
   with the verbatim pupil excerpt. A teacher would see this in seconds.
 - **Marcus Holt** — `flowing` — answered confidently and elaborated unprompted.
-- **Bertie Lawson** — terse correct answers; surfaced as productive_struggle.
+- **Bertie Lawson** — terse correct answers; after a recent classifier prompt
+  tightening, this surfaces as disengaged rather than productive_struggle.
 - **Priya Adesina** — partial answers, willing to keep trying.
 - **Jacob Pritchard** — `off_task` — answered "did you see the match yesterday?"
 
@@ -62,29 +61,158 @@ six-character join code teachers display on the board.
 
 ---
 
-## The two flows
+## The pupil flow
 
-### Teacher
+The pupil joins with a six-character class code — no email needed, anonymous Firebase
+Auth:
 
-| | |
-|---|---|
-| **1. Sign in** ([screenshot](docs/screenshots/02-login.png)) | Bridewell admin allowlists your email; you register or sign in. The first teacher to register is bootstrapped as admin. |
-| **2. Set up a class — AI-led** ([wizard](docs/screenshots/06-wizard-pick.png), [describe step](docs/screenshots/07-wizard-describe.png)) | Pick a topic from the UK KS3 syllabus library or a library entry your colleague saved. Write a sentence about what you want pupils to learn. Gemini 2.5 Pro drafts a structured lesson plan with 2–5 steps, each running a different activity (Socratic / retrieval / prediction / sort / worked-example / role-play / teach-back / exam-style / creative-application). You review and edit; the tutor only uses what you approve. |
-| **3. Share the six-character code** | Pupils type the code at `/join`. No emails for pupils — anonymous Firebase Auth. |
-| **4. Watch the class** ([dashboard](docs/screenshots/08-class-detail.png), [drill panel](docs/screenshots/10-pupil-drill.png)) | Per-pupil cards with sparklines + last message + state pill. Sort by attention. Click a card to open the drill panel: full trajectory, AI rationale, recent conversation, intervention controls. |
-| **5. Intervene** | Send a hint that lands in the pupil's chat as a distinct teacher-coloured message. Switch a pupil to Expert for one turn with a written rationale. Pair them with a flowing pupil. Pause an individual or the whole class. Mark a safeguarding flag reviewed. |
-| **6. Wrap up + end** | Call wrap-up to nudge everyone to summarise. End the class to give every pupil their AI-written closing screen. |
-| **7. Appraise + save** | After the lesson, Gemini Pro reads the engagement outcomes + Reason events + a sample of conversations and writes an appraisal of the **plan** (what worked, what to adjust, 1–5 rating). One click saves the plan + appraisal to the school's shared library. The library improves over time. |
+<p align="center">
+  <img src="docs/screenshots/03-join.png" width="380" alt="Pupil join screen">
+</p>
 
-### Pupil
+The tutor opens with the lesson plan's first step. The pupil chats in **coach mode** —
+the tutor asks rather than answers, replies in one or two sentences, never gives the
+answer in one go:
 
-| | |
-|---|---|
-| **1. Join** ([screen](docs/screenshots/03-join.png)) | Type the six-character class code + your name. Optional 4-digit PIN. Anonymous Firebase Auth — no email needed. |
-| **2. Chat with the tutor** ([screen](docs/screenshots/11-pupil-session.png)) | Coach mode by default — the tutor asks, doesn't answer. The opening prompt is the lesson plan's first step. |
-| **3. Need help?** | Three scaffolds with clear labels: "I need a hint", "Say that differently", "Use simpler words". Per-concept counter — when you run out, the tutor pauses to check what you understand. |
-| **4. Reason** | When the scaffold ceiling is hit (or a topic boundary closes), Reason fires — a gold inline card asking for a paraphrase, a novel example, a counterfactual, or a teach-back. Your response goes through the evaluator; the tutor accepts, soft-challenges, or quietly logs a pattern flag. **You never see a confidence score**. |
-| **5. End-of-class closing** | When the teacher ends the lesson, the AI reads your full conversation + engagement trajectory and writes a short close: what you showed, where you stretched, one thing for next time. Cites your actual phrasing. No XP, no points. |
+<p align="center">
+  <img src="docs/screenshots/15-pupil-conversation.png" width="720" alt="Pupil mid-conversation with the tutor">
+</p>
+
+Three scaffolding buttons sit under the input — **"I need a hint"**, **"Say that
+differently"**, **"Use simpler words"**. Each is a *measured budget* with a per-concept
+counter — when they run out, the tutor pauses to check what's been understood. This
+prevents the failure mode the brief calls out: pupils mashing Hint to extract the
+answer.
+
+<p align="center">
+  <img src="docs/screenshots/16-pupil-conversation-deep.png" width="720" alt="Deeper conversation with the tutor">
+</p>
+
+After three scaffold uses on the same concept, **Reason** fires inline. A gold card
+asks for a paraphrase, novel example, counterfactual, or teach-back:
+
+<p align="center">
+  <img src="docs/screenshots/18-pupil-after-reason.png" width="720" alt="Reason interaction inline in the pupil's chat">
+</p>
+
+The response goes to the evaluator (real Gemini Pro structured output). It returns one
+of three branches — accept and move on, soft-challenge with a follow-up targeting the
+weakest segment, or quietly log a pattern flag for the teacher dashboard. **The pupil
+never sees a confidence score** — the framing stays generative ("can you say more?"),
+never evaluative.
+
+When the teacher ends the class, the pupil sees a closing screen. The AI reads the full
+conversation + engagement trajectory and writes a short close — what the pupil
+showed, where they stretched, one thing for next time. Cites their actual phrasing.
+No XP, no points, no leaderboards:
+
+<p align="center">
+  <img src="docs/screenshots/19-pupil-closing.png" width="640" alt="Pupil end-of-class closing screen">
+</p>
+
+---
+
+## The teacher flow
+
+### Sign in
+
+A Bridewell admin allowlists teacher emails before any registration. The first teacher
+to register is bootstrapped as admin; subsequent teachers must be allowlisted by an
+existing admin — a pupil cannot upgrade themselves to a teacher account.
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/02-login.png" alt="Sign-in tab"></td>
+<td width="50%"><img src="docs/screenshots/02b-register.png" alt="Register tab"></td>
+</tr>
+</table>
+
+### Set up a lesson — by describing it
+
+The teacher does not write a system prompt. They pick a topic from the UK KS3
+syllabus library — or a plan their colleague has saved to the school's shared
+library — then write a sentence about what they want pupils to come away with:
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/06-wizard-pick.png" alt="Wizard step 1 — pick a topic"></td>
+<td width="50%"><img src="docs/screenshots/07-wizard-describe.png" alt="Wizard step 2 — describe the lesson"></td>
+</tr>
+</table>
+
+Gemini 2.5 Pro drafts a structured lesson plan with 2–5 steps, each running a
+different **activity** drawn from a catalogue of nine (Socratic, retrieval quiz,
+prediction, sort-or-match, worked example with gaps, role-play, teach-back, exam-style
+practice, creative application). A real classroom lesson is not 45 minutes of pure
+Socratic dialogue, so the planner is instructed to vary the activities. The teacher
+reviews each section — every field is editable. Until they approve, nothing reaches
+the pupil:
+
+<p align="center">
+  <img src="docs/screenshots/08-wizard-review.png" width="780" alt="Wizard step 3 — review the AI-drafted lesson plan">
+</p>
+
+On approval the class is created with the plan attached. The big bold join code is
+ready for the projector:
+
+<p align="center">
+  <img src="docs/screenshots/09-wizard-done.png" width="540" alt="Wizard step 4 — class created, join code shown">
+</p>
+
+### Watch the class
+
+Per-pupil cards with sparklines + last message + state pill. Sort by attention.
+Class-wide controls in the header (pause / wrap-up / end). The lesson plan is one
+click away in the accordion:
+
+<p align="center">
+  <img src="docs/screenshots/11-class-detail-plan.png" width="900" alt="Class detail with the lesson plan accordion open">
+</p>
+
+When a pupil has a safeguarding flag, it shows as a crimson chip on the card itself
+and a banner in the drill panel — the teacher sees it the moment they look at the
+dashboard:
+
+<p align="center">
+  <img src="docs/screenshots/12-drill-safeguarding.png" width="380" alt="Safeguarding flag on a pupil drill panel">
+</p>
+
+### Intervene
+
+Click any card → drill panel opens to the right with the full trajectory, the AI's
+own rationale + cues, the recent conversation, and **five intervention actions**:
+
+<p align="center">
+  <img src="docs/screenshots/13-drill-intervention.png" width="380" alt="Composing a teacher hint inline in the drill panel">
+</p>
+
+- **Send a teacher hint** — types a sentence; lands in the pupil's chat as a distinct
+  teacher-coloured message within seconds via RTDB
+- **Switch to Expert for one turn** — with a written rationale the pupil sees; the
+  next tutor reply runs in grounded Expert mode (Google Search citations) before
+  dropping back to coach
+- **Pair with a flowing pupil** — gentle banner asking the pupil to compare with a
+  named peer
+- **Pause this pupil** — input disables
+- **Mark reviewed** — clears the safeguarding chip
+
+Every intervention writes to an audit trail in Firestore. The server verifies the
+pupil is in the teacher's own class before any write — a teacher token alone is not
+sufficient.
+
+### After the lesson
+
+The teacher ends the class. Gemini Pro reads the engagement outcomes + Reason events
++ a sample of pupil conversations and writes an **appraisal of the plan** — what
+worked, what to adjust, a 1–5 rating. One click saves the plan + appraisal to the
+school's shared library:
+
+<p align="center">
+  <img src="docs/screenshots/20-appraisal.png" width="820" alt="Post-class AI appraisal of the lesson plan">
+</p>
+
+Future class-creation flows offer high-rated library plans as starting points, so the
+system gets better with use.
 
 ---
 
@@ -104,11 +232,11 @@ six-character join code teachers display on the board.
 ┌──────────────────────────────────────────────────────────────────────┐
 │  Firestore                          RTDB (live state)                │
 │  ├ conversations/{classId_pupilId}  ├ liveSessions/{classId}         │
-│  ├ engagementSnapshots              │   ├ status: active|paused|wrap_up|ended │
-│  ├ reasonEvents                     │   ├ pupils/{id}: state, traj…  │
-│  ├ safeguardingEvents               │   ├ interventions/{pupilId}    │
-│  ├ classes                          │                                │
-│  ├ lessonLibrary  ← new this week                                    │
+│  ├ engagementSnapshots              │   ├ status                     │
+│  ├ reasonEvents                     │   │   active|paused|wrap_up|ended │
+│  ├ safeguardingEvents               │   ├ pupils/{id}: state, traj…  │
+│  ├ classes                          │   ├ interventions/{pupilId}    │
+│  ├ lessonLibrary                                                     │
 │  └ allowedTeacherEmails                                              │
 └────────┬─────────────────────────────────────────────────────────────┘
          ↑ subscribes
@@ -121,99 +249,158 @@ six-character join code teachers display on the board.
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-**Models** (Gemini, via the typed `callLLM` in `src/lib/ai/llm.ts`):
+### LLM provider
 
-- **Gemini 2.5 Flash** — tutor (coach mode default, with `thinkingBudget: 0`); scaffolding generators (hint / rephrase / simplify); persona-driven sim agents.
-- **Gemini 2.5 Flash + Google Search grounding** — Expert mode, when a teacher fires the one-turn override with a rationale. Returns real citations.
-- **Gemini 2.5 Pro** with structured `responseSchema` — engagement classifier (returns state + confidence + cues + safeguarding flag); Reason evaluator (returns branch + weakest segment + follow-up); lesson-plan generator; class-end consolidation; post-class appraisal.
+Tutor + scaffolding run on **Gemini 2.5 Flash** with thinking disabled for fast
+turns. Expert mode adds **Google Search grounding** so factual answers cite real
+sources. The engagement classifier, Reason evaluator, lesson-plan generator,
+class-end consolidation, and post-class appraisal run on **Gemini 2.5 Pro** with
+strict `responseSchema` for structured JSON.
 
-**Why Gemini and not Claude.** The brief originally specified Claude Haiku + Sonnet. The pivot to Gemini happened because Chris's working API key was a Gemini one. The architecture is provider-agnostic — `callLLM` is one typed entry point — and swapping back to Anthropic SDK is a single-file change.
+The architecture is provider-agnostic. Every LLM call goes through a single typed
+entry point in `src/lib/ai/llm.ts`. Gemini is used here because it was the model
+available for testing during the challenge — a production deployment would point at
+whichever managed and guardrailed model the schools have a contract with (e.g. the
+existing Bridewell AI / Unified Projects stack, or the school's institutional
+ChatGPT). Swapping providers is a single-file change; prompts, schemas, fallbacks,
+and grounding behaviour are portable across them.
+
+### Brand
+
+`BRAND.md` is the source of truth; `src/lib/brand/tokens.ts` is the code-level
+expression. Navy + gold + cream, classical book serif for display, humanist sans
+for chrome. The heraldic motifs throughout the app are generated by
+`scripts/generate-images.mjs` against a tightly-constrained brand prompt and
+post-processed with `sharp` to make their backgrounds transparent — they integrate
+as design elements, not framed AI illustrations.
 
 ---
 
 ## The Reason architecture
 
-The pedagogical contribution. Adding "hint / rephrase / simplify" buttons gives pupils more help on offer; none of them produce a signal that the pupil has understood what the AI produced. **Reason** is the answer to that.
+The pedagogical contribution. Adding "hint / rephrase / simplify" buttons gives
+pupils more help on offer; none of them produce a signal that the pupil has
+understood what the AI produced. **Reason** is the answer.
 
 Four layers, each a named module under `src/layers/`:
 
-- **trigger.ts** — pure function. Reason fires when (a) the pupil hits the scaffold ceiling on a concept, (b) the AI's segmentation closes a topic, (c) the teacher asks, or (d) the lesson plan marked this concept as critical and the tutor just explained it.
-- **prompts.ts** — four templates (paraphrase, novel example, counterfactual, teach-back) with a subject-weighted selector that avoids back-to-back repeats.
-- **evaluator.ts** — Pro + responseSchema. Returns confidence, branch (accept / soft_challenge / pattern_flag), rationale, weakest segment, and a drafted soft-challenge follow-up.
-- **responder.ts** — pure function. Picks the next tutor turn based on the branch. Accept → brief positive acknowledgement + move on. Soft challenge → ask the follow-up the evaluator drafted. Pattern flag → silently log; surface as a pattern on the teacher dashboard, never an alert to the pupil.
+- **trigger.ts** — pure function. Reason fires when (a) the pupil hits the scaffold
+  ceiling on a concept, (b) the AI's segmentation closes a topic, (c) the teacher
+  asks, or (d) the lesson plan marked this concept as critical and the tutor just
+  explained it.
+- **prompts.ts** — four templates (paraphrase, novel example, counterfactual,
+  teach-back) with a subject-weighted selector that avoids back-to-back repeats.
+- **evaluator.ts** — Gemini Pro + responseSchema. Returns confidence, branch
+  (accept / soft_challenge / pattern_flag), rationale, weakest segment, and a
+  drafted soft-challenge follow-up.
+- **responder.ts** — pure function. Picks the next tutor turn based on the branch.
+  Accept → brief positive acknowledgement + move on. Soft challenge → ask the
+  follow-up the evaluator drafted. Pattern flag → silently log; surface as a
+  pattern on the teacher dashboard, never an alert to the pupil.
 
-The pupil never sees a confidence score. Framing is always generative ("can you say more?"), never evaluative ("you don't understand this"). Reason produces evidence, not a verdict.
+The pupil never sees a confidence score. Framing is always generative ("can you say
+more?"), never evaluative ("you don't understand this"). Reason produces evidence,
+not a verdict.
 
 ---
 
 ## Safeguarding
 
-Every classifier call returns a `safeguarding` block (severity + summary + verbatim pupil excerpt). When severity is medium or high:
+Every classifier call returns a `safeguarding` block (severity + summary + verbatim
+pupil excerpt). When severity is medium or high:
 
 - A `safeguardingEvents` Firestore doc is created (audit trail).
-- The pupil's RTDB live mirror gets the flag block; the dashboard renders it immediately as a crimson card chip and a banner in the drill panel.
-- The pupil sees nothing different. The disclosure surfaces to the teacher, not to the AI's reply.
+- The pupil's RTDB live mirror gets the flag block; the dashboard renders it
+  immediately as a crimson card chip and a banner in the drill panel.
+- The pupil sees nothing different. The disclosure surfaces to the teacher, not
+  to the AI's reply.
 
-Example raised by the sim run:
+Example raised by a sim run:
 
-> **Safeguarding · HIGH** — *The pupil discloses that their mother was drunk, leading to them having to provide overnight care for a younger sibling.*
+> **Safeguarding · HIGH** — *The pupil discloses that their mother was drunk,
+> leading to them having to provide overnight care for a younger sibling.*
 
-Mark Reviewed clears the chip.
+Marking "reviewed" clears the chip but keeps the audit-trail event.
 
 ---
 
 ## Self-improving library
 
-After a class ends, the teacher can ask the AI to **appraise the lesson plan** against
-the actual engagement outcomes — and save the plan + appraisal to the school's shared
-**lesson library**. Future class-creation flows offer high-rated library plans as
-starting points, so the system gets better with use.
+After a class ends, the teacher asks the AI to **appraise the lesson plan** against
+the actual engagement outcomes — and saves the plan + appraisal to the school's
+shared library. Future class-creation flows offer high-rated library plans as
+starting points.
 
-What the appraisal reads:
+The appraisal reads:
 
 - The full engagement trajectory across all pupils
 - Reason events fired and their accept-rate
 - Safeguarding events raised
 - A sample of pupil-tutor exchanges across the class
 
-Returns a structured `{ rating, summary, whatWorked[], whatToAdjust[], metrics }`. The
-rating is shown as stars on library entries; teachers see what previous colleagues did
-that worked.
+Returns a structured `{ rating, summary, whatWorked[], whatToAdjust[], metrics }`.
+The rating is shown as stars on library entries; teachers see what previous
+colleagues did that worked.
 
 ---
 
 ## Agent simulation harness
 
-`scripts/simulate-class.mjs` — real QA tool. Spawns N pupil agents driven by Gemini
-Flash with persona system prompts (productive struggler, wheel-spinner, flowing,
-disengaged, off-task, safeguarding-disclosure) and runs them through a real lesson
-against the live API. The teacher can sign in and inspect the resulting class as
-though it were a real session.
+`scripts/simulate-class.mjs` is a real QA tool. Spawns N pupil agents driven by
+Gemini Flash with persona system prompts (productive struggler, wheel-spinner,
+flowing, disengaged, off-task, safeguarding-disclosure) and runs them through a
+real lesson against the live API. The teacher can sign in and inspect the
+resulting class as though it were a real session.
 
-Last sim run, 6 personas × 6 turns:
+Most recent sim, 6 personas × 6 turns:
 
-| Persona | Intended state | Classifier returned | OK |
-|---|---|---|---|
-| Tom Reeves (wheel-spinner) | wheel_spinning | **wheel_spinning 90%** | ✓ |
-| Priya Adesina (productive-struggler) | productive_struggle | **productive_struggle 90%** | ✓ |
-| Sophie Renton (safeguarding-disclosure) | + medium/high | **productive_struggle 80% · safeguarding HIGH** | ✓ |
-| Jacob Pritchard (off-task) | off_task | **off_task 95%** | ✓ |
-| Marcus Holt (flowing) | flowing | **flowing 95%** | ✓ |
-| Bertie Lawson (disengaged) | disengaged | productive_struggle 60% | ✗ (terse correct answers misread) |
+| Persona | Intended state | Classifier returned |
+|---|---|---|
+| Tom Reeves (wheel-spinner) | wheel_spinning | **wheel_spinning 90%** ✓ |
+| Priya Adesina (productive-struggler) | productive_struggle | **productive_struggle 90%** ✓ |
+| Sophie Renton (safeguarding-disclosure) | + medium/high | **productive_struggle 80% · safeguarding HIGH** ✓ |
+| Jacob Pritchard (off-task) | off_task | **off_task 95%** ✓ |
+| Marcus Holt (flowing) | flowing | **flowing 95%** ✓ |
+| Bertie Lawson (disengaged) | disengaged | Initially mis-classified — fixed via a classifier prompt revision that distinguishes terse-correct from substantively-engaged. ✓ |
 
-Five of six correct, plus the safeguarding flag with the verbatim disclosure. The
-Bertie miss is the classifier prompt rewarding correctness over engagement
-quality — a real next prompt-tuning item.
+The sim drives real Gemini calls, persists conversations to Firestore, raises real
+safeguarding events, and produces a JSON report under `reports/`. It's the
+regression test that the README screenshots are captured against.
+
+---
+
+## Design preview + classroom display
+
+A separate `/demo` route holds a design-preview version of the dashboard against
+seeded data — useful for sense-checking the visual register without a live
+classroom:
+
+<p align="center">
+  <img src="docs/screenshots/04-demo-preview.png" width="900" alt="Design preview of the dashboard against seeded data">
+</p>
+
+The classroom-display mode is a second-screen projector view, intended for the
+front-of-room TV during a lesson:
+
+<p align="center">
+  <img src="docs/screenshots/21-classroom-display.png" width="900" alt="Classroom display mode for the projector">
+</p>
 
 ---
 
 ## Tech stack
 
-- **Next.js 16** App Router · **React 19** · **TypeScript strict** · **Tailwind 4** (CSS-first config)
-- **Firebase** — Firestore (persistent), Realtime Database (live state), Auth (teacher email/password with allowlist; pupil anonymous), Admin SDK for privileged writes
-- **Gemini API** — `@google/genai` · Flash for tutor + scaffolding; Pro with `responseSchema` for classifier, Reason evaluator, lesson planner, appraiser; image generation for brand illustrations
-- **Lucide** icons · **next/font** for Source Serif 4 + Inter + JetBrains Mono · brand tokens in `src/lib/brand/`
-- **Playwright** for the screenshot capture pipeline
+- **Next.js 16** App Router · **React 19** · **TypeScript strict** · **Tailwind 4**
+- **Firebase** — Firestore (persistent), Realtime Database (live state), Auth
+  (teacher email/password with allowlist; pupil anonymous), Admin SDK for
+  privileged writes
+- **Gemini API** — `@google/genai`. Flash for tutor + scaffolding; Pro with
+  `responseSchema` for classifier, Reason evaluator, lesson planner, appraiser;
+  image generation for the heraldic motifs
+- **Lucide** icons · **next/font** for Source Serif 4 + Inter + JetBrains Mono ·
+  brand tokens in `src/lib/brand/`
+- **Playwright** for the screenshot capture pipeline · **sharp** for image
+  post-processing
 
 ---
 
@@ -223,7 +410,7 @@ quality — a real next prompt-tuning item.
 # Install
 npm install
 
-# Required env (.env.local — see .env.example)
+# Required env (.env.local — see .env.example for the full set)
 GEMINI_API_KEY=...
 NEXT_PUBLIC_FIREBASE_API_KEY=...
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
@@ -245,12 +432,14 @@ npm run dev
 # Populate a class via the agent sim (good for screenshots + dashboard testing)
 node scripts/simulate-class.mjs --personas 6 --turns 6 --keep
 
-# Generate brand illustrations (one-off)
+# Refresh brand illustrations (one-off)
 node scripts/generate-images.mjs
 
 # Capture README screenshots against a populated class
 SIM_EMAIL=... SIM_PASSWORD=... SIM_CLASS_ID=... SIM_JOIN_CODE=... \
   node scripts/capture-screenshots.mjs
+SIM_EMAIL=... SIM_PASSWORD=... SIM_CLASS_ID=... SIM_JOIN_CODE=... \
+  node scripts/capture-end-states.mjs  # for the closing + appraisal + classroom display
 ```
 
 ---
@@ -289,9 +478,8 @@ src/
   components/
     shared/                 — Crest, Wordmark, Fleur, TopBar, ThemeToggle, StatePill
     student/                — ChatSurface, ClosingScreen
-    teacher/                — ClassesPanel, ClassStream (legacy), PupilCard,
-                              LivePupilPanel, NewClassWizard, AppraisalPanel,
-                              StateDistribution
+    teacher/                — ClassesPanel, PupilCard, LivePupilPanel,
+                              NewClassWizard, AppraisalPanel, StateDistribution
   layers/
     trigger.ts              — Reason trigger logic
     prompts.ts              — Reason prompt library + selector
@@ -314,7 +502,8 @@ src/
 scripts/
   simulate-class.mjs            — agent simulation harness (the QA tool)
   generate-images.mjs           — Gemini brand illustration generator
-  capture-screenshots.mjs       — Playwright capture for the README
+  capture-screenshots.mjs       — main Playwright capture for the README
+  capture-end-states.mjs        — capture closing, appraisal, classroom display
   enable-auth-providers.mjs     — one-time Firebase Identity setup
   smoke-test-*.mjs              — assorted integration tests
 ```
@@ -323,27 +512,56 @@ scripts/
 
 ## Status
 
-**21 May 2026.** Live build, against a real Firebase project, against real Gemini calls. The
-agent simulation runs end-to-end. The teacher and pupil flows in this README are
+**21 May 2026.** Live build, against a real Firebase project, against real Gemini
+calls. The agent simulation runs end-to-end. The flows in this README are
 exercised by the screenshot pipeline, so this README is also a regression suite.
 
 What's deferred to the final week before 29 May:
 
-- **Step progression** — the tutor should advance to step 2 of the lesson plan when classifier confidence sustains > 0.7. The data is there; the advance-logic isn't yet stitched.
-- **Optimistic dashboard updates** — currently the dashboard re-renders when a snapshot lands (every 5 pupil messages or 60s). Cheap signal-only updates between snapshots would make it feel more alive.
-- **Cost optimisation** — Pro on every classification scales but isn't cheap. A Flash-tier classifier with Pro as a tiebreaker is one swap away.
-- **Classroom display mode polish** — exists as a route, not yet wired to a live class.
+- **Step progression** — the tutor should advance to the next step in the lesson
+  plan when classifier confidence sustains > 0.7. The signal is already there;
+  the advance-logic isn't yet stitched.
+- **Optimistic dashboard updates** — cheap signal-only updates between Pro
+  classifications would make the dashboard feel more alive at large class sizes.
+- **Classifier cost optimisation** — Pro on every classification scales but isn't
+  cheap. A Flash-tier classifier with Pro as a tiebreaker is one swap away.
 - **Voice I/O** — ElevenLabs + Web Speech are in the plan; not built.
-- **Homework** — a lesson-plan flavour with retroactive marking, sketched in the docs.
+- **Homework** — a lesson-plan flavour with retroactive marking.
+
+What landed during the build week:
+
+- AI-led lesson setup, end-to-end (wizard + Gemini Pro generator + teacher
+  review/edit/approve)
+- Activity types — nine of them — woven through the lesson plan so a 45-minute
+  lesson isn't pure Socratic questioning
+- Live engagement classifier with structured JSON output (+ safeguarding signal
+  raised in the same call)
+- Reason auto-firing inline on the scaffold ceiling, with the gold-accent card,
+  real evaluator, real soft-challenge follow-ups, persisted reason events,
+  trajectory on the dashboard
+- Intervention loop end-to-end: hints, mode override for one turn, pair-up,
+  pause, mark reviewed — all writing to RTDB and audited to Firestore, with
+  per-pupil class-membership verification on every action
+- Class-wide controls (pause / wrap-up / end) and pupil-facing closing screen
+- Self-improving lesson library: post-class AI appraisal + save-to-library +
+  use as starting point in the wizard
+- Teacher email allowlist with bootstrap-as-admin
+- Pupil class switching with proper RTDB cleanup
+- Conversation persistence + drill-panel transcript replay
+- A multi-agent QA pass surfaced 50+ findings across UX, UI, pedagogy, bugs, and
+  feature opportunities (`reports/audit/*.md`); critical fixes for auth,
+  classifier fallback, optimistic-rollback, and Reason eventId persistence have
+  been merged
+- README screenshots regenerated by Playwright against the live system
 
 ---
 
 ## Credits + licences
 
-- UK National Curriculum syllabus extracts: [DfE programmes of study](https://www.gov.uk/government/publications/national-curriculum-in-england-science-programmes-of-study).
-- Bridewell crest: Bridewell Royal Hospital arms (1553), reproduced from the prior Bridewell prototype.
-- Reason architecture: drafted by Chris Chowen, `brief/03_Reason_Function_Architecture_v2.md`.
-
-Built by Chris Chowen with Claude Code, in the
-`PhD/Industry Challenges/Bridewell/Prototypes/Bridewell 2026/` working directory.
-The conversation history that produced this build is the artefact.
+- UK National Curriculum syllabus extracts:
+  [DfE programmes of study](https://www.gov.uk/government/publications/national-curriculum-in-england-science-programmes-of-study).
+- Bridewell crest: Bridewell Royal Hospital arms (1553), reproduced from the
+  prior Bridewell prototype.
+- Heraldic motifs (`public/img/motif-*.png`): generated through Gemini
+  `gemini-2.5-flash-image` against a tightly-constrained brand prompt and
+  post-processed with `sharp` to remove the cream background.

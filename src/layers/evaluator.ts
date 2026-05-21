@@ -105,15 +105,31 @@ export async function evaluateReasonResponse(
     };
   }
   const j = result.json as {
-    confidence: number;
-    branch: ReasonEvaluatorResult["branch"];
-    rationale: string;
+    confidence?: number;
+    branch?: ReasonEvaluatorResult["branch"];
+    rationale?: string;
     weakest_segment?: string;
     follow_up?: string;
   };
+  // Validate required fields. A partially-formed object would otherwise
+  // pass through and either crash the responder or quietly emit a
+  // generic follow-up, masking an evaluator failure.
+  if (
+    typeof j.confidence !== "number" ||
+    !j.branch ||
+    !["accept", "soft_challenge", "pattern_flag"].includes(j.branch) ||
+    !j.rationale
+  ) {
+    return {
+      confidence: 0,
+      branch: "pattern_flag",
+      rationale: "Evaluator returned an incomplete JSON object",
+      fallbackUsed: true,
+    };
+  }
   return {
-    confidence: Math.min(1, Math.max(0, j.confidence ?? 0)),
-    branch: j.branch ?? "pattern_flag",
+    confidence: Math.min(1, Math.max(0, j.confidence)),
+    branch: j.branch,
     rationale: j.rationale,
     weakestSegment: j.weakest_segment,
     followUp: j.follow_up,

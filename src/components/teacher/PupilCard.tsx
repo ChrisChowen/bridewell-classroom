@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ChevronRight, AlertTriangle, MessageSquare } from "lucide-react";
+import { ChevronRight, AlertTriangle, MessageSquare, CloudOff } from "lucide-react";
 import { StatePill } from "@/components/shared/StatePill";
 import { statePill, type EngagementState } from "@/lib/brand";
 import type { LivePupil } from "@/lib/firebase/live";
@@ -171,6 +171,19 @@ export function PupilCard({
         <div className="flex items-center justify-between" style={{ fontSize: 11, color: "var(--text-muted)" }}>
           <span title={`Engagement confidence ${(pupil.confidence * 100).toFixed(0)}%`}>
             {humanAge(ageMs)} ago · {Math.round(pupil.confidence * 100)}%
+            {pupil.classifierFallback && (
+              <span
+                title="The classifier was unavailable for the most recent snapshot — this state is not reliable."
+                style={{
+                  marginLeft: 6,
+                  color: "var(--color-gold-500)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                }}
+              >
+                <CloudOff size={10} />
+              </span>
+            )}
           </span>
           <span className="flex items-center gap-1" style={{ color: "var(--text)" }}>
             Open <ChevronRight size={11} />

@@ -29,6 +29,17 @@
   --color-line-dark: rgba(181, 138, 60, 0.22);
   --color-zebra: rgba(15, 26, 46, 0.02);
 
+  /* Gold tints — named per intensity so component code stops
+     hard-coding rgba(181,138,60,0.XX) inline. Pair with the
+     dark-mode overrides below. */
+  --color-gold-tint-1: rgba(181, 138, 60, 0.06);
+  --color-gold-tint-2: rgba(181, 138, 60, 0.10);
+  --color-gold-tint-3: rgba(181, 138, 60, 0.14);
+
+  /* Crimson tints — for safeguarding-high banners + error states */
+  --color-crimson-tint-1: rgba(142, 42, 42, 0.08);
+  --color-crimson-tint-2: rgba(142, 42, 42, 0.12);
+
   /* Type families — wired up in app/layout.tsx via next/font */
   --font-serif: "Source Serif 4", "Source Serif Pro", Georgia, serif;
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -60,6 +71,16 @@
   --text: var(--color-cream-50);
   --text-muted: #a8b1c4;
   --line: var(--color-line-dark);
+
+  /* Dark mode needs more luminous gold tints to remain readable
+     against the navy surface — bump opacity per the UI-polish audit
+     so the gold accents don't fade. */
+  --color-reason-tint: rgba(181, 138, 60, 0.16);
+  --color-gold-tint-1: rgba(181, 138, 60, 0.14);
+  --color-gold-tint-2: rgba(181, 138, 60, 0.20);
+  --color-gold-tint-3: rgba(181, 138, 60, 0.28);
+  --color-crimson-tint-1: rgba(142, 42, 42, 0.18);
+  --color-crimson-tint-2: rgba(142, 42, 42, 0.26);
 }
 
 html, body {

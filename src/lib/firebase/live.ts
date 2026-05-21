@@ -34,6 +34,10 @@ export interface LivePupil {
   trajectory: Array<{ state: EngagementState; t: number; confidence: number }>;
   lastPupilExcerpt?: string | null;
   scaffoldUsesRecent?: number;
+  // True if the most recent classifier call fell back (LLM unavailable
+  // or malformed JSON). Dashboard surfaces this as a degraded
+  // indicator so the teacher knows the signal is not real.
+  classifierFallback?: boolean;
   safeguarding?: {
     severity: "low" | "medium" | "high";
     summary: string;

@@ -49,6 +49,20 @@ const SCHEMA = {
 } as const;
 
 export async function POST(req: Request) {
+  try {
+    return await handle(req);
+  } catch (err) {
+    // Never let an unhandled exception crash the client's res.json() —
+    // always return a JSON 500.
+    console.error("consolidate route error:", err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Consolidation failed" },
+      { status: 500 }
+    );
+  }
+}
+
+async function handle(req: Request) {
   const a = getAdmin();
   if (!a.ready) return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });
 
