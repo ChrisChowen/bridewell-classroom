@@ -99,7 +99,7 @@ function Hero() {
         style={{ gap: 10, justifyContent: "center", marginBottom: 26 }}
       >
         <Fleur size={14} />
-        <span className="bw-section-label">A Bridewell AI product · since 1553</span>
+        <span className="bw-section-label">Bridewell Classroom</span>
         <Fleur size={14} />
       </div>
 
@@ -144,13 +144,12 @@ function Hero() {
         style={{
           fontSize: 18,
           lineHeight: 1.55,
-          maxWidth: 620,
+          maxWidth: 580,
           margin: "22px auto 28px",
         }}
       >
-        Pupils think with a calm coaching tutor. Teachers see the class in
-        pattern and intervene quickly. Lessons stay anchored to the curriculum,
-        approved by the teacher before pupils see them.
+        An in-lesson AI tutor that coaches pupils to think, and a teacher view
+        that shows the whole class at once.
       </p>
 
       <div
@@ -177,9 +176,11 @@ function Hero() {
 }
 
 // ── Product preview ───────────────────────────────────────────────────
-// A composed view that mirrors the actual product surfaces (chat on the
-// left, class view on the right) without screenshotting them. Built from
-// the same brand tokens so it stays true as the product evolves.
+// Composed example of the product surfaces (pupil chat on the left,
+// teacher class view on the right). Built from the same brand tokens
+// so it stays true as the product evolves. Framed explicitly as an
+// "Example" so a visitor can't mistake it for a live data feed of real
+// pupils.
 
 function ProductPreview() {
   return (
@@ -188,9 +189,21 @@ function ProductPreview() {
         maxWidth: 1200,
         width: "100%",
         margin: "0 auto",
-        padding: "32px 40px 48px",
+        padding: "16px 40px 48px",
       }}
     >
+      <div
+        className="flex items-center"
+        style={{
+          gap: 10,
+          marginBottom: 16,
+          justifyContent: "center",
+        }}
+      >
+        <Fleur size={12} />
+        <span className="bw-section-label">A look at the lesson</span>
+      </div>
+
       <div
         style={{
           display: "grid",
@@ -203,16 +216,40 @@ function ProductPreview() {
       </div>
       <p
         style={{
-          fontSize: 12,
+          fontSize: 11,
           color: "var(--text-muted)",
           textAlign: "center",
-          marginTop: 16,
-          letterSpacing: "0.02em",
+          marginTop: 14,
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+          fontWeight: 600,
         }}
       >
-        The pupil&apos;s view · The teacher&apos;s view
+        Illustrative example · not a live class
       </p>
     </section>
+  );
+}
+
+// Small reusable badge that sits inside each preview card so neither
+// can be misread as a live data feed.
+function ExampleTag() {
+  return (
+    <span
+      style={{
+        fontSize: 9,
+        letterSpacing: "0.18em",
+        textTransform: "uppercase",
+        fontWeight: 700,
+        color: "var(--text-muted)",
+        padding: "3px 8px",
+        border: "1px solid var(--line)",
+        borderRadius: 999,
+        background: "var(--bg)",
+      }}
+    >
+      Example
+    </span>
   );
 }
 
@@ -230,8 +267,11 @@ function PupilPreviewCard() {
       }}
     >
       <header className="flex items-center justify-between">
-        <span className="bw-section-label" style={{ color: "var(--color-gold-500)" }}>
-          Pupil
+        <span className="flex items-center gap-2">
+          <span className="bw-section-label" style={{ color: "var(--color-gold-500)" }}>
+            What pupils see
+          </span>
+          <ExampleTag />
         </span>
         <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Photosynthesis · Y8</span>
       </header>
@@ -297,41 +337,33 @@ function TeacherPreviewCard() {
       }}
     >
       <header className="flex items-center justify-between">
-        <span className="bw-section-label" style={{ color: "var(--color-gold-500)" }}>
-          Teacher
+        <span className="flex items-center gap-2">
+          <span className="bw-section-label" style={{ color: "var(--color-gold-500)" }}>
+            What teachers see
+          </span>
+          <ExampleTag />
         </span>
-        <span className="flex items-center gap-2" style={{ fontSize: 11, color: "var(--text-muted)" }}>
-          <span
-            aria-hidden
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 999,
-              background: "var(--color-bridewell-red)",
-              boxShadow: "0 0 0 3px rgba(227,6,19,0.15)",
-              animation: "bw-pulse 1800ms infinite ease-in-out",
-            }}
-          />
-          Live · 22 pupils
-        </span>
+        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Y8 Biology · class of four</span>
       </header>
 
       <div style={{ display: "grid", gap: 8 }}>
-        <PreviewPupilRow name="Alice M." state="flowing" tail="Working on the second example" />
-        <PreviewPupilRow name="Daniel R." state="productive" tail="Asked a follow-up question" />
-        <PreviewPupilRow name="Priya S." state="wheel" tail="Three scaffolds in a row" />
-        <PreviewPupilRow name="Olu A." state="flowing" tail="Reason · paraphrase accepted" />
+        <PreviewPupilRow name="Pupil A" state="flowing" tail="Working through the example" />
+        <PreviewPupilRow name="Pupil B" state="productive" tail="Following up with a question" />
+        <PreviewPupilRow name="Pupil C" state="wheel" tail="Could use a nudge from the teacher" />
+        <PreviewPupilRow name="Pupil D" state="flowing" tail="Explained it back in their own words" />
       </div>
 
       <div
         style={{
           paddingTop: 8,
           borderTop: "1px solid var(--line)",
-          fontSize: 11,
+          fontSize: 12,
           color: "var(--text-muted)",
+          lineHeight: 1.5,
         }}
       >
-        Pattern · 3 pupils showing productive struggle · 1 needs attention
+        The whole class at a glance, so the teacher can spot who&apos;s
+        flowing and who needs them.
       </div>
     </div>
   );
@@ -480,8 +512,8 @@ function Principles() {
 }
 
 // ── Trust block ───────────────────────────────────────────────────────
-// The one place where Bridewell red appears — a small accent on the
-// hyphen between the school names + the date pin. Restrained, not loud.
+// A calm strip with the three schools. The one place where Bridewell red
+// appears on the page — as the small separator between school names.
 
 function TrustBlock() {
   return (
@@ -494,94 +526,64 @@ function TrustBlock() {
     >
       <div
         style={{
-          maxWidth: 1200,
+          maxWidth: 980,
           width: "100%",
           margin: "0 auto",
-          padding: "44px 40px",
+          padding: "48px 40px",
+          textAlign: "center",
           display: "grid",
-          gridTemplateColumns: "1.5fr 1fr",
-          gap: 40,
-          alignItems: "center",
+          gap: 14,
         }}
-        className="bw-trust-grid"
       >
-        <div style={{ display: "grid", gap: 12 }}>
-          <span className="bw-section-label">Built with the schools</span>
-          <h2 className="bw-display" style={{ fontSize: 26, lineHeight: 1.2, margin: 0 }}>
-            Bridewell-native, teacher-in-charge, curriculum-anchored.
-          </h2>
-          <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.7, margin: 0 }}>
-            Bridewell Classroom is part of the Bridewell AI ecosystem already in
-            production at the schools. Every lesson plan is reviewed by the
-            teacher before pupils see it, every concerning disclosure is
-            surfaced to the teacher immediately, and conversation data stays
-            inside the schools&apos; own Firebase project.
-          </p>
-
-          <div
-            className="flex items-center"
-            style={{
-              gap: 14,
-              flexWrap: "wrap",
-              fontSize: 13,
-              marginTop: 4,
-              color: "var(--text)",
-            }}
-          >
-            <strong style={{ fontWeight: 600 }}>King Edward&apos;s Witley</strong>
-            <span aria-hidden style={{ color: "var(--color-bridewell-red)" }}>·</span>
-            <strong style={{ fontWeight: 600 }}>Barrow Hills</strong>
-            <span aria-hidden style={{ color: "var(--color-bridewell-red)" }}>·</span>
-            <strong style={{ fontWeight: 600 }}>Longacre</strong>
-          </div>
-        </div>
-
-        <aside
+        <span
+          className="bw-section-label"
+          style={{ justifySelf: "center" }}
+        >
+          Built with the Bridewell schools
+        </span>
+        <h2
+          className="bw-display"
           style={{
-            display: "grid",
-            gap: 14,
-            paddingLeft: 0,
+            fontSize: 28,
+            lineHeight: 1.2,
+            margin: "0 auto",
+            maxWidth: 720,
           }}
         >
-          <div
-            style={{
-              padding: 18,
-              border: "1px solid var(--line)",
-              borderRadius: 10,
-              background: "var(--bg)",
-              display: "grid",
-              gap: 6,
-            }}
-          >
-            <span className="bw-section-label">Production partner</span>
-            <strong style={{ fontWeight: 600, fontSize: 14 }}>Unified Projects</strong>
-            <p style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.6, margin: 0 }}>
-              The consultancy that built and will inherit the production
-              Bridewell AI.
-            </p>
-          </div>
+          Teacher-in-charge, curriculum-anchored, in the classroom every day.
+        </h2>
+        <p
+          style={{
+            fontSize: 14.5,
+            color: "var(--text-muted)",
+            lineHeight: 1.7,
+            margin: "0 auto",
+            maxWidth: 620,
+          }}
+        >
+          Lesson plans are reviewed and approved by the teacher before pupils
+          see them. Conversations stay inside the schools&apos; own
+          infrastructure. Concerning disclosures reach the teacher straight
+          away.
+        </p>
 
-          <div
-            style={{
-              padding: 18,
-              border: "1px solid var(--line)",
-              borderRadius: 10,
-              background: "var(--bg)",
-              display: "grid",
-              gap: 6,
-            }}
-          >
-            <span className="bw-section-label">CDT Spring Challenge</span>
-            <strong style={{ fontWeight: 600, fontSize: 14 }}>
-              <span style={{ color: "var(--color-bridewell-red)" }}>29 May 2026</span>
-              {" · "}
-              University of Surrey
-            </strong>
-            <p style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.6, margin: 0 }}>
-              Final presentation, alongside the academic panel.
-            </p>
-          </div>
-        </aside>
+        <div
+          className="flex items-center"
+          style={{
+            gap: 14,
+            flexWrap: "wrap",
+            justifyContent: "center",
+            fontSize: 13.5,
+            marginTop: 10,
+            color: "var(--text)",
+          }}
+        >
+          <strong style={{ fontWeight: 600 }}>King Edward&apos;s Witley</strong>
+          <span aria-hidden style={{ color: "var(--color-bridewell-red)" }}>·</span>
+          <strong style={{ fontWeight: 600 }}>Barrow Hills</strong>
+          <span aria-hidden style={{ color: "var(--color-bridewell-red)" }}>·</span>
+          <strong style={{ fontWeight: 600 }}>Longacre</strong>
+        </div>
       </div>
     </section>
   );
@@ -658,25 +660,44 @@ function SiteFooter() {
       style={{
         marginTop: "auto",
         borderTop: "1px solid var(--line)",
-        padding: "22px 40px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
+        padding: "22px 40px 18px",
         fontSize: 12,
         color: "var(--text-muted)",
-        flexWrap: "wrap",
-        gap: 10,
       }}
     >
-      <span className="flex items-center gap-3">
-        <Crest size={20} />
-        <span>
-          Bridewell Royal Hospital schools · King Edward&apos;s Witley · Barrow Hills · Longacre
+      <div
+        className="flex items-center"
+        style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}
+      >
+        <span className="flex items-center gap-3">
+          <Crest size={20} />
+          <span>
+            Bridewell Royal Hospital schools · King Edward&apos;s Witley ·
+            Barrow Hills · Longacre
+          </span>
         </span>
-      </span>
-      <span style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>
-        v0.1 · 21 May 2026
-      </span>
+        <span style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>
+          v0.1
+        </span>
+      </div>
+
+      {/* Project-context line. Kept here, not in the body, so the site
+          reads as a product first; the academic/industry framing is
+          available for anyone who scrolls all the way down. */}
+      <div
+        style={{
+          marginTop: 10,
+          paddingTop: 10,
+          borderTop: "1px dashed var(--line)",
+          fontSize: 11,
+          opacity: 0.75,
+          letterSpacing: "0.01em",
+        }}
+      >
+        Developed alongside Unified Projects, partner of the Bridewell AI
+        programme. Presented at the CDT Spring Challenge, University of
+        Surrey, May 2026.
+      </div>
     </footer>
   );
 }
@@ -685,20 +706,20 @@ function SiteFooter() {
 
 const principles = [
   {
-    title: "Coaching, not answering",
-    body: "Real LLM calls in coach mode by default. Hint, Rephrase, and Simplify scaffold the tutor's prior turn — never the pupil's thinking.",
+    title: "Pupils do the thinking",
+    body: "The tutor asks questions instead of answering them. When a pupil's stuck, three calm scaffolds nudge them forward without giving the answer away.",
   },
   {
-    title: "Patterns, not alerts",
-    body: "Five named engagement states from the productive-struggle literature, classified live and surfaced as a calm sparkline. Teachers act on a pattern, not a notification.",
+    title: "Shape of the room, at a glance",
+    body: "Every pupil's engagement, on one screen. Teachers see who's flowing, who's struggling productively, and who needs them — without notifications going off.",
   },
   {
-    title: "Reason, as a moment",
-    body: "An inline probing interaction, not a fourth button. It generates evidence of understanding without raising an alert to the pupil mid-thought.",
+    title: "Quiet checks for understanding",
+    body: "At natural moments the tutor asks the pupil to put the idea in their own words. That answer tells the teacher whether it's landed, without breaking the lesson.",
   },
   {
-    title: "Safeguarding from turn one",
-    body: "If a pupil discloses something concerning, the AI surfaces it to the teacher immediately with the verbatim message. The pupil never sees a verdict.",
+    title: "Safeguarding, built in",
+    body: "If a pupil writes something the teacher should see, the teacher sees it. The pupil keeps their conversation; the teacher gets the context, immediately.",
   },
 ];
 
@@ -711,18 +732,18 @@ const audienceCards: {
   {
     audience: "For pupils",
     headline: "A tutor that asks you to think.",
-    body: "Your tutor will not hand you the answer. It coaches you with one question at a time, and gives you a hint, a rephrase, or a simpler explanation if you get stuck. Log in with the code your teacher displays — no email needed.",
+    body: "Your tutor coaches you with one question at a time. If you get stuck, a hint, a rephrase, or a simpler explanation is one tap away. Join with the code your teacher displays — no email, no account to set up.",
     cta: { label: "Join with class code", href: "/join" },
   },
   {
     audience: "For teachers",
-    headline: "Set up a lesson by describing it.",
-    body: "Pick a topic from the curriculum library, write a sentence about what you want pupils to come away with, and the AI drafts a lesson plan you review and approve. See the whole class in pattern, intervene in two clicks.",
+    headline: "Build a lesson by describing it.",
+    body: "Pick a topic, write a sentence about what you want pupils to learn, and your lesson plan is ready to review. Run the lesson, see the whole class at once, step in when a pupil needs you.",
     cta: { label: "Sign in or register", href: "/login" },
   },
   {
     audience: "For parents and the school",
-    headline: "Bridewell-aligned, curriculum-anchored.",
-    body: "Lessons are anchored to the UK National Curriculum, the teacher approves every plan before pupils see it, and disclosures of concern are surfaced to the teacher immediately. Conversation data stays inside the schools' own infrastructure.",
+    headline: "On the curriculum, in the teacher's hands.",
+    body: "Lessons are written against the UK National Curriculum and approved by the teacher before pupils see them. Concerning disclosures reach the teacher immediately. Pupil conversations stay inside the schools' own systems.",
   },
 ];
