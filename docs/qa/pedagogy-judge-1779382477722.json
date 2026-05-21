@@ -1,0 +1,548 @@
+{
+  "reportSource": "sim-1779382425921.json",
+  "lessonTitle": "Light Catchers: How Plants Make Food",
+  "criticalConcepts": [
+    "Chlorophyll absorbs light energy",
+    "Photosynthesis word equation",
+    "Light as a limiting factor"
+  ],
+  "total": 30,
+  "averagePassCount": 5.17,
+  "pct": {
+    "coaches": 100,
+    "no_answer_giveaway": 93,
+    "anchors": 67,
+    "short": 97,
+    "calm": 100,
+    "addresses": 60
+  },
+  "worst5": [
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "This is boring, can we do this later?",
+      "tutorTurn": "I understand you're finding this challenging.\n\nLet's think about it this way: what do you need to feel energised and grow?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor fails to anchor to the lesson topic or address the pupil's comment about boredom directly."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Marcus Holt",
+      "pupilTurn": "Well, if there's not much light, a plant might make more chlorophyll to try and catch as much as it can. But if there's loads of light, maybe it doesn't need as much, or too much light could even damage it, so it might make less.",
+      "tutorTurn": "That's a thoughtful idea about how plants adapt. You're thinking about how the amount of light might affect the plant's ability to make food.\n\nThis process, where plants use light energy to make their food, has a specific scientific name. Do you recall what it is?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 0,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor turn is too long and does not directly address the pupil's insightful ideas about chlorophyll adaptation."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Priya Adesina",
+      "pupilTurn": "Hmm, okay. So the nutrients... I guess they're like food for the plant, right? Like how we eat food to grow big and strong, maybe the plant uses the nutrients to build its leaves and wood.",
+      "tutorTurn": "What happens to the amount of dirt in the plant pot as the plant eats stuff from it to get bigger?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor's question is a good coaching move, but it does not address the pupil's previous turn about nutrients and also fails to anchor to the lesson's critical concepts."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "I don't know.",
+      "tutorTurn": "That's quite all right. Let's break it down. What does the plant need to take in from its surroundings to grow?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor's question is too general and does not anchor to the lesson's critical concepts about light and photosynthesis."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Bertie Lawson",
+      "pupilTurn": "I don't know.",
+      "tutorTurn": "That's perfectly fine. Let's think about what plants need to live and grow. What do you give a houseplant to keep it alive?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor's question is a good coaching move, but it doesn't anchor to the lesson's critical concepts about light and photosynthesis."
+      },
+      "total": 5
+    }
+  ],
+  "all": [
+    {
+      "pupil": "Bertie Lawson",
+      "pupilTurn": "I don't know.",
+      "tutorTurn": "That's perfectly fine. Let's think about what plants need to live and grow. What do you give a houseplant to keep it alive?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor's question is a good coaching move, but it doesn't anchor to the lesson's critical concepts about light and photosynthesis."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Bertie Lawson",
+      "pupilTurn": "Water.",
+      "tutorTurn": "Good. Water is definitely important. What else might a plant need from its surroundings to help it grow bigger?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor turn is good but fails to anchor to the lesson's critical concepts."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Bertie Lawson",
+      "pupilTurn": "Sun.",
+      "tutorTurn": "You're right, sunlight is crucial. What do you think the plant uses the sunlight for?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor coaches the pupil by asking what the plant uses sunlight for, directly building on the pupil's previous answer and anchoring to the lesson topic."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Bertie Lawson",
+      "pupilTurn": "Dunno.",
+      "tutorTurn": "Think about what the plant is trying to do when it grows. It's making new leaves and stems. What does it need to do that?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor's question is good but it does not anchor to the lesson's critical concepts."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Bertie Lawson",
+      "pupilTurn": "Ok.",
+      "tutorTurn": "We've talked about water and sunlight. Plants also need something from the air around them. Do you know what that might be?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor's turn does not directly address the pupil's 'Ok' but instead moves on to the next topic."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Bertie Lawson",
+      "pupilTurn": "Ok.",
+      "tutorTurn": "What gas do plants take in from the atmosphere?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor's question does not address the pupil's previous turn, which was simply 'Ok.'"
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "This is boring, can we do something else?",
+      "tutorTurn": "Fair enough, this bit can seem a bit dry.\n\nLet's try a different way in: what do you think plants eat?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor effectively re-engages the pupil by acknowledging their boredom and asking a relevant question that anchors to the lesson's core concept."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "Did you see the match yesterday?",
+      "tutorTurn": "I'm here to help you with our science lesson today.\n\nThinking about what plants need, have you heard the word 'photosynthesis' before?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor fails to address the pupil's off-topic comment directly before pivoting to the lesson content."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "This is boring, can we do this later?",
+      "tutorTurn": "I hear you. Sometimes new topics can feel that way.\n\nLet's try a quick thought experiment: what would happen if a plant didn't get any sunlight?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor effectively re-engages the pupil by acknowledging their boredom and then immediately pivoting to a relevant, coaching question about the lesson topic."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "Did you see the match yesterday?",
+      "tutorTurn": "I'm here to help you understand how plants make their food.\n\nWhat do you think plants use sunlight for?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor fails to address the pupil's off-topic comment, instead pivoting directly to a new question."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "This is boring, can we do this later?",
+      "tutorTurn": "I understand you're finding this challenging.\n\nLet's think about it this way: what do you need to feel energised and grow?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor fails to anchor to the lesson topic or address the pupil's comment about boredom directly."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Jacob Pritchard",
+      "pupilTurn": "Did you see the match yesterday?",
+      "tutorTurn": "I'm here to help you learn about plants and how they grow.\n\nWhat do plants need from their environment to live and get bigger?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor turn does not address the pupil's off-topic comment, instead pivoting directly to a new question."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Marcus Holt",
+      "pupilTurn": "That's easy! Most of the stuff comes from the air, actually – carbon dioxide. The rest comes from water and some minerals from the soil.",
+      "tutorTurn": "That's a great start. You've mentioned carbon dioxide, water, and minerals.\n\nWhat role does carbon dioxide play in this process of a plant growing?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor coaches the pupil by asking a follow-up question that builds on the pupil's previous answer and anchors to the lesson topic."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Marcus Holt",
+      "pupilTurn": "Well, the plant takes in the carbon dioxide from the air, and then it uses sunlight to turn it into glucose – that's like the plant's food – and oxygen. The glucose is what the plant uses to grow bigger, like making its trunk and leaves.",
+      "tutorTurn": "That's a very clear explanation of how plants use carbon dioxide. You mentioned sunlight is involved.\n\nWhat does the plant do with the sunlight, specifically?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor coaches the pupil by asking a specific question about the role of sunlight, anchoring to a critical concept without giving away the answer."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Marcus Holt",
+      "pupilTurn": "The plant uses the sunlight as energy to power the whole process of turning carbon dioxide and water into glucose. It's like the fuel for making its food, isn't it?",
+      "tutorTurn": "That's right, sunlight is the fuel.\n\nThere's a special green substance in plants that's responsible for catching this light energy. Do you remember what it's called?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 0,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor gives away the answer to the next question by stating there is a 'special green substance' that catches light energy, which is a direct hint to chlorophyll."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Marcus Holt",
+      "pupilTurn": "Oh yeah, that's chlorophyll! It's what makes plants green and it traps the sunlight so the plant can make its food. Does the amount of chlorophyll change depending on how much light a plant gets?",
+      "tutorTurn": "You've got it, chlorophyll is indeed the substance that traps sunlight.\n\nThat's an interesting question about the amount of chlorophyll. How do you think a plant might benefit from changing the amount of chlorophyll it has, depending on the light?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor effectively coaches the pupil by asking a follow-up question that encourages deeper thinking about the relationship between chlorophyll and light."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Marcus Holt",
+      "pupilTurn": "Well, if there's not much light, a plant might make more chlorophyll to try and catch as much as it can. But if there's loads of light, maybe it doesn't need as much, or too much light could even damage it, so it might make less.",
+      "tutorTurn": "That's a thoughtful idea about how plants adapt. You're thinking about how the amount of light might affect the plant's ability to make food.\n\nThis process, where plants use light energy to make their food, has a specific scientific name. Do you recall what it is?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 0,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor turn is too long and does not directly address the pupil's insightful ideas about chlorophyll adaptation."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Marcus Holt",
+      "pupilTurn": "That's photosynthesis! It's how plants \"photo-synthesise\" their food using light.",
+      "tutorTurn": "That's the one! Photosynthesis.\n\nYou've already mentioned the key ingredients and what they become. Can you put that into a word equation for photosynthesis?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor effectively coaches the pupil to formulate the word equation, building on their previous answer without giving away the solution."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Priya Adesina",
+      "pupilTurn": "That's a good question! I think... well, the tree is in the ground, so maybe it sucks up stuff from the soil? Like, water and... nutrients? Is that the right word?",
+      "tutorTurn": "Nutrients is a good word. What do you think those nutrients do for the plant?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor's question is good, but it doesn't anchor to the lesson's critical concepts about light and photosynthesis."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Priya Adesina",
+      "pupilTurn": "Hmm, okay. So the nutrients... I guess they're like food for the plant, right? Like how we eat food to grow big and strong, maybe the plant uses the nutrients to build its leaves and wood.",
+      "tutorTurn": "That's an interesting idea. If the plant is using nutrients from the soil as food to grow bigger, what would happen to the amount of soil in the pot over time?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor's question is a good coaching move, but it does not anchor to the lesson's critical concepts."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Priya Adesina",
+      "pupilTurn": "Hmm, okay. So the nutrients... I guess they're like food for the plant, right? Like how we eat food to grow big and strong, maybe the plant uses the nutrients to build its leaves and wood.",
+      "tutorTurn": "What happens to the amount of dirt in the plant pot as the plant eats stuff from it to get bigger?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor's question is a good coaching move, but it does not address the pupil's previous turn about nutrients and also fails to anchor to the lesson's critical concepts."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Priya Adesina",
+      "pupilTurn": "Wait, let me think about that for a second. So if the plant is eating the dirt to grow, then the amount of dirt in the pot should go down, right? Like if I eat a sandwich, there's less sandwich left.",
+      "tutorTurn": "That's a clear way to put it. Have you ever noticed a plant pot getting emptier of soil as the plant grows?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor's question is effective in prompting the pupil to reconsider their hypothesis, but it does not anchor to the lesson's critical concepts."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Priya Adesina",
+      "pupilTurn": "Hmm, no, I don't think I have. I mean, sometimes soil spills out, or it gets compacted down, but it doesn't really look like it's disappearing because the plant ate it. That's a bit confusing then.",
+      "tutorTurn": "It is confusing. If the soil isn't disappearing, then perhaps the plant isn't 'eating' the soil in the way we eat a sandwich. What else does a plant take in from its surroundings?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor turn does not anchor to the lesson topic or critical concepts, instead asking a general question about plant intake."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Priya Adesina",
+      "pupilTurn": "Well, plants need water, obviously. My mum always tells me to water the plants. And they need sunlight too, I know that. Like, if you put a plant in a dark cupboard, it dies.",
+      "tutorTurn": "You're right, water and sunlight are definitely important. What do you think the plant uses the water for?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor effectively coaches the pupil by asking a follow-up question that builds on their previous answer and anchors to a critical concept."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "The sun?",
+      "tutorTurn": "The sun is certainly important for plants. What does the plant use the sun's energy for?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor effectively coaches the pupil by asking a follow-up question that builds on their previous response and anchors to the lesson's critical concepts."
+      },
+      "total": 6
+    },
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "The sun?",
+      "tutorTurn": "What is the name of the process plants use to make their own food?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor's question does not directly address the pupil's previous turn, which was a guess about the source of energy."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "The sun?",
+      "tutorTurn": "What is it called when plants make their own food?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor's question does not directly address the pupil's previous turn, which was a guess about the sun."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "The sun?",
+      "tutorTurn": "What do we call the way plants create their own meals?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor's question does not directly address the pupil's previous turn, which was a guess about the sun."
+      },
+      "total": 5
+    },
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "I don't know.",
+      "tutorTurn": "That's quite all right. Let's break it down. What does the plant need to take in from its surroundings to grow?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 1,
+        "anchors": 0,
+        "short": 1,
+        "calm": 1,
+        "addresses": 0,
+        "note": "The tutor's question is too general and does not anchor to the lesson's critical concepts about light and photosynthesis."
+      },
+      "total": 4
+    },
+    {
+      "pupil": "Tom Reeves",
+      "pupilTurn": "The sun?",
+      "tutorTurn": "The sun provides energy. What else does a plant need from its environment to grow and build its structure?",
+      "score": {
+        "coaches": 1,
+        "no_answer_giveaway": 0,
+        "anchors": 1,
+        "short": 1,
+        "calm": 1,
+        "addresses": 1,
+        "note": "The tutor gives away the answer that the sun provides energy, which the pupil was meant to infer."
+      },
+      "total": 5
+    }
+  ]
+}
