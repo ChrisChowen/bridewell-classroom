@@ -350,6 +350,19 @@ select:focus-visible {
   }
 }
 
+/* UserChip — collapses to just the initials disc on phones so the
+   header doesn't crowd. Tap the disc to open the UserMenu. */
+@media (max-width: 640px) {
+  .bw-userchip-school,
+  .bw-userchip-text {
+    display: none !important;
+  }
+  .bw-userchip {
+    padding: 4px !important;
+    gap: 0 !important;
+  }
+}
+
 /* Phone */
 @media (max-width: 640px) {
   .bw-stack-sm {

@@ -19,9 +19,10 @@ export function UserChip({
     .slice(0, 2)
     .join("");
   return (
-    <div className="flex items-center gap-3 bw-card" style={{ padding: "6px 10px" }}>
+    <div className="flex items-center gap-3 bw-card bw-userchip" style={{ padding: "6px 10px" }}>
       <div
         aria-hidden
+        className="bw-userchip-school"
         style={{
           width: 18,
           height: 18,
@@ -38,7 +39,7 @@ export function UserChip({
       >
         {schoolPlate(school).monogram}
       </div>
-      <div className="flex flex-col leading-tight">
+      <div className="flex flex-col leading-tight bw-userchip-text">
         <span style={{ fontSize: 13, fontWeight: 500 }}>{name}</span>
         <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
           {role} · {school}

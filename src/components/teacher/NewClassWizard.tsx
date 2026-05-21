@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, BookOpen, Sparkles, Check, X, AlertTriangle, RotateCcw, Library, Pencil, Search } from "lucide-react";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
+import { getCleanIdToken } from "@/lib/firebase/auth-fetch";
 import { SYLLABUS_LIBRARY } from "@/lib/syllabi";
 import type { SyllabusEntry } from "@/lib/syllabi/types";
 import { ACTIVITIES, ALL_ACTIVITY_TYPES } from "@/lib/ai/activities";
@@ -163,23 +164,44 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
     try {
       const fb = getFirebase();
       if (!fb.ready) throw new Error("Firebase not configured");
-      const token = await fb.auth.currentUser!.getIdToken();
+      const token = await getCleanIdToken();
+      if (!token) throw new Error("Could not get a sign-in token — please sign out and back in.");
+      // Trim user-typed fields. iOS Safari occasionally pastes
+      // trailing nbsp / whitespace from autofill that fails downstream
+      // validation; normalising here gives a clearer error than the
+      // mobile-Safari fallback ("the string did not match the expected
+      // pattern").
+      const safeName = (className || "").trim();
+      const safeSchool = (school || "").trim();
+      if (!safeName) throw new Error("Class name is required");
+      if (!safeSchool) throw new Error("School is required");
       const res = await fetch("/api/classes/create", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          name: className,
+          name: safeName,
           subject: syllabus.subject,
-          school,
+          school: safeSchool,
           lessonPlan: plan,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to create class");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? `Create failed (HTTP ${res.status})`);
+      if (!data.class?.joinCode) throw new Error("Class created but join code missing — refresh and check the dashboard.");
       setJoinCode(data.class.joinCode);
       setStep("done");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      // Bubble the underlying error up to the UI; previously the
+      // generic "Something went wrong" hid the root cause from a
+      // teacher in front of pupils.
+      const msg =
+        e instanceof Error
+          ? e.message
+          : typeof e === "string"
+          ? e
+          : "Something went wrong creating the class. Try again.";
+      console.error("[wizard] approveAndCreate failed", e);
+      setError(msg);
     } finally {
       setSubmitting(false);
     }

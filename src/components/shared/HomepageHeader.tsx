@@ -91,9 +91,12 @@ export function HomepageHeader() {
       <nav className="flex items-center gap-2">
         {isTeacher ? (
           <>
+            {/* Dashboard button hides on phone — the same destination is
+                in the UserMenu dropdown one tap away. Keeps the mobile
+                header clean (chip-only) rather than crowded. */}
             <Link
               href="/dashboard"
-              className="bw-btn-secondary"
+              className="bw-btn-secondary bw-hide-sm"
               style={{
                 fontSize: 13,
                 display: "inline-flex",

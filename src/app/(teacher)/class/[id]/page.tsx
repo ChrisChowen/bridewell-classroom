@@ -7,6 +7,7 @@ import { ArrowLeft, Copy, Check, BookOpen, ChevronDown, ChevronRight, Pause, Pla
 import { TopBar } from "@/components/shared/TopBar";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
+import { getCleanIdToken } from "@/lib/firebase/auth-fetch";
 import { subscribeToLiveClass, subscribeToSessionStatus, type LivePupil, type SessionStatus } from "@/lib/firebase/live";
 import { PupilCard } from "@/components/teacher/PupilCard";
 import { LivePupilPanel } from "@/components/teacher/LivePupilPanel";
@@ -29,7 +30,7 @@ export default function ClassDetailPage() {
   const params = useParams<{ id: string }>();
   const classId = params.id;
   const router = useRouter();
-  const { status, displayName, email, signOut } = useAuth();
+  const { status, displayName, email } = useAuth();
 
   const [klass, setKlass] = useState<ClassRecord | null>(null);
   const [roster, setRoster] = useState<PupilRecord[]>([]);
@@ -57,7 +58,15 @@ export default function ClassDetailPage() {
       const fb = getFirebase();
       if (!fb.ready || !fb.auth.currentUser) return;
       try {
-        const token = await fb.auth.currentUser.getIdToken();
+        // getCleanIdToken strips any non-ASCII chars from the token —
+        // defends against the iOS-Safari "Headers: the string did not
+        // match the expected pattern" error when constructing the
+        // Authorization header.
+        const token = await getCleanIdToken();
+        if (!token) {
+          if (!cancelled) setError("Sign-in token unavailable. Please sign out and back in.");
+          return;
+        }
         const res = await fetch(`/api/classes/${classId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -112,9 +121,8 @@ export default function ClassDetailPage() {
     if (!classId || !klass) return;
     setClassCtrlBusy(type);
     try {
-      const fb = getFirebase();
-      if (!fb.ready || !fb.auth.currentUser) return;
-      const token = await fb.auth.currentUser.getIdToken();
+      const token = await getCleanIdToken();
+      if (!token) return;
       await fetch("/api/interventions", {
         method: "POST",
         headers: {
@@ -302,9 +310,7 @@ export default function ClassDetailPage() {
                 </button>
               </>
             )}
-            <button onClick={signOut} className="bw-btn-secondary" style={{ fontSize: 12 }}>
-              Sign out
-            </button>
+            {/* Sign out lives in the UserMenu (top-right user chip) now. */}
           </div>
         </div>
 

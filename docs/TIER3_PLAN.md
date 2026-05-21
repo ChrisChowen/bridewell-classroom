@@ -171,19 +171,87 @@ privacy notice needs review by the schools.
 **Demo-day risk without:** none. The data accumulates harmlessly;
 no real pupils on 29 May.
 
+## 8. Persistent pupil accounts + long-term tracking
+
+**State:** pupils are anonymous Firebase Auth users today, keyed by
+class + display name. Each session has no memory of any previous one.
+Chris's steer (post-mobile-testing): "Probably need student accounts
+and a join code for classes to track long term performance for
+students etc. send profiles too."
+
+**Done means:**
+- A pupil has one persistent identity across sessions — most likely
+  their school SSO (Microsoft 365 / Azure Entra ID, which the schools
+  are already on). Join code becomes a *room key* rather than the
+  pupil's identity.
+- `LearnerProfile` Firestore doc keyed by `pupilUid` rather than by
+  the per-class anonymous uid. Holds:
+  - Engagement trajectory across sessions
+  - Scaffold-reliance pattern
+  - Reason confidence trajectory by concept
+  - SEND adaptation profile (see item 2 above)
+  - Recurring strengths and recurring struggles, written by the
+    longitudinal updater (item 3)
+- Teacher dashboard pupil drill-down has a *Across sessions* tab.
+
+**Effort:** ~2-3 days. The biggest piece is the auth bridge — SSO
+into Firebase Auth via SAML/OIDC. The schema work is mostly already
+typed in `src/types/index.ts`.
+
+**Demo-day risk without:** none on 29 May. This is the production
+roadmap, not a demo blocker.
+
+**Trade-off note:** persistent pupil identity is a privacy step-up.
+Talk to the schools' DSL before turning it on — what data we want to
+track must be reviewed against the school's privacy notice and the
+DfE Keeping Children Safe in Education guidance.
+
+## 9. Adaptive difficulty per pupil
+
+**State:** `challengeLevel` is set at the lesson level
+(`foundation` / `core` / `stretch`) and applied uniformly across the
+whole class. Chris's steer: "Adaptive difficulty and knowledge of the
+student will help surely."
+
+**Done means:**
+- Per-pupil challenge calibration that drifts based on:
+  - Reason confidence trajectory (consistent high → stretch up; low →
+    foundation pace)
+  - Scaffold reliance (heavy use → foundation)
+  - Time-to-respond and substance of responses
+- The tutor system prompt picks up the *current* per-pupil challenge,
+  not the lesson-wide one.
+- The drift is gentle and slow (1-2 sessions of evidence before
+  changing band) — adaptive systems that change every turn feel
+  manipulative.
+- Teacher dashboard shows each pupil's current band + the rationale.
+- Teacher can override the auto-band per pupil with one click.
+
+**Effort:** ~1-2 days once item 8 (persistent profile) is in place.
+The hook is at `buildTutorSystemPrompt` (already takes
+`challengeLevel`); we just feed the per-pupil value instead of the
+lesson default.
+
+**Demo-day risk without:** none on 29 May.
+
+**Trade-off note:** make the band visible to the teacher but **not**
+to the pupil. Pupils labelled "foundation" who can read the label
+will internalise it. Same reason we don't show pupils their own
+engagement state.
+
 ---
 
 ## Sequencing
 
 Suggested order if all of Tier 3 lands post-demo:
 
-1. **Voice I/O** — most visible payoff for next round of school visits,
-   and self-contained.
+1. **Persistent pupil accounts (item 8)** — unlocks every "long-term"
+   item below. Do this first.
 2. **Firestore rules tightening** — must do before any external use.
 3. **Session-end retention** — must do before any minor's data lands.
-4. **SEND wiring** — natural extension of voice work (both touch the
-   accessibility surface).
-5. **Longitudinal consolidation** — needs real session data first;
-   build after a couple of weeks of usage.
-6. **Playwright e2e** — least urgent, highest insurance.
-7. **Cost controls v2** — only when usage warrants it.
+4. **SEND wiring** — depends on persistent accounts; natural pairing.
+5. **Longitudinal consolidation** — needs real session data first.
+6. **Adaptive difficulty (item 9)** — sits on top of items 8 + 5.
+7. **Voice I/O** — most visible payoff for next round of school visits.
+8. **Playwright e2e** — least urgent, highest insurance.
+9. **Cost controls v2** — only when usage warrants it.
