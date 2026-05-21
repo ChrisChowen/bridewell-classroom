@@ -24,6 +24,7 @@ interface Body {
   className?: string;
   yearGroup?: number;
   classNotes?: string;
+  challengeLevel?: "foundation" | "core" | "stretch";
 }
 
 export async function POST(req: Request) {
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
     className: body.className,
     yearGroup: body.yearGroup,
     classNotes: body.classNotes,
+    challengeLevel: body.challengeLevel,
   });
 
   return NextResponse.json({ plan });

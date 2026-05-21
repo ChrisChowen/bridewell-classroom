@@ -10,6 +10,8 @@
 import type { ActivityType, TutorMode } from "@/types";
 import { ACTIVITIES } from "./activities";
 
+type ChallengeLevel = "foundation" | "core" | "stretch";
+
 export interface PromptContext {
   mode: TutorMode;
   lessonTitle?: string;
@@ -35,6 +37,16 @@ export interface PromptContext {
   stepGoal?: string;
   // Pupil's SEND profile expressed as a short adaptation block.
   pupilProfile?: string;
+  // Difficulty knob inherited from the lesson plan. Calibrates the
+  // tutor's expectation of pupil response substance and how generous
+  // its soft-challenge follow-ups are. Default "core".
+  challengeLevel?: ChallengeLevel;
+  // Pupil is in the extension/overflow run — finished the main
+  // sequence (or was promoted by the teacher) and is now on the
+  // above-syllabus stretch brief. Tutor pitch shifts accordingly.
+  inExtension?: boolean;
+  extensionBrief?: string;
+  extensionStretchHint?: string;
 }
 
 const BASE = `You are the Bridewell Classroom tutor. You support Year 7–9 pupils,
@@ -119,7 +131,41 @@ export function buildTutorSystemPrompt(ctx: PromptContext): string {
     parts.push(`Pupil adaptation notes (adjust your output accordingly):\n${ctx.pupilProfile}`);
   }
 
+  if (ctx.challengeLevel && ctx.challengeLevel !== "core") {
+    parts.push(challengeBlock(ctx.challengeLevel));
+  }
+
+  if (ctx.inExtension && ctx.extensionBrief) {
+    parts.push(
+      `This pupil has completed the main lesson sequence and is now on the **extension** ` +
+        `task. Treat them as having mastered the syllabus content already. Pitch the ` +
+        `conversation above the year-group syllabus into the next layer.\n\n` +
+        `Extension brief: ${ctx.extensionBrief}` +
+        (ctx.extensionStretchHint ? `\n\nReach: ${ctx.extensionStretchHint}` : "") +
+        `\n\nIn extension you do NOT need to keep the register elementary. Use the proper ` +
+        `technical vocabulary, ask questions that demand substantive elaboration, and be ` +
+        `willing to point at the next key stage where the topic continues.`
+    );
+  }
+
   return parts.join("\n\n");
+}
+
+function challengeBlock(level: ChallengeLevel): string {
+  if (level === "foundation") {
+    return `Challenge calibration — **foundation**. Pitch your prompts below the year-group ` +
+      `average. Move slowly: one new idea per turn, frequent retrieval of what was just said, ` +
+      `lots of small wins. Accept partial answers warmly and build from them. Avoid leaps ` +
+      `in abstraction. The bar for "showing understanding" is lower here — a clear ` +
+      `concrete example counts as evidence.`;
+  }
+  // stretch
+  return `Challenge calibration — **stretch**. Pitch your prompts above the year-group ` +
+    `syllabus. Expect substantive responses; one-sentence answers are not yet evidence. ` +
+    `Push toward generalisation, edge cases, and one connection out to the next key stage ` +
+    `or a real-world application. Soft challenges should ask the pupil to defend their ` +
+    `reasoning, not just restate it. Be precise about vocabulary — anchor to the proper ` +
+    `terms even when introducing new ones.`;
 }
 
 // Constrained system prompts for the three scaffolding generators. Each

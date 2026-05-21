@@ -108,10 +108,18 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
 
   // The active step the tutor is anchored to. Driven by
   // currentStepIndex which the engagement-run route advances when the
-  // classifier confirms sustained understanding.
-  const activeStep =
-    lessonPlan?.sequence?.[currentStepIndex] ?? lessonPlan?.sequence?.[0];
+  // classifier confirms sustained understanding. When the pupil has
+  // moved past the final step, we switch to the extension brief
+  // instead of clamping to the last step — this is how the high
+  // attainer gets the above-syllabus stretch.
   const stepCount = lessonPlan?.sequence?.length ?? 0;
+  const inExtension = !!(
+    lessonPlan?.extension && stepCount > 0 && currentStepIndex >= stepCount
+  );
+  const activeStep =
+    lessonPlan?.sequence?.[currentStepIndex] ??
+    lessonPlan?.sequence?.[stepCount - 1] ??
+    lessonPlan?.sequence?.[0];
 
   const lessonForApi = lessonPlan
     ? {
@@ -120,6 +128,7 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
         criticalConcepts: lessonPlan.criticalConcepts,
         keyVocabulary: lessonPlan.keyVocabulary,
         tutorAddendum: lessonPlan.tutorAddendum,
+        challengeLevel: lessonPlan.challengeLevel,
       }
     : {
         title: demoLesson.title,
@@ -134,6 +143,14 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
         activityType: activeStep.activityType,
       }
     : undefined;
+
+  const extensionForApi =
+    inExtension && lessonPlan?.extension
+      ? {
+          brief: lessonPlan.extension.brief,
+          stretchHint: lessonPlan.extension.stretchHint,
+        }
+      : undefined;
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -420,6 +437,7 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
           mode,
           lesson: lessonForApi,
           step: stepForApi,
+          extension: extensionForApi,
         }),
       });
       const data = (await res.json()) as {

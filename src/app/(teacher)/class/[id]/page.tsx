@@ -9,7 +9,6 @@ import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
 import { subscribeToLiveClass, subscribeToSessionStatus, type LivePupil, type SessionStatus } from "@/lib/firebase/live";
 import { PupilCard } from "@/components/teacher/PupilCard";
-import { StepTimeline } from "@/components/teacher/StepTimeline";
 import { LivePupilPanel } from "@/components/teacher/LivePupilPanel";
 import { AppraisalPanel } from "@/components/teacher/AppraisalPanel";
 import { ACTIVITIES } from "@/lib/ai/activities";
@@ -366,49 +365,137 @@ export default function ClassDetailPage() {
                   </div>
                 </div>
                 <ol style={{ margin: 0, padding: 0, listStyle: "none", display: "grid", gap: 6 }}>
-                  {klass.lessonPlan.sequence.map((s, i) => (
-                    <li
-                      key={i}
+                  {klass.lessonPlan.sequence.map((s, i) => {
+                    const onStep = Object.values(live).filter(
+                      (p) => (p.currentStepIndex ?? 0) === i
+                    );
+                    return (
+                      <li
+                        key={i}
+                        style={{
+                          padding: "10px 12px",
+                          border: "1px solid var(--line)",
+                          borderRadius: 8,
+                          background: "var(--surface)",
+                        }}
+                      >
+                        <div className="flex items-center justify-between" style={{ gap: 8 }}>
+                          <div className="flex items-center gap-2" style={{ flexWrap: "wrap", minWidth: 0 }}>
+                            <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--text-muted)" }}>
+                              {i + 1}.
+                            </span>
+                            <span style={{ fontSize: 13, fontWeight: 600 }}>{s.title}</span>
+                            <span style={{ fontSize: 10, color: "var(--color-gold-500)", background: "rgba(181,138,60,0.08)", borderRadius: 999, padding: "2px 8px" }}>
+                              {ACTIVITIES[s.activityType]?.label ?? s.activityType}
+                            </span>
+                          </div>
+                          {/* Per-step pupil tokens — the token row IS the
+                              live-progress signal, so we don't need a
+                              separate timeline panel. Dots are coloured
+                              by engagement state; no names exposed in
+                              the cluster (the cards below the plan
+                              carry names + drill detail). */}
+                          {onStep.length > 0 && (
+                            <div
+                              className="flex items-center gap-1"
+                              style={{ flexShrink: 0 }}
+                              aria-label={`${onStep.length} pupil${onStep.length === 1 ? "" : "s"} on this step`}
+                            >
+                              <span style={{ fontSize: 11, color: "var(--color-gold-500)", fontWeight: 600, marginRight: 4 }}>
+                                {onStep.length}
+                              </span>
+                              {onStep.slice(0, 10).map((p) => (
+                                <span
+                                  key={p.pupilId}
+                                  title={`${p.displayName} · ${p.state}`}
+                                  style={{
+                                    width: 9,
+                                    height: 9,
+                                    borderRadius: 999,
+                                    background: statePill[p.state]?.colour ?? "var(--text-muted)",
+                                    opacity: 0.9,
+                                  }}
+                                />
+                              ))}
+                              {onStep.length > 10 && (
+                                <span style={{ fontSize: 10, color: "var(--text-muted)", marginLeft: 4 }}>
+                                  +{onStep.length - 10}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.45, marginTop: 4 }}>{s.goal}</div>
+                      </li>
+                    );
+                  })}
+                </ol>
+
+                {/* Extension brief — the above-syllabus run for early
+                    finishers. The pupil enters this when their step
+                    index has advanced one past the last step. */}
+                {klass.lessonPlan.extension && (() => {
+                  const inExt = Object.values(live).filter(
+                    (p) => (p.currentStepIndex ?? 0) >= klass.lessonPlan!.sequence.length
+                  );
+                  return (
+                    <div
                       style={{
                         padding: "10px 12px",
-                        border: "1px solid var(--line)",
+                        border: "1px solid var(--color-gold-500)",
                         borderRadius: 8,
-                        background: "var(--surface)",
+                        background: "rgba(181,138,60,0.06)",
+                        marginTop: 8,
                       }}
                     >
-                      <div className="flex items-center gap-2" style={{ marginBottom: 4 }}>
-                        <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--text-muted)" }}>
-                          {i + 1}.
-                        </span>
-                        <span style={{ fontSize: 13, fontWeight: 600 }}>{s.title}</span>
-                        <span style={{ fontSize: 10, color: "var(--color-gold-500)", background: "rgba(181,138,60,0.08)", borderRadius: 999, padding: "2px 8px" }}>
-                          {ACTIVITIES[s.activityType]?.label ?? s.activityType}
-                        </span>
+                      <div className="flex items-center justify-between" style={{ gap: 8 }}>
+                        <div className="flex items-center gap-2" style={{ flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-gold-500)", fontWeight: 700 }}>
+                            EXT.
+                          </span>
+                          <span style={{ fontSize: 13, fontWeight: 600 }}>{klass.lessonPlan.extension.title}</span>
+                          <span style={{ fontSize: 10, color: "var(--color-gold-500)", background: "rgba(181,138,60,0.10)", borderRadius: 999, padding: "2px 8px" }}>
+                            above syllabus
+                          </span>
+                        </div>
+                        {inExt.length > 0 && (
+                          <div className="flex items-center gap-1" style={{ flexShrink: 0 }}>
+                            <span style={{ fontSize: 11, color: "var(--color-gold-500)", fontWeight: 600, marginRight: 4 }}>
+                              {inExt.length}
+                            </span>
+                            {inExt.slice(0, 10).map((p) => (
+                              <span
+                                key={p.pupilId}
+                                title={`${p.displayName} · on the extension`}
+                                style={{
+                                  width: 9,
+                                  height: 9,
+                                  borderRadius: 999,
+                                  background: statePill[p.state]?.colour ?? "var(--text-muted)",
+                                  opacity: 0.9,
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.45 }}>{s.goal}</div>
-                    </li>
-                  ))}
-                </ol>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.45, marginTop: 4 }}>
+                        {klass.lessonPlan.extension.brief}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, fontStyle: "italic" }}>
+                        Stretch: {klass.lessonPlan.extension.stretchHint}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                  Edits to the lesson plan propagate to pupils on their next tutor turn. Pupils
-                  already past a step are not rewound; pupils inserted into a new step pick it up
-                  from the next reply.
+                  Dots on each step are pupils currently inside it — coloured by engagement state.
+                  Edits to the lesson plan propagate to pupils on their next tutor turn; pupils
+                  already past a step are not rewound.
                 </p>
               </div>
             )}
-          </section>
-        )}
-
-        {/* Step timeline — bird's-eye view of where the class is in the plan */}
-        {klass?.lessonPlan?.sequence && klass.lessonPlan.sequence.length > 1 && Object.keys(live).length > 0 && (
-          <section className="bw-card" style={{ padding: 14, marginBottom: 18 }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
-              <span className="bw-section-label">Class progress through the plan</span>
-              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                Dots are pupils; each step shows who is currently inside it.
-              </span>
-            </div>
-            <StepTimeline sequence={klass.lessonPlan.sequence} pupils={Object.values(live)} />
           </section>
         )}
 

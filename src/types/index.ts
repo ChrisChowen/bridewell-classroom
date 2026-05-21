@@ -164,6 +164,34 @@ export interface LessonPlan {
   // Free-text notes the AI wants the teacher to confirm (open questions,
   // assumed prior knowledge).
   notesForTeacher?: string[];
+  // Difficulty knob the planner respects + the tutor inherits. Real
+  // classes are imbalanced: the same syllabus topic ranges from
+  // "stretch the high attainer" to "build the basics for the bottom
+  // set". The planner uses this to pick prompt depth + activity
+  // difficulty. The tutor uses it to calibrate how generous to be on
+  // the soft-challenge follow-ups.
+  //   foundation: build understanding from minimal prior knowledge
+  //   core:       on-syllabus for the year group
+  //   stretch:    push beyond the explicit syllabus into the next layer
+  challengeLevel?: "foundation" | "core" | "stretch";
+  // Extension / overflow task — what a pupil who finishes early or who
+  // is plainly ahead of the class should be doing. The AI plans this
+  // as one open-ended brief that can run for 10+ minutes, NOT as a
+  // structured step (the early-finisher should not be on rails). The
+  // tutor switches into this when the pupil completes step N where N
+  // is the last step OR when the teacher promotes them via the drill
+  // panel. Deliberately reaches above the syllabus so the AI doesn't
+  // simply give the high-attainer more of the same.
+  extension?: {
+    title: string;
+    // 2-3 sentence brief the pupil sees + the tutor coaches against.
+    brief: string;
+    // What "above the syllabus" looks like for this lesson — e.g. a
+    // KS4 idea for a Y8 lesson, or a real-world application.
+    stretchHint: string;
+    // Anchored concepts the tutor should probe on this stretch run.
+    criticalConcepts?: string[];
+  };
 }
 
 // Lesson library + post-class appraisal ----------------------------------

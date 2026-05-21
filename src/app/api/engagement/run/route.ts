@@ -114,16 +114,22 @@ export async function POST(req: Request) {
   //    the next step in their lesson plan.
   const liveRef = a.rtdb.ref(`liveSessions/${pupil.classId}/pupils/${decoded.uid}`);
 
-  // Read the lesson plan's step count so we don't overshoot. Cheap
-  // here because we're already touching the class for safeguarding.
+  // Read the lesson plan's step count + whether it has an extension.
+  // The pupil can advance one position past the last step IF there's
+  // an extension defined — that's how the high attainer crosses over
+  // into the above-syllabus brief without the teacher having to
+  // promote them manually.
   let sequenceLength = 1;
+  let hasExtension = false;
   try {
     const classSnap = await a.db.collection("classes").doc(pupil.classId).get();
     const cls = classSnap.data() as ClassRecord | undefined;
     sequenceLength = cls?.lessonPlan?.sequence?.length ?? 1;
+    hasExtension = !!cls?.lessonPlan?.extension;
   } catch {
     /* keep default — we never block on this */
   }
+  const maxStepIndex = hasExtension ? sequenceLength : sequenceLength - 1;
   const ENGAGED: ReadonlyArray<string> = ["flowing", "productive_struggle"];
   const HIGH_CONF = 0.7;
   const STREAK_TO_ADVANCE = 2;
@@ -151,7 +157,7 @@ export async function POST(req: Request) {
     const prevStepIndex = c.currentStepIndex ?? 0;
     let stepIndex = prevStepIndex;
     let didAdvance = false;
-    if (nextStreak >= STREAK_TO_ADVANCE && prevStepIndex < sequenceLength - 1) {
+    if (nextStreak >= STREAK_TO_ADVANCE && prevStepIndex < maxStepIndex) {
       stepIndex = prevStepIndex + 1;
       didAdvance = true;
     }

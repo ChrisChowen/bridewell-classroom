@@ -31,12 +31,19 @@ type Body = {
     context?: string;
     tutorAddendum?: string;
     keyVocabulary?: string[];
+    challengeLevel?: "foundation" | "core" | "stretch";
   };
   // The current step in the lesson plan, if the pupil is inside one.
   step?: {
     title?: string;
     goal?: string;
     activityType?: ActivityType;
+  };
+  // If set, the pupil has completed the main sequence and is running
+  // the extension brief. Tutor pitches above-syllabus.
+  extension?: {
+    brief: string;
+    stretchHint?: string;
   };
   pupilProfile?: string;
   system?: string;
@@ -82,6 +89,10 @@ export async function POST(req: Request) {
       stepTitle: body.step?.title,
       stepGoal: body.step?.goal,
       pupilProfile: body.pupilProfile,
+      challengeLevel: body.lesson?.challengeLevel,
+      inExtension: !!body.extension,
+      extensionBrief: body.extension?.brief,
+      extensionStretchHint: body.extension?.stretchHint,
     });
 
   const result = await callLLM({

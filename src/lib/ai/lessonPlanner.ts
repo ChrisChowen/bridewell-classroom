@@ -22,6 +22,11 @@ export interface GenerateLessonPlanInput {
   className?: string;
   yearGroup?: number;
   classNotes?: string;
+  // Difficulty knob the planner respects. Real classes are imbalanced
+  // — same syllabus topic, very different ability mixes — so the
+  // teacher chooses where the centre of gravity sits. Defaults to
+  // "core" (on-syllabus for the year group).
+  challengeLevel?: "foundation" | "core" | "stretch";
 }
 
 function buildSystemPrompt(): string {
@@ -70,6 +75,25 @@ ${activityCatalogue}
     assumed pupils have met word equations before"). The teacher will
     review these.
 
+  - **Challenge level** matters. The teacher will tell you whether to
+    pitch the lesson at "foundation" (build understanding from minimal
+    prior knowledge — slower pacing, more retrieval and scaffolding,
+    fewer abstract leaps), "core" (on-syllabus for the year group —
+    the default), or "stretch" (push beyond the syllabus into the
+    next layer of difficulty — invite generalisation, edge cases, and
+    one connection out to the next key stage). Adjust pacing, prompt
+    depth, and the expected pupil response substance accordingly.
+
+  - **Extension task** — always plan an extension that runs
+    independently of the main sequence. It is for the pupil(s) who
+    finish early or who are plainly ahead from the start. The extension
+    should reach above the explicit syllabus into the next layer or a
+    real-world application — never simply "more questions of the same
+    shape". Give it: a short title, a 2–3 sentence brief the pupil
+    sees, a stretchHint that names where it goes beyond the syllabus,
+    and 1–2 critical concepts to anchor the tutor on. Aim for a brief
+    that supports ~10–15 minutes of independent work.
+
 Output strict JSON only — no prose outside the schema.`;
 }
 
@@ -101,6 +125,17 @@ const SCHEMA = {
     tutorAddendum: { type: "string" },
     scaffoldCeiling: { type: "integer", minimum: 1, maximum: 6 },
     estimatedMinutes: { type: "integer", minimum: 10, maximum: 120 },
+    challengeLevel: { type: "string", enum: ["foundation", "core", "stretch"] },
+    extension: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        brief: { type: "string" },
+        stretchHint: { type: "string" },
+        criticalConcepts: { type: "array", items: { type: "string" } },
+      },
+      required: ["title", "brief", "stretchHint"],
+    },
     notesForTeacher: { type: "array", items: { type: "string" } },
   },
   required: [
@@ -111,6 +146,7 @@ const SCHEMA = {
     "tutorAddendum",
     "scaffoldCeiling",
     "estimatedMinutes",
+    "extension",
   ],
 } as const;
 
@@ -134,6 +170,7 @@ export async function generateLessonPlan(
     "",
     `Teacher class context: ${input.className ?? "n/a"}${input.yearGroup ? ` (Year ${input.yearGroup})` : ""}`,
     input.classNotes ? `Teacher notes about the class: ${input.classNotes}` : null,
+    `Challenge level: ${input.challengeLevel ?? "core"} (pitch the whole plan at this level).`,
     "",
     `Teacher brief (natural language) — produce the lesson plan to land this:`,
     teacherIntent.trim(),
@@ -179,6 +216,15 @@ export async function generateLessonPlan(
       defaultMode: "coach",
       estimatedMinutes: syllabus.suggestedMinutes,
       generatedAt: Date.now(),
+      challengeLevel: input.challengeLevel ?? "core",
+      extension: {
+        title: `Beyond ${syllabus.topic}`,
+        brief:
+          `Push your understanding of ${syllabus.topic} one step beyond the lesson. ` +
+          `Apply it to a real situation you haven't been taught yet.`,
+        stretchHint: `Above-syllabus reach into the next layer of ${syllabus.subject}.`,
+        criticalConcepts: syllabus.criticalConcepts.slice(0, 2),
+      },
       notesForTeacher: [
         `LLM was unavailable when this plan was generated (${result.text.slice(0, 120)}…). ` +
           `Plan reflects the syllabus directly; edit before approving.`,
@@ -204,6 +250,13 @@ export async function generateLessonPlan(
     tutorAddendum: string;
     scaffoldCeiling: number;
     estimatedMinutes: number;
+    challengeLevel?: "foundation" | "core" | "stretch";
+    extension?: {
+      title: string;
+      brief: string;
+      stretchHint: string;
+      criticalConcepts?: string[];
+    };
     notesForTeacher?: string[];
   };
 
@@ -235,6 +288,15 @@ export async function generateLessonPlan(
     defaultMode: "coach",
     estimatedMinutes: clampInt(j.estimatedMinutes, 10, 120) ?? syllabus.suggestedMinutes,
     generatedAt: Date.now(),
+    challengeLevel: j.challengeLevel ?? input.challengeLevel ?? "core",
+    extension: j.extension
+      ? {
+          title: j.extension.title,
+          brief: j.extension.brief,
+          stretchHint: j.extension.stretchHint,
+          criticalConcepts: j.extension.criticalConcepts,
+        }
+      : undefined,
     notesForTeacher: j.notesForTeacher,
     fallbackUsed: false,
   };

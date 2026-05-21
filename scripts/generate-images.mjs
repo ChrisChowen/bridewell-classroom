@@ -235,27 +235,116 @@ async function generate(t) {
 
 // Convert the flat cream background to transparent so the motif sits
 // cleanly on any surface. We use a chroma-key style threshold — any
-// pixel within `tol` of pure cream becomes transparent.
+// pixel within `tol` of pure cream becomes transparent. We then crop
+// to the bounding box of the non-transparent content with a small
+// padding, so the image scales without phantom whitespace around it.
 async function removeCreamBackground(buf) {
   const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  const out = Buffer.from(data); // copy
+  const out = Buffer.from(data);
   const target = { r: 0xfa, g: 0xf6, b: 0xee };
-  const tol = 18; // distance per channel
-  for (let i = 0; i < out.length; i += 4) {
-    const dr = Math.abs(out[i] - target.r);
-    const dg = Math.abs(out[i + 1] - target.g);
-    const db = Math.abs(out[i + 2] - target.b);
-    if (dr <= tol && dg <= tol && db <= tol) {
-      out[i + 3] = 0; // alpha to 0
+  const tol = 18;
+  const { width, height } = info;
+  // Pass 1 — chroma-key + record content bounds
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      const dr = Math.abs(out[i] - target.r);
+      const dg = Math.abs(out[i + 1] - target.g);
+      const db = Math.abs(out[i + 2] - target.b);
+      if (dr <= tol && dg <= tol && db <= tol) {
+        out[i + 3] = 0;
+      } else {
+        // Non-background pixel — record bounds
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
     }
   }
-  return sharp(out, { raw: { width: info.width, height: info.height, channels: 4 } })
+  // No content found — return the keyed result as-is
+  if (maxX < 0 || maxY < 0) {
+    return sharp(out, { raw: { width, height, channels: 4 } }).png().toBuffer();
+  }
+  // Pad the bounding box by ~3% of the image dimension so the figure
+  // breathes; clamp to the original frame.
+  const padX = Math.round(width * 0.03);
+  const padY = Math.round(height * 0.03);
+  const left = Math.max(0, minX - padX);
+  const top = Math.max(0, minY - padY);
+  const right = Math.min(width - 1, maxX + padX);
+  const bottom = Math.min(height - 1, maxY + padY);
+  const cropW = right - left + 1;
+  const cropH = bottom - top + 1;
+  return sharp(out, { raw: { width, height, channels: 4 } })
+    .extract({ left, top, width: cropW, height: cropH })
     .png()
     .toBuffer();
 }
 
-// Allow targeted regeneration: `node scripts/generate-images.mjs scholar-*`
-const filter = process.argv[2];
+// Reprocess an existing PNG that already has a transparent background —
+// just crop it to the content's bounding box + padding. Useful for
+// trimming the dead space around images already in `public/img/`
+// without re-running Imagen.
+async function recropTransparent(filePath) {
+  const buf = await sharp(filePath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { data, info } = buf;
+  const { width, height } = info;
+  let minX = width, minY = height, maxX = -1, maxY = -1;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      if (data[i + 3] > 12) {
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (maxX < 0) return null;
+  const padX = Math.round(width * 0.03);
+  const padY = Math.round(height * 0.03);
+  const left = Math.max(0, minX - padX);
+  const top = Math.max(0, minY - padY);
+  const right = Math.min(width - 1, maxX + padX);
+  const bottom = Math.min(height - 1, maxY + padY);
+  return sharp(filePath)
+    .extract({ left, top, width: right - left + 1, height: bottom - top + 1 })
+    .png()
+    .toBuffer();
+}
+
+// Modes:
+//   node scripts/generate-images.mjs              — regenerate all targets
+//   node scripts/generate-images.mjs scholar-*    — regenerate matching
+//   node scripts/generate-images.mjs --recrop     — re-crop the existing
+//     transparent PNGs in public/img/ without re-running Imagen. Useful
+//     when an earlier run left too much empty space around the figure.
+const arg = process.argv[2];
+
+if (arg === "--recrop") {
+  const { readdirSync, writeFileSync } = await import("node:fs");
+  const files = readdirSync(outDir).filter((f) => f.endsWith(".png"));
+  console.log(`Re-cropping ${files.length} existing PNG(s) in ${outDir}`);
+  for (const f of files) {
+    const inPath = resolve(outDir, f);
+    const cropped = await recropTransparent(inPath);
+    if (cropped) {
+      writeFileSync(inPath, cropped);
+      console.log(`  ✓ ${f} (${(cropped.length / 1024).toFixed(1)} KB)`);
+    } else {
+      console.log(`  · ${f} (no content to crop to)`);
+    }
+  }
+  process.exit(0);
+}
+
+const filter = arg;
 const toRun = filter
   ? targets.filter((t) =>
       filter.endsWith("*") ? t.name.startsWith(filter.slice(0, -1)) : t.name === filter

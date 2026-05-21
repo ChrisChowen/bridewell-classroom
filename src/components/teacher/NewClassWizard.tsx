@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, BookOpen, Sparkles, Check, X, AlertTriangle, RotateCcw, Library } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Sparkles, Check, X, AlertTriangle, RotateCcw, Library, Pencil } from "lucide-react";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
 import { SYLLABUS_LIBRARY } from "@/lib/syllabi";
@@ -33,6 +33,7 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
   const [yearGroup, setYearGroup] = useState<number>(8);
   const [intent, setIntent] = useState("");
   const [classNotes, setClassNotes] = useState("");
+  const [challengeLevel, setChallengeLevel] = useState<"foundation" | "core" | "stretch">("core");
   const [generating, setGenerating] = useState(false);
   const [plan, setPlan] = useState<LessonPlan | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -95,6 +96,7 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
           className,
           yearGroup,
           classNotes: classNotes.trim() || undefined,
+          challengeLevel,
         }),
       });
       const data = await res.json();
@@ -106,6 +108,52 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
     } finally {
       setGenerating(false);
     }
+  }
+
+  // "Start from scratch" — seeds a minimal LessonPlan against the chosen
+  // syllabus and drops the teacher into the review/edit step where they
+  // can shape every field by hand. The third entry point of the wizard
+  // alongside "Generate" and "From the library".
+  function startBlank() {
+    if (!syllabus) return;
+    const blank: LessonPlan = {
+      id: `lp_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`,
+      title: `${syllabus.topic}`,
+      subject: syllabus.subject,
+      yearGroup,
+      teacherIntent: intent.trim() || `Teach ${syllabus.topic} to Year ${yearGroup}.`,
+      syllabusId: syllabus.id,
+      learningObjectives: syllabus.learningOutcomes.slice(0, 3),
+      criticalConcepts: syllabus.criticalConcepts.slice(0, 3),
+      keyVocabulary: syllabus.keyVocabulary,
+      sequence: [
+        {
+          title: "Open the topic",
+          goal: `Surface what pupils already know about ${syllabus.topic}.`,
+          activityType: "socratic",
+          criticalConcepts: syllabus.criticalConcepts.slice(0, 1),
+          openingPrompt: `What do you already know about ${syllabus.topic}?`,
+          estimatedMinutes: 8,
+        },
+      ],
+      tutorAddendum: `Anchor the conversation to ${syllabus.topic} for Year ${syllabus.yearGroup}. Coach mode by default.`,
+      scaffoldCeiling: 3,
+      defaultMode: "coach",
+      estimatedMinutes: syllabus.suggestedMinutes,
+      generatedAt: Date.now(),
+      challengeLevel,
+      extension: {
+        title: `Beyond ${syllabus.topic}`,
+        brief: `Push your understanding of ${syllabus.topic} one step beyond the lesson — apply it to a real situation you haven't been taught yet.`,
+        stretchHint: `Above-syllabus reach into the next layer of ${syllabus.subject}.`,
+        criticalConcepts: syllabus.criticalConcepts.slice(0, 2),
+      },
+      notesForTeacher: [
+        "This plan started as a blank — every field is editable. Add 1–4 more steps to shape the lesson.",
+      ],
+    };
+    setPlan(blank);
+    setStep("review");
   }
 
   async function approveAndCreate() {
@@ -192,6 +240,8 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
               setIntent={setIntent}
               classNotes={classNotes}
               setClassNotes={setClassNotes}
+              challengeLevel={challengeLevel}
+              setChallengeLevel={setChallengeLevel}
               generating={generating}
               libraryEntries={libraryEntries}
               onLibraryPick={(entry) => {
@@ -200,6 +250,7 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
               }}
               onBack={() => setStep("pick")}
               onGenerate={generate}
+              onStartBlank={startBlank}
             />
           )}
 
@@ -348,11 +399,14 @@ function DescribeStep({
   setIntent,
   classNotes,
   setClassNotes,
+  challengeLevel,
+  setChallengeLevel,
   generating,
   libraryEntries,
   onLibraryPick,
   onBack,
   onGenerate,
+  onStartBlank,
 }: {
   syllabus: SyllabusEntry;
   className: string;
@@ -365,11 +419,14 @@ function DescribeStep({
   setIntent: (v: string) => void;
   classNotes: string;
   setClassNotes: (v: string) => void;
+  challengeLevel: "foundation" | "core" | "stretch";
+  setChallengeLevel: (v: "foundation" | "core" | "stretch") => void;
   generating: boolean;
   libraryEntries: LessonLibraryEntry[];
   onLibraryPick: (entry: LessonLibraryEntry) => void;
   onBack: () => void;
   onGenerate: () => void;
+  onStartBlank: () => void;
 }) {
   return (
     <div style={{ display: "grid", gap: 16 }}>
@@ -484,26 +541,42 @@ function DescribeStep({
         />
       </label>
 
-      <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
+      <ChallengeSelect value={challengeLevel} onChange={setChallengeLevel} />
+
+      <div
+        className="flex items-center justify-between"
+        style={{ marginTop: 4, gap: 8, flexWrap: "wrap" }}
+      >
         <button onClick={onBack} className="bw-btn-secondary" style={{ fontSize: 13 }}>
           <ArrowLeft size={14} style={{ marginRight: 6 }} /> Back
         </button>
-        <button
-          onClick={onGenerate}
-          disabled={!intent.trim() || generating}
-          className="bw-btn-emphasis"
-          style={{ fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}
-        >
-          {generating ? (
-            <>
-              <Sparkles size={14} /> Drafting the plan…
-            </>
-          ) : (
-            <>
-              <Sparkles size={14} /> Generate lesson plan
-            </>
-          )}
-        </button>
+        <div className="flex items-center" style={{ gap: 8 }}>
+          <button
+            onClick={onStartBlank}
+            disabled={generating}
+            className="bw-btn-secondary"
+            style={{ fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}
+            title="Skip the AI draft — open a blank plan you can shape from scratch in the next step."
+          >
+            <Pencil size={14} /> Start from scratch
+          </button>
+          <button
+            onClick={onGenerate}
+            disabled={!intent.trim() || generating}
+            className="bw-btn-emphasis"
+            style={{ fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}
+          >
+            {generating ? (
+              <>
+                <Sparkles size={14} /> Drafting the plan…
+              </>
+            ) : (
+              <>
+                <Sparkles size={14} /> Generate lesson plan
+              </>
+            )}
+          </button>
+        </div>
       </div>
       {generating && (
         <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "right" }}>
@@ -700,6 +773,20 @@ function ReviewStep({
           onChange={(e) => setPlan({ ...plan, tutorAddendum: e.target.value })}
           rows={4}
           style={{ ...inputStyle, resize: "vertical", fontSize: 13, fontFamily: "var(--font-mono)" }}
+        />
+      </Section>
+
+      <Section
+        label="Extension · for pupils who finish early or are plainly ahead"
+        muted="The tutor switches into this above-syllabus brief when a pupil completes the main sequence"
+      >
+        <ExtensionEditor plan={plan} setPlan={setPlan} />
+      </Section>
+
+      <Section label="Challenge level · pitch of the whole plan">
+        <ChallengeSelect
+          value={plan.challengeLevel ?? "core"}
+          onChange={(v) => setPlan({ ...plan, challengeLevel: v })}
         />
       </Section>
 
@@ -948,3 +1035,131 @@ const errBox: React.CSSProperties = {
   gap: 8,
   marginTop: 16,
 };
+
+// Three-way pitch selector. Used in DescribeStep before generating the
+// plan and in ReviewStep so the teacher can adjust the level on a
+// loaded/edited plan too.
+function ChallengeSelect({
+  value,
+  onChange,
+}: {
+  value: "foundation" | "core" | "stretch";
+  onChange: (v: "foundation" | "core" | "stretch") => void;
+}) {
+  const options: Array<{
+    key: "foundation" | "core" | "stretch";
+    label: string;
+    body: string;
+  }> = [
+    {
+      key: "foundation",
+      label: "Foundation",
+      body: "Build understanding from minimal prior knowledge. Slower pace, more retrieval.",
+    },
+    {
+      key: "core",
+      label: "Core",
+      body: "On-syllabus for the year group. The default for most classes.",
+    },
+    {
+      key: "stretch",
+      label: "Stretch",
+      body: "Above-syllabus. Pupils are expected to generalise and defend reasoning.",
+    },
+  ];
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+      {options.map((opt) => {
+        const active = value === opt.key;
+        return (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => onChange(opt.key)}
+            aria-pressed={active}
+            style={{
+              textAlign: "left",
+              padding: "10px 12px",
+              borderRadius: 8,
+              cursor: "pointer",
+              background: active ? "rgba(181,138,60,0.10)" : "var(--surface)",
+              border: `1px solid ${active ? "var(--color-gold-500)" : "var(--line)"}`,
+              transition: "all 120ms ease",
+            }}
+          >
+            <div style={{ fontSize: 12, fontWeight: 700, color: active ? "var(--color-gold-500)" : "var(--text)" }}>
+              {opt.label}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4, marginTop: 4 }}>
+              {opt.body}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Edit the extension brief on the review surface. If the plan has no
+// extension yet (e.g. loaded from a pre-extension library entry), we
+// offer an "Add an extension" button that seeds one and opens it.
+function ExtensionEditor({
+  plan,
+  setPlan,
+}: {
+  plan: LessonPlan;
+  setPlan: (p: LessonPlan) => void;
+}) {
+  const ext = plan.extension;
+  if (!ext) {
+    return (
+      <button
+        type="button"
+        onClick={() =>
+          setPlan({
+            ...plan,
+            extension: {
+              title: `Beyond ${plan.title}`,
+              brief: `Push your understanding of ${plan.title} one step beyond the lesson — apply it somewhere you haven't been taught.`,
+              stretchHint: "Above-syllabus reach into the next layer.",
+              criticalConcepts: plan.criticalConcepts.slice(0, 2),
+            },
+          })
+        }
+        className="bw-btn-secondary"
+        style={{ fontSize: 12 }}
+      >
+        Add an extension task
+      </button>
+    );
+  }
+  function update(patch: Partial<NonNullable<LessonPlan["extension"]>>) {
+    setPlan({ ...plan, extension: { ...ext!, ...patch } });
+  }
+  return (
+    <div style={{ display: "grid", gap: 10 }}>
+      <input
+        value={ext.title}
+        onChange={(e) => update({ title: e.target.value })}
+        placeholder="Extension title"
+        style={{ ...inputStyle, fontWeight: 600 }}
+      />
+      <textarea
+        value={ext.brief}
+        onChange={(e) => update({ brief: e.target.value })}
+        placeholder="2–3 sentence brief the pupil sees"
+        rows={3}
+        style={{ ...inputStyle, resize: "vertical", fontSize: 13 }}
+      />
+      <label style={{ display: "grid", gap: 4 }}>
+        <span style={tinyLabel}>How this reaches above the syllabus</span>
+        <input
+          value={ext.stretchHint}
+          onChange={(e) => update({ stretchHint: e.target.value })}
+          placeholder="e.g. a KS4 idea for a Y8 lesson, or a real-world application"
+          style={inputStyle}
+        />
+      </label>
+    </div>
+  );
+}
