@@ -53,8 +53,9 @@ export async function POST(req: Request) {
     return await handle(req);
   } catch (err) {
     // Never let an unhandled exception crash the client's res.json() —
-    // always return a JSON 500.
-    console.error("consolidate route error:", err);
+    // always return a JSON 500. Log the message only (not the full error
+    // object, which could carry request data) per the no-PII-in-logs rule.
+    console.error("consolidate route error:", err instanceof Error ? err.message : "unknown");
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Consolidation failed" },
       { status: 500 }

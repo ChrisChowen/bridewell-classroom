@@ -247,17 +247,23 @@ export async function classifyEngagement(input: ClassifierInput): Promise<Classi
     // confidence so the dashboard does NOT falsely reassure the
     // teacher, plus the fallback flag the live mirror surfaces as a
     // degraded indicator.
+    // GDPR: never log model text here — on fallback result.text echoes
+    // the classifier prompt, which contains pupil turns (PII). Log only
+    // non-identifying operational metadata.
     console.warn("CLASSIFIER_FALLBACK", {
       fallback: result.fallbackUsed,
       tier,
-      text: result.text.slice(0, 120),
+      reason: result.fallbackUsed ? "llm_unavailable" : "non_json_output",
     });
     return {
       state: "productive_struggle",
       confidence: 0.1,
+      // No raw model text here either — on fallback it echoes the prompt
+      // (pupil turns). A plain operational message keeps the snapshot
+      // free of duplicated pupil content.
       rationale: result.fallbackUsed
-        ? `Classifier unavailable (${result.text.slice(0, 120)}…)`
-        : `Classifier returned non-JSON output: ${result.text.slice(0, 120)}…`,
+        ? "Classifier temporarily unavailable — engagement read is a safe placeholder, not a real signal."
+        : "Classifier returned malformed output — engagement read is a safe placeholder.",
       cues: ["classifier_fallback"],
       safeguarding: { severity: "none", summary: "" },
       fallbackUsed: true,

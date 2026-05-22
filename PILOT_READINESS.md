@@ -32,7 +32,7 @@ once added)._
 | GDPR: retention + auto-purge | 🔴 | No retention policy or purge job. |
 | GDPR: subject-access export (pseudonymised P001…) | 🔴 | No export endpoint. |
 | GDPR: full pupil-record deletion | 🟡 | `scripts/reset-profile.mjs` can wipe a teacher+data manually; no in-product path. |
-| No PII in logs | 🟡 | Needs an audit pass; some `console.error` paths log content. |
+| No PII in logs | 🟢 | Audited all server-side `console.*` (api + layers + lib). Two sites scrubbed: classifier fallback no longer logs/stores model text (echoes pupil turns on fallback); consolidate logs `err.message` only. Only operational metadata (flags/tier/codes) now reaches Cloud Logging. _Client-side console (runs in the user's own browser, not aggregated) out of scope._ |
 | Safeguarding: audit-trail doc on medium/high | 🟡 | Classifier emits flag; dashboard surfaces it (`LivePupilPanel`); routing to a named DSL + intervention history not built. |
 | Safeguarding: automated test (seeded disclosure surfaces + logs) | 🔴 | Not written. |
 | Auth rules scoped (teacher reads only own classes) | 🟢 | `firestore.rules` v3: teacher reads only owned classes/pupils/conversations; teacher-email PII leak closed; server-only collections (snapshots/reason/safeguarding/profiles/interventions) denied to all clients. Emulator-tested (`npm run test:rules`, 18 assertions incl. live query shapes); deployed + verified live. |
