@@ -252,7 +252,8 @@ const CHALLENGE_LABELS: Record<ChallengeLevel, string> = {
 // The pitch is AI-set on evidence and TEACHER-OVERRIDABLE. It is never
 // labelled to the pupil. Shows the across-sessions trajectory so a teacher
 // can see how a pupil's level has moved over time.
-function AdaptivePitch({ pupilId, pupilName }: { pupilId: string; pupilName: string }) {
+// Exported for component tests.
+export function AdaptivePitch({ pupilId, pupilName }: { pupilId: string; pupilName: string }) {
   const [profile, setProfile] = useState<LearnerProfile | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
 
@@ -412,7 +413,8 @@ const OUTPUT_FORMAT_OPTIONS: Array<{ value: SendProfile["outputFormat"]; label: 
 // Teacher-set SEND profile. Adapts HOW the tutor communicates (output
 // shape, pace, support) — never what counts as understanding, never shown
 // to the pupil. Feeds the tutor via buildSendAdaptationBlock.
-function SendEditor({ pupilId, pupilName }: { pupilId: string; pupilName: string }) {
+// Exported for component tests.
+export function SendEditor({ pupilId, pupilName }: { pupilId: string; pupilName: string }) {
   const [send, setSend] = useState<SendProfile | null | undefined>(undefined);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);

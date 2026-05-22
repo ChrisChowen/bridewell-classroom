@@ -9,8 +9,11 @@ import { resolve } from "node:path";
 // elsewhere, not here, so the unit suite stays fast and deterministic
 // with no network.
 export default defineConfig({
+  // Use React's automatic JSX runtime so component tests (.tsx) don't need
+  // an explicit `import React` (matching the Next build).
+  esbuild: { jsx: "automatic" },
   test: {
-    include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
+    include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.ts"],
     // Emulator-backed tests run under vitest.emulator.config.ts so the
     // default suite stays fast + emulator-free.
     exclude: ["**/node_modules/**", "src/**/*.emulator.test.ts"],

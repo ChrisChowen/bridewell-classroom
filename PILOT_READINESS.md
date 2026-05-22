@@ -27,7 +27,7 @@ once added)._
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Test + CI foundation | 🟢 | Vitest unit suite (42 tests) on trigger/responder/joinCode/rate-limit/prompts; GitHub Actions `ci.yml` gates typecheck + test + build on push/PR to main. |
+| Test + CI foundation | 🟢 | Vitest suite (**93 tests**): pure logic (trigger/responder/joinCode/rate-limit/prompts/llm/learner-profile/send/voice-select/reason-eval-metrics) + **React component tests** (happy-dom + RTL) covering the teacher drill-down panels (AdaptivePitch, SendEditor — empty + populated states) and the pupil AccessibilityMenu, plus 6 emulator tests. GitHub Actions `ci.yml` gates typecheck + test + build on push/PR to main. |
 | Playwright e2e for scenarios A/B/C | 🔴 | Not yet; unit gate landed first. |
 | GDPR: retention + auto-purge | 🟡🔒 | Retention policy DRAFTED (`docs/data-retention-policy.md`); on-demand erasure built + tested. Scheduled auto-purge (dry-run-first) pending the DPO-approved window + a Cloud Function. |
 | GDPR: subject-access export (Art. 15) | 🟢 | `gatherPupilData` (`src/lib/pupil-data.ts`) + teacher-scoped `GET /api/pupils/{id}/export`. Emulator-tested (`npm run test:emulator`). _Teacher-facing download button: small follow-up._ |
