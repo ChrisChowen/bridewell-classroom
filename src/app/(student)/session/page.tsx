@@ -10,6 +10,7 @@ import { ClosingScreen } from "@/components/student/ClosingScreen";
 import { AccessibilityMenu } from "@/components/student/AccessibilityMenu";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
+import { getCleanIdToken } from "@/lib/firebase/auth-fetch";
 import { subscribeToSessionStatus, type SessionStatus } from "@/lib/firebase/live";
 import { SessionOverlay } from "@/components/student/SessionOverlay";
 import { demoLesson } from "@/lib/demo/data";
@@ -69,7 +70,14 @@ export default function SessionPage() {
       }
       setLoadState("loading");
       try {
-        const token = await fb.auth.currentUser!.getIdToken();
+        // getCleanIdToken: strips control chars + handles a null user so the
+        // iOS-Safari "string did not match the expected pattern" header error
+        // (and a non-null-assert crash) can't strand the pupil's session load.
+        const token = await getCleanIdToken();
+        if (!token) {
+          router.replace("/join");
+          return;
+        }
         const res = await fetch("/api/pupils/me", {
           headers: { Authorization: `Bearer ${token}` },
         });

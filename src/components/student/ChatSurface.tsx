@@ -7,6 +7,7 @@ import { VOICE_OUTPUT_KEY } from "@/components/student/AccessibilityMenu";
 import type { ClassRecord, LessonPlan, Message, ReasonPromptType } from "@/types";
 import { demoLesson, demoTutorOpening } from "@/lib/demo/data";
 import { getFirebase } from "@/lib/firebase/client";
+import { getCleanIdToken } from "@/lib/firebase/auth-fetch";
 import {
   acknowledgeIntervention,
   bumpPupilLiveMessage,
@@ -476,14 +477,10 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
   // Falls back to no token in the demo/preview (unauthenticated) path.
   async function chatHeaders(): Promise<Record<string, string>> {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
-    try {
-      const fb = getFirebase();
-      if (fb.ready && fb.auth.currentUser) {
-        headers.Authorization = `Bearer ${await fb.auth.currentUser.getIdToken()}`;
-      }
-    } catch {
-      /* no token — server falls back to IP keying */
-    }
+    // getCleanIdToken strips control chars that otherwise make the iOS-Safari
+    // Headers constructor throw "string did not match the expected pattern".
+    const token = await getCleanIdToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
     return headers;
   }
 
