@@ -106,7 +106,10 @@ function timeOfDay() {
 
 function firstName(s: string) {
   const trimmed = s.includes("@") ? s.split("@")[0] : s;
-  return (trimmed.split(/[\s.]/)[0] ?? trimmed) || "there";
+  const first = (trimmed.split(/[\s.]/)[0] ?? trimmed) || "there";
+  // Capitalise — a teacher with no displayName derives from their email
+  // (e.g. "jane.wells@…" → "jane"); "Good morning, jane." reads off-brand.
+  return first.charAt(0).toUpperCase() + first.slice(1);
 }
 
 function EngagementWaitingPanel({ classes }: { classes: ClassRecord[] }) {

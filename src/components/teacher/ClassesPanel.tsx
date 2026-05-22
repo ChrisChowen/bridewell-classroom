@@ -157,7 +157,10 @@ export function ClassesPanel() {
 }
 
 function RosterCount({ classId }: { classId: string }) {
+  // Distinguish "still loading" and "couldn't count" from a genuine zero —
+  // a class you know has pupils showing "—" reads as broken on demo day.
   const [n, setN] = useState<number | null>(null);
+  const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -167,9 +170,12 @@ function RosterCount({ classId }: { classId: string }) {
       try {
         const q = query(collection(fb.db, "pupils"), where("classId", "==", classId));
         const snap = await getCountFromServer(q);
-        if (!cancelled) setN(snap.data().count);
+        if (!cancelled) {
+          setN(snap.data().count);
+          setStatus("ok");
+        }
       } catch {
-        if (!cancelled) setN(null);
+        if (!cancelled) setStatus("error");
       }
     }
     load();
@@ -177,9 +183,11 @@ function RosterCount({ classId }: { classId: string }) {
       cancelled = true;
     };
   }, [classId]);
+  // ok → the real count (including 0); loading → a quiet ellipsis; error → "—".
+  const display = status === "ok" ? n ?? 0 : status === "loading" ? "…" : "—";
   return (
     <span
-      title="Pupils joined"
+      title={status === "error" ? "Couldn't load the roster count" : "Pupils joined"}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -188,7 +196,7 @@ function RosterCount({ classId }: { classId: string }) {
         color: "var(--text-muted)",
       }}
     >
-      <Users size={12} /> {n ?? "—"}
+      <Users size={12} /> {display}
     </span>
   );
 }

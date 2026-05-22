@@ -1101,8 +1101,40 @@ function DescribeStep({
         </div>
       </div>
       {generating && (
-        <div style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "right" }}>
-          The lesson planner is thinking through pacing, critical concepts and likely misconceptions — about fifteen seconds.
+        <div style={{ marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10 }}>
+            The lesson planner is thinking through pacing, critical concepts and likely misconceptions — about fifteen seconds.
+          </div>
+          {/* Skeleton of the plan sections about to appear, so the ~15s wait
+              (the live demo's riskiest dead air) feels alive rather than frozen.
+              Reuses the same bw-shimmer treatment as the suggestions step. */}
+          <div style={{ display: "grid", gap: 12 }} aria-hidden>
+            {[
+              { label: "Objectives", lines: 3 },
+              { label: "Critical concepts", lines: 2 },
+              { label: "Lesson sequence", lines: 4 },
+              { label: "Tutor guidance", lines: 2 },
+            ].map((section) => (
+              <div key={section.label} style={{ display: "grid", gap: 6 }}>
+                <div className="bw-section-label" style={{ opacity: 0.6 }}>{section.label}</div>
+                {Array.from({ length: section.lines }).map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      height: 12,
+                      width: i === section.lines - 1 ? "62%" : "100%",
+                      borderRadius: 6,
+                      background:
+                        "linear-gradient(90deg, var(--line) 0%, rgba(181,138,60,0.12) 50%, var(--line) 100%)",
+                      backgroundSize: "200% 100%",
+                      animation: "bw-shimmer 1400ms linear infinite",
+                      opacity: 0.7,
+                    }}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

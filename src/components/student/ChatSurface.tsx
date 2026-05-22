@@ -70,6 +70,13 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
   const [dictating, setDictating] = useState(false);
   const [micAvailable, setMicAvailable] = useState(false);
   const dictationRef = useRef<Dictation | null>(null);
+  // Ref to the composer so we can return focus after each turn — on a shared
+  // iPad, re-tapping the field every message is a real per-turn tax.
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  // The scaffold-use count lives in signalsRef (read every turn for triggers),
+  // but the "N of N left" pill + disabled state are UI and must re-render when
+  // it changes. Mirror it into state so the pill is never stale.
+  const [scaffoldUsed, setScaffoldUsed] = useState(0);
 
   useEffect(() => {
     setMicAvailable(speechInputAvailable());
@@ -428,6 +435,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
           // they earned on step 1 still blocking step 2.
           if (next > prev) {
             signalsRef.current.scaffoldUseCount = 0;
+            setScaffoldUsed(0);
           }
           return next > prev ? next : prev;
         });
@@ -650,6 +658,9 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
       setError(e instanceof Error ? `Couldn't send — ${e.message}. Try again.` : "Couldn't send. Try again.");
     } finally {
       setPending(false);
+      // Return focus to the composer so the pupil can keep typing without
+      // re-tapping the field every turn (real friction on a shared iPad).
+      if (!inputDisabled) inputRef.current?.focus();
       // Drop the one-turn Expert override after the turn.
       if (usedExpertOverride) setExpertNextTurn(null);
       // Fire the classifier after every 5 pupil messages.
@@ -662,6 +673,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
   async function scaffold(kind: "hint" | "rephrase" | "simplify") {
     if (pending) return;
     signalsRef.current.scaffoldUseCount += 1;
+    setScaffoldUsed(signalsRef.current.scaffoldUseCount);
     signalsRef.current.msgsSinceClassify += 1;
     setPending(true);
     setError(null);
@@ -715,6 +727,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
       setError(e instanceof Error ? e.message : "Network error");
     } finally {
       setPending(false);
+      if (!inputDisabled) inputRef.current?.focus();
     }
   }
 
@@ -845,6 +858,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
 
               // Send to the evaluator. Persist the resulting follow-up
               // tutor turn into the chat.
+              let acknowledged = false;
               try {
                 const token = await fb.auth.currentUser.getIdToken();
                 const res = await fetch("/api/reason/evaluate", {
@@ -863,6 +877,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
                 });
                 const data = await res.json();
                 if (res.ok && data.response?.tutorTurn) {
+                  acknowledged = true;
                   setMessages((m) => [
                     ...m,
                     {
@@ -878,7 +893,19 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
                   });
                 }
               } catch {
-                /* non-fatal */
+                /* non-fatal — handled by the acknowledgement below */
+              }
+              // The pupil just submitted a thoughtful response. If the
+              // evaluator failed (network / error / no follow-up), never
+              // meet that effort with silence — append one calm, generative
+              // line so the conversation always continues.
+              if (!acknowledged) {
+                const soft = "Thanks — that's a good effort. Let's keep going.";
+                setMessages((m) => [
+                  ...m,
+                  { id: nextId(), role: "tutor", content: soft, timestamp: Date.now() },
+                ]);
+                void appendTurn("tutor", soft);
               }
               setReasonCard(null);
               if (typeof window !== "undefined") {
@@ -888,6 +915,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
               // this concept — the pupil has shown what they have, so
               // they get a fresh allowance for the next step.
               signalsRef.current.scaffoldUseCount = 0;
+              setScaffoldUsed(0);
             }}
           />
         )}
@@ -923,7 +951,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
         <div className="flex items-center gap-2" style={{ flexWrap: "wrap" }}>
           {(() => {
             const ceiling = lessonPlan?.scaffoldCeiling ?? 3;
-            const used = signalsRef.current.scaffoldUseCount;
+            const used = scaffoldUsed;
             const remaining = Math.max(0, ceiling - used);
             return (
               <>
@@ -963,6 +991,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
         </div>
         <div className="flex items-center gap-2">
           <input
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {

@@ -553,7 +553,11 @@ export function SendEditor({ pupilId, pupilName }: { pupilId: string; pupilName:
           </p>
         </div>
       )}
-      {saved && <div style={{ fontSize: 11, color: "var(--color-gold-500)", marginTop: 6 }}>✓ Saved</div>}
+      {saved && (
+        <div style={{ fontSize: 11, color: "var(--color-gold-500)", marginTop: 6, display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <Check size={11} /> Saved
+        </div>
+      )}
     </div>
   );
 }
@@ -762,8 +766,8 @@ function InterventionActions({
         />
       </div>
       {confirmation && (
-        <div style={{ fontSize: 11, color: "var(--color-gold-500)", marginTop: 8 }}>
-          ✓ {confirmation}
+        <div style={{ fontSize: 11, color: "var(--color-gold-500)", marginTop: 8, display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <Check size={11} /> {confirmation}
         </div>
       )}
     </div>

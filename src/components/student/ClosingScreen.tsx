@@ -108,9 +108,15 @@ export function ClosingScreen() {
         {error && !loading && (
           <div>
             <div className="bw-display" style={{ fontSize: 22, marginBottom: 8 }}>
-              Lesson ended.
+              Well done today.
             </div>
-            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>
+            <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.5, marginBottom: 10 }}>
+              Your teacher has ended the lesson. Carry the questions you didn&apos;t
+              fully answer into the next one.
+            </p>
+            {/* Keep the technical reason available but quiet — the pupil sees a
+                warm close, not an error dump. */}
+            <p style={{ fontSize: 11, color: "var(--text-muted)", opacity: 0.6, marginBottom: 16 }}>
               {error}
             </p>
           </div>

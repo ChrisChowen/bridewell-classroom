@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
 import { getCleanIdToken } from "@/lib/firebase/auth-fetch";
 import { useModalDialog } from "@/lib/useModalDialog";
+import { ConnectionPill } from "@/components/shared/ConnectionPill";
 import { subscribeToLiveClass, subscribeToSessionStatus, type LivePupil, type SessionStatus } from "@/lib/firebase/live";
 import { PupilCard } from "@/components/teacher/PupilCard";
 import { LivePupilPanel } from "@/components/teacher/LivePupilPanel";
@@ -44,6 +45,9 @@ export default function ClassDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(null);
   const [classCtrlBusy, setClassCtrlBusy] = useState<string | null>(null);
+  // Transient "✓ Wrap-up called" confirmation — the per-pupil panel already
+  // confirms its actions, so the class-level controls shouldn't fire silently.
+  const [ctrlConfirm, setCtrlConfirm] = useState<string | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
 
   // Auth guard
@@ -125,7 +129,7 @@ export default function ClassDetailPage() {
     try {
       const token = await getCleanIdToken();
       if (!token) return;
-      await fetch("/api/interventions", {
+      const res = await fetch("/api/interventions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -133,6 +137,19 @@ export default function ClassDetailPage() {
         },
         body: JSON.stringify({ classId, type, text }),
       });
+      // Confirm the controls that don't otherwise produce an obvious banner
+      // change (Wrap-up is a one-shot nudge; the others flip the status pill).
+      if (res.ok) {
+        const labels: Record<string, string> = {
+          start: "Class started",
+          pause: "Class paused",
+          resume: "Class resumed",
+          wrap_up: "Wrap-up called",
+          end: "Class ended",
+        };
+        setCtrlConfirm(labels[type] ?? "Done");
+        window.setTimeout(() => setCtrlConfirm(null), 2500);
+      }
     } finally {
       setClassCtrlBusy(null);
     }
@@ -173,6 +190,7 @@ export default function ClassDetailPage() {
             <ArrowLeft size={13} style={{ marginRight: 6 }} /> All classes
           </Link>
           <div className="flex items-center gap-2" style={{ flexWrap: "wrap" }}>
+            <ConnectionPill />
             {/* Class-wide controls */}
             {klass && sessionStatus?.value !== "ended" && (
               <>
@@ -229,6 +247,21 @@ export default function ClassDetailPage() {
                   >
                     <StopCircle size={12} /> End class
                   </button>
+                )}
+                {ctrlConfirm && (
+                  <span
+                    role="status"
+                    style={{
+                      fontSize: 12,
+                      color: "var(--color-gold-500)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      animation: "bw-fade-in 200ms ease",
+                    }}
+                  >
+                    <Check size={12} /> {ctrlConfirm}
+                  </span>
                 )}
               </>
             )}

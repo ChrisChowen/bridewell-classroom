@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Crest } from "@/components/shared/Crest";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { ConnectionPill } from "@/components/shared/ConnectionPill";
 import { ChatSurface } from "@/components/student/ChatSurface";
 import { ClosingScreen } from "@/components/student/ClosingScreen";
 import { AccessibilityMenu } from "@/components/student/AccessibilityMenu";
@@ -199,11 +200,12 @@ export default function SessionPage() {
         </div>
 
         <div className="flex items-center justify-end gap-2">
+          <ConnectionPill />
           <AccessibilityMenu />
           <span className="bw-hide-sm"><ThemeToggle /></span>
           <Link
             href="/join"
-            className="bw-btn-secondary bw-hide-sm"
+            className="bw-btn-secondary"
             style={{ fontSize: 11 }}
           >
             Switch class
