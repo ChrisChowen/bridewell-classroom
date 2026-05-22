@@ -3,6 +3,8 @@ import {
   checkRateLimit,
   advanceBucket,
   bucketToResult,
+  identifyByIp,
+  RATE_LIMITS,
   type RateLimitConfig,
   type Bucket,
 } from "./rate-limit";
@@ -99,5 +101,39 @@ describe("checkRateLimit", () => {
         resolve();
       }, 5);
     });
+  });
+});
+
+describe("identifyByIp (enumeration-guard identity)", () => {
+  const reqWith = (headers: Record<string, string>) =>
+    new Request("https://x.test/api/classes/join", { method: "POST", headers });
+
+  it("uses the first x-forwarded-for hop", () => {
+    expect(identifyByIp(reqWith({ "x-forwarded-for": "203.0.113.7, 10.0.0.1" }))).toBe("ip:203.0.113.7");
+  });
+
+  it("falls back to x-real-ip", () => {
+    expect(identifyByIp(reqWith({ "x-real-ip": "198.51.100.4" }))).toBe("ip:198.51.100.4");
+  });
+
+  it("returns 'anon' when no source IP header is present", () => {
+    expect(identifyByIp(reqWith({}))).toBe("anon");
+  });
+
+  it("ignores a bearer token (IP-anchored, not UID)", () => {
+    // Even with a token present, identifyByIp must NOT key on the UID —
+    // that's the whole point for join-code enumeration defence.
+    expect(
+      identifyByIp(reqWith({ authorization: "Bearer xyz", "x-forwarded-for": "192.0.2.9" })),
+    ).toBe("ip:192.0.2.9");
+  });
+});
+
+describe("RATE_LIMITS.join preset", () => {
+  it("is a tight per-minute IP budget for join-code lookups", () => {
+    expect(RATE_LIMITS.join.bucket).toBe("join");
+    expect(RATE_LIMITS.join.windowMs).toBe(60_000);
+    expect(RATE_LIMITS.join.limit).toBeGreaterThan(0);
+    expect(RATE_LIMITS.join.limit).toBeLessThanOrEqual(20); // far below a scripted sweep
   });
 });

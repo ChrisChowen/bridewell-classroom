@@ -110,6 +110,20 @@ export async function checkRateLimitDurable(
 // ── Identity + enforcement ────────────────────────────────────────────
 
 /**
+ * IP-only identifier (x-forwarded-for first hop / x-real-ip / "anon").
+ * Used where UID-based limiting is defeatable — e.g. join-code
+ * enumeration, where an attacker can mint unlimited anonymous UIDs but
+ * is anchored to a source IP. Pure header parsing — unit-testable.
+ */
+export function identifyByIp(req: Request): string {
+  const fwd = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (fwd) return `ip:${fwd}`;
+  const real = req.headers.get("x-real-ip");
+  if (real) return `ip:${real}`;
+  return "anon";
+}
+
+/**
  * Best-effort identifier: Firebase UID (hard to spoof) when a valid
  * bearer token is present, else x-forwarded-for / x-real-ip, else "anon".
  */
@@ -127,11 +141,7 @@ export async function identifyRequester(req: Request): Promise<string> {
       }
     }
   }
-  const fwd = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  if (fwd) return `ip:${fwd}`;
-  const real = req.headers.get("x-real-ip");
-  if (real) return `ip:${real}`;
-  return "anon";
+  return identifyByIp(req);
 }
 
 /**
@@ -142,9 +152,13 @@ export async function identifyRequester(req: Request): Promise<string> {
  */
 export async function enforceRateLimit(
   req: Request,
-  cfg: RateLimitConfig
+  cfg: RateLimitConfig,
+  opts?: { byIp?: boolean }
 ): Promise<NextResponse | null> {
-  const id = await identifyRequester(req);
+  // `byIp` anchors the limit to the source IP rather than the UID — the
+  // right choice for endpoints where an attacker can cheaply rotate
+  // identities (anonymous sign-in) but not their network origin.
+  const id = opts?.byIp ? identifyByIp(req) : await identifyRequester(req);
   let r: RateLimitResult;
   try {
     r = await checkRateLimitDurable(id, cfg);
@@ -181,4 +195,8 @@ export const RATE_LIMITS = {
   reasonEvaluate: { bucket: "reason-evaluate", limit: 60, windowMs: 60_000 } satisfies RateLimitConfig,
   engagementClassify: { bucket: "engagement-classify", limit: 60, windowMs: 60_000 } satisfies RateLimitConfig,
   lessonsAppraise: { bucket: "lessons-appraise", limit: 20, windowMs: 60_000 } satisfies RateLimitConfig,
+  // Join-code lookups, limited by IP to blunt enumeration. Generous for a
+  // real classroom (a pupil retries a few times, may switch class) but
+  // far below what a scripted code-guessing sweep needs.
+  join: { bucket: "join", limit: 12, windowMs: 60_000 } satisfies RateLimitConfig,
 };

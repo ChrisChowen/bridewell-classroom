@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 import { normaliseJoinCode } from "@/lib/joinCode";
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import type { PupilRecord } from "@/types";
 import { createHash } from "crypto";
 
@@ -18,6 +19,12 @@ interface Body {
 }
 
 export async function POST(req: Request) {
+  // Enumeration guard: cap join-code lookups by source IP. Anonymous
+  // sign-in means UID-based limiting is trivially bypassed (mint a new
+  // UID per guess), so we anchor to the network origin instead.
+  const limited = await enforceRateLimit(req, RATE_LIMITS.join, { byIp: true });
+  if (limited) return limited;
+
   const a = getAdmin();
   if (!a.ready) return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });
 
