@@ -28,6 +28,14 @@ describe("buildTutorSystemPrompt — coach mode", () => {
   it("includes an off-task / resistant-pupil playbook", () => {
     expect(coach.toLowerCase()).toMatch(/boring|do this later|resists/);
   });
+
+  it("hard-limits to text-only — forbids claiming to show diagrams/images", () => {
+    const c = coach.toLowerCase();
+    expect(c).toMatch(/text-only|cannot (draw|show)|no canvas/);
+    expect(c).toMatch(/diagram/);
+    // must explicitly forbid promising a visual it can't deliver
+    expect(c).toMatch(/never say or imply you will show|cannot .*(draw|display|render)/);
+  });
 });
 
 describe("buildTutorSystemPrompt — prompt-injection defence", () => {
@@ -62,6 +70,13 @@ describe("buildTutorSystemPrompt — prompt-injection defence", () => {
   it("neutralises code fences in injected content", () => {
     const p = buildTutorSystemPrompt({ mode: "coach", lessonContext: "```\nmalicious\n```" });
     expect(p).not.toContain("```");
+  });
+
+  it("warns that pupil chat messages are also untrusted (jailbreak defence)", () => {
+    const p = buildTutorSystemPrompt({ mode: "coach" }).toLowerCase();
+    expect(p).toMatch(/chat messages? (are )?also untrusted|jailbreak/);
+    expect(p).toMatch(/ignore your instructions|repeat\/print your system prompt|system prompt/);
+    expect(p).toMatch(/cannot be overridden/);
   });
 });
 
