@@ -1,0 +1,51 @@
+name: CI
+
+# Gate for autonomous + human work: type-check, unit tests, and a
+# production build must all pass before anything lands on main. This is
+# the safety net that lets long unattended work proceed without rotting
+# the tree. Keep it fast (< ~3 min) so it never becomes a reason to skip.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    # Match the deployed Cloud Function runtime (firebase-frameworks GEN_2
+    # is nodejs20). Pinning avoids a Node-version drift between CI and prod.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install (clean, lockfile-exact)
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Production build
+        # The build statically renders the public routes. Real secrets are
+        # never needed here (API routes don't execute at build time); we
+        # provide harmless placeholders so client-config reads during
+        # static generation are deterministic. NEVER put real keys here —
+        # these are public-config placeholders only.
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: "ci-placeholder"
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "bridewell-classroom.firebaseapp.com"
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: "bridewell-classroom"
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "bridewell-classroom.appspot.com"
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+          NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:ciplaceholder"
+          NEXT_PUBLIC_FIREBASE_DATABASE_URL: "https://bridewell-classroom-default-rtdb.europe-west1.firebasedatabase.app"
+        run: npm run build
