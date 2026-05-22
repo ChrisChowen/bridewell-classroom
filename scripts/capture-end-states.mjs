@@ -99,9 +99,13 @@ try {
   console.log("\n21 — classroom display");
   const cCtx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
   const cPage = await cCtx.newPage();
-  await cPage.goto(`${BASE}/classroom`);
+  // The Field needs a classId to read the names-stripped aggregate; without one
+  // it renders the empty "open from the class detail page" entry state.
+  await cPage.goto(
+    `${BASE}/classroom?classId=${SIM_CLASS_ID}&title=${encodeURIComponent("Photosynthesis: The Power of Light")}&steps=4&class=${encodeURIComponent("Year 8 · Set 2")}&code=${SIM_JOIN_CODE}`
+  );
   await cPage.waitForLoadState("networkidle");
-  await cPage.waitForTimeout(700);
+  await cPage.waitForTimeout(1500);
   await shot(cPage, "21-classroom-display", { fullPage: true });
   await cCtx.close();
 

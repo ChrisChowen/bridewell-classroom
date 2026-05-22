@@ -325,9 +325,11 @@ try {
     await tPage.goto(`${BASE}/class/${created.testClassId}`);
     await tPage.waitForLoadState("networkidle");
     await tPage.waitForTimeout(800);
-    // Set up a confirm-dialog handler so the End-class confirm() goes through.
-    tPage.once("dialog", (d) => d.accept());
+    // End class now uses an in-app confirm modal (not a native confirm()):
+    // click the trigger, then confirm inside the dialog.
     await tPage.click('button:has-text("End class")');
+    await tPage.waitForSelector('[role="dialog"]', { timeout: 5_000 });
+    await tPage.click('[role="dialog"] button:has-text("End class")');
     await tPage.waitForTimeout(1500);
 
     // Pupil should now see the closing screen on the next render. The
