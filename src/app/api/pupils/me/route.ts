@@ -1,59 +1,50 @@
 import { NextResponse } from "next/server";
-import { getAdmin } from "@/lib/firebase/admin";
-import { getEffectiveChallengeLevel } from "@/lib/learner-profile-store";
+import { verifyRequest } from "@/lib/auth";
+import { resolveDataStore } from "@/lib/data";
 import { buildSendAdaptationBlock } from "@/lib/send";
-import type { ChallengeLevel, ClassRecord, PupilRecord } from "@/types";
+import type { ChallengeLevel } from "@/types";
 
 // GET /api/pupils/me
 //
 // Returns the signed-in pupil's record + their class (including the
-// approved lesson plan). Used by the pupil session page to anchor the
-// tutor to the teacher-approved plan.
+// approved lesson plan), their effective adaptive challenge level, and the
+// SEND-derived tutor adaptation block. Used by the pupil session page.
 //
-// Auth: Bearer ID token (anonymous Firebase Auth).
+// Reference implementation for the handover seams: this route touches NO
+// Firebase directly — identity goes through the auth seam (verifyRequest)
+// and all reads through the data seam (resolveDataStore).
 
 export async function GET(req: Request) {
-  const a = getAdmin();
-  if (!a.ready) return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });
+  // Any signed-in user (pupils are anonymous, no role required).
+  const auth = await verifyRequest(req);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const authHeader = req.headers.get("authorization") ?? "";
-  const idToken = authHeader.replace(/^Bearer\s+/i, "");
-  if (!idToken) return NextResponse.json({ error: "Missing Authorization bearer token" }, { status: 401 });
+  const store = resolveDataStore();
 
-  let decoded;
-  try {
-    decoded = await a.auth.verifyIdToken(idToken);
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
-
-  const snap = await a.db.collection("pupils").doc(decoded.uid).get();
-  if (!snap.exists) {
+  const pupil = await store.getPupil(auth.user.uid);
+  if (!pupil) {
     return NextResponse.json({ error: "No pupil record yet — join a class first" }, { status: 404 });
   }
-  const pupil = snap.data() as PupilRecord;
 
-  const classSnap = await a.db.collection("classes").doc(pupil.classId).get();
-  if (!classSnap.exists) {
+  const cls = await store.getClass(pupil.classId);
+  if (!cls) {
     return NextResponse.json({ error: "Class no longer exists" }, { status: 404 });
   }
-  const cls = classSnap.data() as ClassRecord;
 
   // Adaptive difficulty: the pupil inherits their drifted, per-pupil
   // challenge level (falls back to the lesson-wide default if we've never
-  // profiled them). The session page passes this into the tutor as
-  // lesson.challengeLevel so coaching is pitched per pupil, not per class.
+  // profiled them). The session page passes this into the tutor.
   const lessonLevel = (cls.lessonPlan?.challengeLevel as ChallengeLevel | undefined) ?? "core";
   let effectiveChallengeLevel: ChallengeLevel = lessonLevel;
   try {
-    effectiveChallengeLevel = await getEffectiveChallengeLevel(a.db, decoded.uid, lessonLevel);
+    const profile = await store.getLearnerProfile(auth.user.uid);
+    effectiveChallengeLevel = profile?.challengeLevel ?? lessonLevel;
   } catch {
     // Non-fatal: fall back to the lesson-wide level.
   }
 
   // SEND adaptation: derive the tutor's free-text adaptation block from the
-  // pupil's structured SEND profile (set by the teacher). Fed to the tutor
-  // via lesson chat as pupilProfile. Absent when the pupil has no profile.
+  // pupil's structured SEND profile. Absent when the pupil has no profile.
   const pupilProfile = buildSendAdaptationBlock(pupil.send);
 
   return NextResponse.json({ pupil, class: cls, effectiveChallengeLevel, pupilProfile });

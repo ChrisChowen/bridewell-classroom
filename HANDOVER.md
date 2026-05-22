@@ -71,10 +71,16 @@ these; leave the rest.
   `learnerProfiles`, `allowedTeacherEmails`, `syllabusSuggestions`.
 - RTDB live mirror: `liveSessions/{classId}/{pupils,status,interventions}`.
 - Rules: `firestore.rules`, `database.rules.json`.
-- **Currently Firestore/RTDB calls are made directly from routes + a few
-  client components**, not behind one datastore interface. If you keep
-  Firebase, no work. If you must move stores, this is a real refactor — flagged
-  honestly.
+- **Data seam started** (`src/lib/data/`): `DataStore` interface + Firestore
+  adapter + registry + `resolveDataStore()`, selected by `DATA_PROVIDER`. It
+  covers the cross-route entity reads (class, pupil, learner profile);
+  `GET /api/pupils/me` is a zero-direct-Firebase reference route using both
+  the auth + data seams. Swap proven by `src/lib/data/index.test.ts`.
+- **Migration status:** the analytics-collection writes (`engagementSnapshots`,
+  `reasonEvents`, …) + the RTDB live mirror are still accessed directly and
+  fold in behind `DataStore` as routes migrate. If you keep Firebase, no work.
+  If you must move stores, reimplement one adapter — tracked in
+  `PILOT_READINESS.md`.
 
 ## 3. Environment / configuration
 
