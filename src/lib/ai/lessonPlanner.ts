@@ -185,7 +185,7 @@ export async function generateLessonPlan(
     .join("\n\n");
 
   const result = await callLLM({
-    use: "reasonEvaluator", // Pro tier; we want thinking on for this.
+    use: "lessonPlanner", // Pro tier; we want thinking on for this.
     system: buildSystemPrompt(),
     messages: [{ role: "user", content: userBlock }],
     responseSchema: SCHEMA as unknown as Record<string, unknown>,

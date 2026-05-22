@@ -32,10 +32,19 @@ export function StateDistribution({ pupils }: { pupils: PupilSummary[] }) {
         </span>
       </div>
 
-      {/* Stacked bar */}
+      {/* Stacked bar (decorative — the same data is in the labelled tiles
+          below; the aria-label still announces the live breakdown so a
+          screen-reader user gets it without colour). */}
       <div
         role="img"
-        aria-label="Class state distribution stacked bar"
+        aria-label={
+          pupils.length === 0
+            ? "Class state distribution — no pupils yet"
+            : "Class state distribution: " +
+              ORDER.filter((s) => counts[s] > 0)
+                .map((s) => `${counts[s]} ${statePill[s].label}`)
+                .join(", ")
+        }
         style={{
           display: "flex",
           height: 10,

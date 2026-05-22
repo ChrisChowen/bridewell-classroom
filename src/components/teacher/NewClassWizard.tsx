@@ -85,9 +85,11 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
     setGenerating(true);
     setError(null);
     try {
-      const fb = getFirebase();
-      if (!fb.ready) throw new Error("Firebase not configured");
-      const token = await fb.auth.currentUser!.getIdToken();
+      // getCleanIdToken handles an expired/absent session (returns null) — a
+      // non-null assert here threw an opaque TypeError if the teacher had gone
+      // idle. Mirror the approveAndCreate path.
+      const token = await getCleanIdToken();
+      if (!token) throw new Error("Your session has expired — please sign in again.");
       const res = await fetch("/api/lessons/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -1088,16 +1090,16 @@ function subjectMotif(subject: SyllabusEntry["subject"]): string {
     case "Biology":
     case "Chemistry":
     case "Physics":
-      return "/img/motif-biology.png";
+      return "/img/motif-biology.webp";
     case "English":
-      return "/img/motif-english.png";
+      return "/img/motif-english.webp";
     case "Mathematics":
-      return "/img/motif-mathematics.png";
+      return "/img/motif-mathematics.webp";
     case "History":
     case "Geography":
-      return "/img/motif-history.png";
+      return "/img/motif-history.webp";
     default:
-      return "/img/motif-open-book.png";
+      return "/img/motif-open-book.webp";
   }
 }
 

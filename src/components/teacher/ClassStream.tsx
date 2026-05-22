@@ -163,8 +163,11 @@ function Ribbon({
 }) {
   // Render as inline-SVG strips so we can pulse the head independently and
   // overlay an axis. Strip width adapts to container; using percentages.
-  const pad = states.length < buckets ? Array.from({ length: buckets - states.length }, () => current) : [];
-  const seq: EngagementState[] = [...pad, ...states];
+  // Left-pad missing history with EMPTY cells (null), not the current state's
+  // colour — painting unobserved early history in the current colour
+  // misrepresented what the pupil was doing. Empty cells read as "no data yet".
+  const padCount = states.length < buckets ? buckets - states.length : 0;
+  const seq: Array<EngagementState | null> = [...Array<null>(padCount).fill(null), ...states];
   const headColour = statePill[current].colour;
 
   return (
@@ -183,11 +186,12 @@ function Ribbon({
         {seq.map((s, i) => (
           <div
             key={i}
-            title={statePill[s].label}
+            title={s ? statePill[s].label : "no data yet"}
             style={{
               flex: 1,
-              background: statePill[s].colour,
-              opacity: 0.6 + (i / buckets) * 0.4, // older fades, newer is full
+              background: s ? statePill[s].colour : "transparent",
+              // older real cells fade, newer is full; empty (pad) cells stay clear
+              opacity: s ? 0.6 + (i / buckets) * 0.4 : 1,
             }}
           />
         ))}

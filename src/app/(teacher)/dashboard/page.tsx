@@ -13,7 +13,7 @@ import type { ClassRecord, School } from "@/types";
 // Teacher dashboard. Honest empty states first — no seeded/demo content
 // on the real surface; the teacher only sees what is actually live.
 //
-// The engagement viz (ClassStream / StateDistribution / PupilPanel)
+// The engagement viz (ClassStream / StateDistribution / LivePupilPanel)
 // appears only when there is a live class with pupils joined. Until
 // Phase 1 wires real classifier output, that block stays in a "waiting
 // for pupils" state.
@@ -179,7 +179,7 @@ function FirstStepsCard() {
       >
         <span className="bw-scholar-frame">
           <Image
-            src="/img/motif-open-book.png"
+            src="/img/motif-open-book.webp"
             alt=""
             width={180}
             height={180}

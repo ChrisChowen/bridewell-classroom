@@ -92,7 +92,7 @@ export async function appraiseLesson(
   ].join("\n\n");
 
   const result = await callLLM({
-    use: "reasonEvaluator",
+    use: "appraiser",
     system: SYSTEM,
     messages: [{ role: "user", content: userBlock }],
     responseSchema: SCHEMA as unknown as Record<string, unknown>,

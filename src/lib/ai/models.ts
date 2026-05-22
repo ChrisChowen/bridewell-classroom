@@ -24,6 +24,12 @@ export const MODELS = {
   classifier: "gemini-2.5-pro",
   reasonEvaluator: "gemini-2.5-pro",
   profileUpdater: "gemini-2.5-pro",
+  // Distinct keys for lesson generation + appraisal (both Pro). Previously
+  // these reused `reasonEvaluator`, which conflated three call-types under one
+  // key — wrong for the per-`use` cost attribution + any future per-key
+  // rate-limiting/caching.
+  lessonPlanner: "gemini-2.5-pro",
+  appraiser: "gemini-2.5-pro",
 } as const;
 
 export type ModelKey = keyof typeof MODELS;
