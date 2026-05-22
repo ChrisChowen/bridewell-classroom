@@ -19,7 +19,7 @@ const ELEVEN_MODEL = "eleven_flash_v2_5";
 const DEFAULT_BRITISH_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
 
 export async function POST(req: Request) {
-  const limited = await enforceRateLimit(req, RATE_LIMITS.chat);
+  const limited = await enforceRateLimit(req, RATE_LIMITS.tts);
   if (limited) return limited;
 
   const key = process.env.ELEVENLABS_API_KEY;

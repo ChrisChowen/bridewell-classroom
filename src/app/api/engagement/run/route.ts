@@ -3,6 +3,7 @@ import "@/lib/cost/recorder"; // best-effort LLM usage recorder (nodejs side-eff
 import { getAdmin } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/auth";
 import { resolveDataStore } from "@/lib/data";
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { classifyEngagement, type ClassifierInput } from "@/layers/classifier";
 import type { EngagementSnapshot, ClassRecord } from "@/types";
 
@@ -35,6 +36,11 @@ interface Body extends ClassifierInput {
 const MAX_TRAJECTORY = 24; // last 20 minutes at 50s windows
 
 export async function POST(req: Request) {
+  // The classifier runs on Pro (most expensive model) + writes Firestore/RTDB
+  // per call — cap it so a stuck/looping client can't burn the budget.
+  const limited = await enforceRateLimit(req, RATE_LIMITS.engagementClassify);
+  if (limited) return limited;
+
   const a = getAdmin();
   if (!a.ready) {
     return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });

@@ -51,12 +51,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Unknown syllabusId: ${body.syllabusId}` }, { status: 404 });
   }
 
+  // Cap free-text the teacher pastes before it reaches the LLM — bounds
+  // prompt cost and the injection surface. Generous (a rich brief is fine).
+  const cap = (s: string | undefined, max: number) =>
+    s ? s.normalize("NFKC").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max) : s;
+
   const plan = await generateLessonPlan({
     syllabus,
-    teacherIntent: body.teacherIntent.trim(),
-    className: body.className,
+    teacherIntent: cap(body.teacherIntent, 1500)!.trim(),
+    className: cap(body.className, 120),
     yearGroup: body.yearGroup,
-    classNotes: body.classNotes,
+    classNotes: cap(body.classNotes, 2000),
     challengeLevel: body.challengeLevel,
   });
 

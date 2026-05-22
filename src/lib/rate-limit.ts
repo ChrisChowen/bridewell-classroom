@@ -199,4 +199,9 @@ export const RATE_LIMITS = {
   // real classroom (a pupil retries a few times, may switch class) but
   // far below what a scripted code-guessing sweep needs.
   join: { bucket: "join", limit: 12, windowMs: 60_000 } satisfies RateLimitConfig,
+  // Text-to-speech: its own budget so voice-on pupils don't eat the chat
+  // allowance (2 requests/turn would otherwise share one bucket).
+  tts: { bucket: "tts", limit: 60, windowMs: 60_000 } satisfies RateLimitConfig,
+  // Conversation persistence — a few writes per turn; generous but bounded.
+  conversationAppend: { bucket: "conversation-append", limit: 120, windowMs: 60_000 } satisfies RateLimitConfig,
 };

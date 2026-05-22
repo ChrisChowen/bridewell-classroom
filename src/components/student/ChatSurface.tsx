@@ -470,6 +470,23 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [klass]);
 
+  // Build /api/chat headers, attaching the pupil's ID token when signed in
+  // so the server rate-limiter keys by UID (not shared classroom IP — a whole
+  // class behind one NAT would otherwise collide on the per-IP budget).
+  // Falls back to no token in the demo/preview (unauthenticated) path.
+  async function chatHeaders(): Promise<Record<string, string>> {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    try {
+      const fb = getFirebase();
+      if (fb.ready && fb.auth.currentUser) {
+        headers.Authorization = `Bearer ${await fb.auth.currentUser.getIdToken()}`;
+      }
+    } catch {
+      /* no token — server falls back to IP keying */
+    }
+    return headers;
+  }
+
   async function send() {
     const text = input.trim();
     if (!text || inputDisabled) return;
@@ -520,7 +537,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await chatHeaders(),
         body: JSON.stringify({
           messages: toApiMessages(optimistic),
           mode,
@@ -670,7 +687,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await chatHeaders(),
         body: JSON.stringify({
           messages: toApiMessages(messages),
           scaffold: kind,

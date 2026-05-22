@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/auth";
 import { resolveDataStore } from "@/lib/data";
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 // POST /api/conversation/append
 //
@@ -20,6 +21,9 @@ interface Body {
 }
 
 export async function POST(req: Request) {
+  const limited = await enforceRateLimit(req, RATE_LIMITS.conversationAppend);
+  if (limited) return limited;
+
   const a = getAdmin();
   if (!a.ready) return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });
 
