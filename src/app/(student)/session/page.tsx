@@ -71,35 +71,46 @@ export default function SessionPage() {
       }
       setLoadState("loading");
       try {
-        // getCleanIdToken: strips control chars + handles a null user so the
-        // iOS-Safari "string did not match the expected pattern" header error
-        // (and a non-null-assert crash) can't strand the pupil's session load.
-        const token = await getCleanIdToken();
-        if (!token) {
-          router.replace("/join");
-          return;
-        }
-        const res = await fetch("/api/pupils/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.status === 404) {
-          // Signed in as anonymous pupil but no Firestore pupil record
-          // yet — they need to join a class. Don't silently show the
-          // demo lesson (that's what caused the "photosynthesis appeared
-          // then switched to IR" confusion).
-          if (!cancelled) {
-            router.replace("/join");
+        // Right after a fresh anonymous join the auth state is still settling:
+        // Firebase fires an immediate securetoken refresh (which briefly leaves
+        // currentUser/token null), and the just-written pupil record can lag a
+        // beat behind the join response. Bouncing to /join on the FIRST
+        // transient null-token / 404 was the "join succeeds but returns to the
+        // code screen" bug. Retry a few times before giving up; each attempt
+        // re-reads the LIVE currentUser via getCleanIdToken (which also strips
+        // control chars + is null-safe for the iOS-Safari header-pattern error).
+        for (let attempt = 0; attempt < 5; attempt++) {
+          if (cancelled) return;
+          const token = await getCleanIdToken();
+          if (token) {
+            const res = await fetch("/api/pupils/me", {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (cancelled) return;
+            if (res.ok) {
+              const data = await res.json();
+              if (cancelled) return;
+              setKlass(data.class as ClassRecord);
+              setPupil(data.pupil as PupilRecord);
+              setEffectiveChallengeLevel(data.effectiveChallengeLevel);
+              setPupilProfile(data.pupilProfile);
+              setLoadState("ready");
+              return;
+            }
+            if (res.status !== 404) {
+              // A real failure (not "no pupil record yet").
+              const data = await res.json().catch(() => ({}));
+              throw new Error(data.error ?? "Failed to load class");
+            }
+            // 404 → record not visible yet; fall through to wait + retry.
           }
-          return;
+          // No token yet (auth settling) or a transient 404 — wait, then retry.
+          await new Promise((r) => setTimeout(r, 500));
         }
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Failed to load class");
-        if (cancelled) return;
-        setKlass(data.class as ClassRecord);
-        setPupil(data.pupil as PupilRecord);
-        setEffectiveChallengeLevel(data.effectiveChallengeLevel);
-        setPupilProfile(data.pupilProfile);
-        setLoadState("ready");
+        // Still nothing after ~2.5s of retries — genuinely not in a class.
+        // Don't silently show the demo lesson (that caused the "photosynthesis
+        // appeared then switched to IR" confusion); send them to join.
+        if (!cancelled) router.replace("/join");
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Failed to load");
@@ -110,7 +121,11 @@ export default function SessionPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, status, router]);
+    // Depend on the STABLE uid, not the user object: a token refresh swaps the
+    // User reference without changing identity, and re-running this effect mid
+    // refresh (transient null token) was bouncing a loaded session to /join.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid, status, router]);
 
   // Live subscription to the class doc so mid-lesson plan edits
   // propagate to the pupil without a refresh. The classifier-driven
