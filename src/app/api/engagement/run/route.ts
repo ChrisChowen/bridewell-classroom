@@ -126,6 +126,13 @@ export async function POST(req: Request) {
     const cls = classSnap.data() as ClassRecord | undefined;
     sequenceLength = cls?.lessonPlan?.sequence?.length ?? 1;
     hasExtension = !!cls?.lessonPlan?.extension;
+    // Self-heal the RTDB live-mirror owner stamp so the hardened
+    // database rules can scope pupil reads to the owning teacher. Older
+    // classes created before meta existed get it on their first
+    // classifier snapshot. Idempotent; best-effort.
+    if (cls?.teacherId) {
+      await a.rtdb.ref(`liveSessions/${pupil.classId}/meta/teacherId`).set(cls.teacherId).catch(() => {});
+    }
   } catch {
     /* keep default — we never block on this */
   }

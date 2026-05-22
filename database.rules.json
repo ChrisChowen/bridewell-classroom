@@ -2,19 +2,37 @@
   "rules": {
     "liveSessions": {
       "$sessionId": {
-        ".read": "auth != null",
+        "meta": {
+          ".read": "auth != null",
+          ".write": false
+        },
         "status": {
+          ".read": "auth != null",
           ".write": "auth != null && auth.token.role === 'teacher'"
         },
+        "aggregate": {
+          ".read": "auth != null"
+        },
         "pupils": {
+          ".read": "auth != null && auth.uid === root.child('liveSessions').child($sessionId).child('meta').child('teacherId').val()",
           "$pupilId": {
+            ".read": "auth != null && auth.uid === $pupilId",
             ".write": "auth != null && (auth.token.role === 'teacher' || auth.uid === $pupilId)"
           }
         },
         "interventions": {
-          ".write": "auth != null && auth.token.role === 'teacher'"
+          ".read": "auth != null && auth.uid === root.child('liveSessions').child($sessionId).child('meta').child('teacherId').val()",
+          ".write": "auth != null && auth.token.role === 'teacher'",
+          "$pupilId": {
+            ".read": "auth != null && auth.uid === $pupilId",
+            ".write": "auth != null && (auth.token.role === 'teacher' || auth.uid === $pupilId)"
+          }
         }
       }
+    },
+    "rateLimits": {
+      ".read": false,
+      ".write": false
     }
   }
 }

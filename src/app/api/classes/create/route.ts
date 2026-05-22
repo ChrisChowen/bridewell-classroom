@@ -96,5 +96,16 @@ export async function POST(req: Request) {
   });
   await batch.commit();
 
+  // Stamp the owning teacher into the RTDB live mirror so the hardened
+  // database rules can scope `liveSessions/{id}/pupils` reads to the
+  // owner. Without this, the teacher's own dashboard cannot read the
+  // live cards. Best-effort: a failure here doesn't fail class creation
+  // (the engagement-run route also self-heals meta on first snapshot).
+  try {
+    await a.rtdb.ref(`liveSessions/${id}/meta`).set({ teacherId: decoded.uid });
+  } catch {
+    /* non-fatal — engagement/run writes meta defensively too */
+  }
+
   return NextResponse.json({ ok: true, class: cls });
 }
