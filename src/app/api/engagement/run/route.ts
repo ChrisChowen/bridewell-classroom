@@ -160,6 +160,13 @@ export async function POST(req: Request) {
       trajectory?: Array<{ state: string; t: number; confidence: number }>;
       currentStepIndex?: number;
       sustainedHighStreak?: number;
+      // Reason-owned fields written by /api/reason/evaluate. They live on the
+      // SAME node; we must carry them through (via the `...c` spread below) or
+      // every classifier snapshot wipes the per-pupil Reason-confidence
+      // trajectory — the demo's load-bearing signal on the teacher dashboard.
+      reasonTrajectory?: unknown;
+      reasonConfidenceTrailing?: unknown;
+      reasonBranchTrailing?: unknown;
     };
     const trajectory = [
       ...((c.trajectory ?? []) as Array<{ state: string; t: number; confidence: number }>),
@@ -177,6 +184,10 @@ export async function POST(req: Request) {
     nextStepIndex = stepIndex;
     advanced = didAdvance;
     return {
+      // Carry through any Reason-owned fields (reasonTrajectory etc.) the
+      // evaluate route wrote on this same node — the engagement-specific
+      // fields below override what they should, the rest is preserved.
+      ...c,
       pupilId: uid,
       displayName: pupil.displayName,
       state: result.state,
