@@ -484,6 +484,14 @@ select:focus-visible {
   100% { transform: translateY(-260px) scale(1); opacity: 0; }
 }
 
+/* Spinner — used on admin/async buttons. */
+@keyframes bw-spin-kf {
+  to { transform: rotate(360deg); }
+}
+.bw-spin {
+  animation: bw-spin-kf 0.8s linear infinite;
+}
+
 /* Projector "Field" stars — a slow, calm breathe so the chart feels
    alive without flicker. Each star offsets its phase (see ClassField). */
 @keyframes bw-star-breathe {

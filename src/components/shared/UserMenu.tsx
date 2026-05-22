@@ -9,9 +9,10 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, LogOut, Sun, Moon } from "lucide-react";
+import { LayoutDashboard, LogOut, Sun, Moon, ShieldCheck } from "lucide-react";
 import { UserChip } from "./UserChip";
 import { useAuth } from "@/lib/firebase/auth-context";
+import { getFirebase } from "@/lib/firebase/client";
 
 type School = "KESW" | "Barrow Hills" | "Longacre";
 
@@ -26,9 +27,35 @@ export function UserMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  // null = not yet checked. We probe the admin API once (the first time
+  // the menu opens) and only reveal the Admin link if it returns 200 —
+  // the API is the real gate, this just hides the link from non-admins.
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { signOut } = useAuth();
+
+  useEffect(() => {
+    if (!open || isAdmin !== null) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const fb = getFirebase();
+        if (!fb.ready || !fb.auth.currentUser) {
+          if (!cancelled) setIsAdmin(false);
+          return;
+        }
+        const t = await fb.auth.currentUser.getIdToken();
+        const r = await fetch("/api/admin/allowlist", { headers: { Authorization: `Bearer ${t}` } });
+        if (!cancelled) setIsAdmin(r.ok);
+      } catch {
+        if (!cancelled) setIsAdmin(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, isAdmin]);
 
   // Mirror the current data-theme so the toggle reads + writes the same
   // attribute the rest of the app uses (no prefers-color-scheme auto).
@@ -114,6 +141,9 @@ export function UserMenu({
           <MenuHeader name={name} school={school} role={role} />
           <Divider />
           <MenuItem href="/dashboard" icon={<LayoutDashboard size={14} />} label="Dashboard" onClick={() => setOpen(false)} />
+          {isAdmin && (
+            <MenuItem href="/admin" icon={<ShieldCheck size={14} />} label="Admin" onClick={() => setOpen(false)} />
+          )}
           <Divider />
           <MenuButton
             icon={theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}

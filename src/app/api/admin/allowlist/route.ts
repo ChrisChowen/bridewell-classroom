@@ -77,3 +77,27 @@ export async function GET(req: Request) {
     allowlist: snap.docs.map((d) => d.data()),
   });
 }
+
+// DELETE /api/admin/allowlist?email=<email-or-*@domain>
+// Removes an allowlist entry. Admin-only. Guard: an admin cannot remove
+// their OWN entry — that's the simplest protection against locking
+// yourself (or the last admin) out of the admin surface.
+export async function DELETE(req: Request) {
+  const ctx = await authedAdmin(req);
+  if ("error" in ctx) return ctx.error;
+  const { a, user } = ctx;
+
+  const url = new URL(req.url);
+  const raw = url.searchParams.get("email")?.toLowerCase().trim();
+  if (!raw) return NextResponse.json({ error: "email query param required" }, { status: 400 });
+
+  if (raw === (user.email ?? "").toLowerCase()) {
+    return NextResponse.json(
+      { error: "You can't remove your own admin access — ask another admin." },
+      { status: 409 },
+    );
+  }
+
+  await a.db.collection("allowedTeacherEmails").doc(raw).delete();
+  return NextResponse.json({ ok: true, removed: raw });
+}

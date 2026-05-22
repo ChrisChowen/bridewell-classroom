@@ -44,8 +44,8 @@ once added)._
 | Error boundaries on routes | 🟢 | `(student)/session` + `(teacher)/class/[id]` boundaries present. |
 | Structured logging / error reporting | 🔴 | None. |
 | Per-class/teacher cost tracking | 🔴 | None. |
-| Multi-teacher within a school (roster import, co-teacher) | 🔴 | Single teacher : N classes only. |
-| Admin surface | 🔴 | None beyond the allowlist API. |
+| Multi-teacher within a school (roster import, co-teacher) | 🟡 | **Registered-teacher roster now visible** in the admin surface (`GET /api/admin/teachers`, admin-only, with an admin column). Multiple teachers per school already work (each owns N classes). _Remaining: bulk roster import + co-teacher / substitute access to a shared class._ |
+| Admin surface | 🟢 | **Built.** `/admin` page (teacher route group), gated by the `isAdmin` allowlist flag — the API is the boundary (page shows a clear "access required" state on 403). Manages the teacher allowlist: add email/domain-wildcard, grant/revoke admin (toggle), remove (DELETE, with a self-removal guard so you can't lock yourself out), plus the registered-teacher roster. Surfaced via an admin-only "Admin" item in the account menu (`UserMenu` probes the admin API once on open). Routes: `GET/POST/DELETE /api/admin/allowlist`, `GET /api/admin/teachers` (all admin-gated, on the auth seam). |
 | Next pinned to 15.x (Turbopack/firebase-admin) | 🟢 | Pinned `next@^15.5.18`; documented. |
 
 ## C. Reason validated (research-grade)
