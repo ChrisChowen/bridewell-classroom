@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:rules": "firebase emulators:exec --only firestore,auth --project bridewell-classroom \"node scripts/test-rules.mjs\"",
-    "test:rtdb": "firebase emulators:exec --only database,auth --project bridewell-classroom \"node scripts/test-rtdb-rules.mjs\""
+    "test:rtdb": "firebase emulators:exec --only database,auth --project bridewell-classroom \"node scripts/test-rtdb-rules.mjs\"",
+    "test:emulator": "firebase emulators:exec --only firestore,database --project bridewell-classroom \"vitest run -c vitest.emulator.config.ts\""
   },
   "dependencies": {
     "@google/genai": "^2.5.0",

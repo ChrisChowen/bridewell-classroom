@@ -30,8 +30,8 @@ once added)._
 | Test + CI foundation | 🟢 | Vitest unit suite (42 tests) on trigger/responder/joinCode/rate-limit/prompts; GitHub Actions `ci.yml` gates typecheck + test + build on push/PR to main. |
 | Playwright e2e for scenarios A/B/C | 🔴 | Not yet; unit gate landed first. |
 | GDPR: retention + auto-purge | 🔴 | No retention policy or purge job. |
-| GDPR: subject-access export (pseudonymised P001…) | 🔴 | No export endpoint. |
-| GDPR: full pupil-record deletion | 🟡 | `scripts/reset-profile.mjs` can wipe a teacher+data manually; no in-product path. |
+| GDPR: subject-access export (Art. 15) | 🟢 | `gatherPupilData` (`src/lib/pupil-data.ts`) + teacher-scoped `GET /api/pupils/{id}/export`. Emulator-tested (`npm run test:emulator`). _Teacher-facing download button: small follow-up._ |
+| GDPR: full pupil-record deletion (Art. 17) | 🟢 | `deletePupilData` + teacher-scoped `POST /api/pupils/{id}/delete` (requires confirmPupilId echo). Emulator-proven **total + isolated** (target → 0 docs, other pupil untouched). Ownership enforced server-side (`pupil-auth.ts`). _Teacher-facing confirm-modal button: small follow-up._ |
 | No PII in logs | 🟢 | Audited all server-side `console.*` (api + layers + lib). Two sites scrubbed: classifier fallback no longer logs/stores model text (echoes pupil turns on fallback); consolidate logs `err.message` only. Only operational metadata (flags/tier/codes) now reaches Cloud Logging. _Client-side console (runs in the user's own browser, not aggregated) out of scope._ |
 | Safeguarding: audit-trail doc on medium/high | 🟡 | Classifier emits flag; dashboard surfaces it (`LivePupilPanel`); routing to a named DSL + intervention history not built. |
 | Safeguarding: automated test (seeded disclosure surfaces + logs) | 🔴 | Not written. |

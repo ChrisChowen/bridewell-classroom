@@ -11,6 +11,9 @@ import { resolve } from "node:path";
 export default defineConfig({
   test: {
     include: ["src/**/*.test.ts"],
+    // Emulator-backed tests run under vitest.emulator.config.ts so the
+    // default suite stays fast + emulator-free.
+    exclude: ["**/node_modules/**", "src/**/*.emulator.test.ts"],
     environment: "node",
     globals: false,
     coverage: {
