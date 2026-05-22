@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { registerAuthProvider, verifyRequest, bearerToken } from "./index";
+import { registerAuthProvider, verifyRequest, verifyAuthToken, bearerToken } from "./index";
 import type { AuthProvider, AuthUser } from "./types";
 
 // Proves the auth seam is genuinely swappable: register a stub provider,
@@ -83,5 +83,35 @@ describe("verifyRequest — provider swap", () => {
     const r = await verifyRequest(reqWith("tok"));
     // resolveAuthProvider throws → mapped to 500 by verifyRequest.
     expect(r).toMatchObject({ ok: false, status: 500 });
+  });
+});
+
+// verifyAuthToken is the raw-token entry point the body-`idToken` routes use
+// (pupil session: reason/engagement/conversation/consolidate). Same seam,
+// same guarantees — just without the header extraction.
+describe("verifyAuthToken — raw token entry point", () => {
+  it("401s on a missing token (null/undefined/empty)", async () => {
+    registerAuthProvider("stub", () => new StubProvider(() => ({ uid: "u", claims: {} })));
+    expect(await verifyAuthToken(null)).toMatchObject({ ok: false, status: 401 });
+    expect(await verifyAuthToken(undefined)).toMatchObject({ ok: false, status: 401 });
+    expect(await verifyAuthToken("")).toMatchObject({ ok: false, status: 401 });
+  });
+
+  it("flows a body token through the swapped provider", async () => {
+    registerAuthProvider("stub", () => new StubProvider((t) => ({ uid: "p-" + t, claims: {} })));
+    const r = await verifyAuthToken("idtok");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.user.uid).toBe("p-idtok");
+  });
+
+  it("401s when the provider rejects, 500 on backend failure, 403 on role mismatch", async () => {
+    registerAuthProvider("stub", () => new StubProvider(() => null));
+    expect(await verifyAuthToken("bad")).toMatchObject({ ok: false, status: 401 });
+
+    registerAuthProvider("stub", () => new StubProvider(() => null, true));
+    expect(await verifyAuthToken("tok")).toMatchObject({ ok: false, status: 500 });
+
+    registerAuthProvider("stub", () => new StubProvider(() => ({ uid: "u", role: "pupil", claims: {} })));
+    expect(await verifyAuthToken("tok", { role: "teacher" })).toMatchObject({ ok: false, status: 403 });
   });
 });

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
+import { verifyAuthToken } from "@/lib/auth";
 import { callLLM } from "@/lib/ai/llm";
 import { consolidateLearnerProfile } from "@/lib/learner-profile-store";
 import type { ChallengeLevel } from "@/types";
@@ -74,14 +75,11 @@ async function handle(req: Request) {
     return NextResponse.json({ error: "idToken required" }, { status: 400 });
   }
 
-  let decoded;
-  try {
-    decoded = await a.auth.verifyIdToken(body.idToken);
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
+  const auth = await verifyAuthToken(body.idToken);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const uid = auth.user.uid;
 
-  const pupilSnap = await a.db.collection("pupils").doc(decoded.uid).get();
+  const pupilSnap = await a.db.collection("pupils").doc(uid).get();
   if (!pupilSnap.exists) return NextResponse.json({ error: "No pupil record" }, { status: 404 });
   const { classId, displayName } = pupilSnap.data() as { classId: string; displayName: string };
 
@@ -90,7 +88,7 @@ async function handle(req: Request) {
   const cls = classSnap.data() as { lessonPlan?: { title: string; learningObjectives?: string[]; criticalConcepts?: string[]; sequence?: Array<{ title: string }>; challengeLevel?: ChallengeLevel } };
 
   // Pull the conversation (newest first via the same path the panel uses).
-  const conversationDocId = `${classId}_${decoded.uid}`;
+  const conversationDocId = `${classId}_${uid}`;
   const msgs = await a.db
     .collection("conversations")
     .doc(conversationDocId)
@@ -107,7 +105,7 @@ async function handle(req: Request) {
 
   const snaps = await a.db
     .collection("engagementSnapshots")
-    .where("pupilId", "==", decoded.uid)
+    .where("pupilId", "==", uid)
     .orderBy("timestamp", "asc")
     .limit(20)
     .get();
@@ -147,7 +145,7 @@ async function handle(req: Request) {
   // log the message only (no PII).
   try {
     await consolidateLearnerProfile(a.db, {
-      pupilId: decoded.uid,
+      pupilId: uid,
       classId,
       lessonTitle: cls.lessonPlan?.title ?? "Untitled lesson",
       lessonLevel: cls.lessonPlan?.challengeLevel ?? "core",

@@ -5,6 +5,7 @@ import {
 } from "@/layers/evaluator";
 import { shapeResponse } from "@/layers/responder";
 import { getAdmin } from "@/lib/firebase/admin";
+import { verifyAuthToken } from "@/lib/auth";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 // POST /api/reason/evaluate
@@ -41,22 +42,19 @@ export async function POST(req: Request) {
     );
   }
 
-  let decoded;
-  try {
-    decoded = await a.auth.verifyIdToken(body.idToken);
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
+  const auth = await verifyAuthToken(body.idToken);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const uid = auth.user.uid;
 
   const evaluation = await evaluateReasonResponse(body);
   const response = shapeResponse({ evaluation, concept: body.concept });
 
   // Persist onto the reasonEvent doc.
-  const pupilSnap = await a.db.collection("pupils").doc(decoded.uid).get();
+  const pupilSnap = await a.db.collection("pupils").doc(uid).get();
   const classId = pupilSnap.exists ? (pupilSnap.data() as { classId: string }).classId : null;
 
   const eventPayload = {
-    pupilId: decoded.uid,
+    pupilId: uid,
     classId,
     timestamp: Date.now(),
     promptType: body.promptType,
@@ -79,7 +77,7 @@ export async function POST(req: Request) {
 
   // Append to the RTDB Reason trajectory on the pupil's live mirror.
   if (classId) {
-    const liveRef = a.rtdb.ref(`liveSessions/${classId}/pupils/${decoded.uid}`);
+    const liveRef = a.rtdb.ref(`liveSessions/${classId}/pupils/${uid}`);
     const cur = (await liveRef.get()).val() as { reasonTrajectory?: Array<{ confidence: number; branch: string; t: number }>} | null;
     const next = [
       ...((cur?.reasonTrajectory ?? []) as Array<{ confidence: number; branch: string; t: number }>),

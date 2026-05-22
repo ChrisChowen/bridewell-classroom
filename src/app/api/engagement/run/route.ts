@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
+import { verifyAuthToken } from "@/lib/auth";
 import { classifyEngagement, type ClassifierInput } from "@/layers/classifier";
 import type { EngagementSnapshot, ClassRecord } from "@/types";
 
@@ -42,15 +43,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "idToken, turns, signals required" }, { status: 400 });
   }
 
-  let decoded;
-  try {
-    decoded = await a.auth.verifyIdToken(body.idToken);
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
+  const auth = await verifyAuthToken(body.idToken);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const uid = auth.user.uid;
 
   // Look up the pupil's class.
-  const pupilSnap = await a.db.collection("pupils").doc(decoded.uid).get();
+  const pupilSnap = await a.db.collection("pupils").doc(uid).get();
   if (!pupilSnap.exists) {
     return NextResponse.json({ error: "No pupil record" }, { status: 404 });
   }
@@ -96,7 +94,7 @@ export async function POST(req: Request) {
     rationale: string;
     cues: string[];
   } = {
-    pupilId: decoded.uid,
+    pupilId: uid,
     pupilDisplayName: pupil.displayName,
     sessionId: pupil.classId, // for now, one session per class
     timestamp: now,
@@ -112,7 +110,7 @@ export async function POST(req: Request) {
   //    re-renders without polling. Also update the step-progression
   //    streak and (if the streak threshold is met) advance the pupil to
   //    the next step in their lesson plan.
-  const liveRef = a.rtdb.ref(`liveSessions/${pupil.classId}/pupils/${decoded.uid}`);
+  const liveRef = a.rtdb.ref(`liveSessions/${pupil.classId}/pupils/${uid}`);
 
   // Read the lesson plan's step count + whether it has an extension.
   // The pupil can advance one position past the last step IF there's
@@ -171,7 +169,7 @@ export async function POST(req: Request) {
     nextStepIndex = stepIndex;
     advanced = didAdvance;
     return {
-      pupilId: decoded.uid,
+      pupilId: uid,
       displayName: pupil.displayName,
       state: result.state,
       confidence: result.confidence,
@@ -205,7 +203,7 @@ export async function POST(req: Request) {
   //    teacher record.
   if (result.safeguarding.severity === "medium" || result.safeguarding.severity === "high") {
     await a.db.collection("safeguardingEvents").add({
-      pupilId: decoded.uid,
+      pupilId: uid,
       pupilDisplayName: pupil.displayName,
       classId: pupil.classId,
       timestamp: now,

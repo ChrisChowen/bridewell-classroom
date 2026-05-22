@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
+import { verifyAuthToken } from "@/lib/auth";
 import { selectReasonPrompt } from "@/layers/prompts";
 import type { ReasonPromptType } from "@/types";
 
@@ -35,14 +36,10 @@ export async function POST(req: Request) {
   if (!body?.idToken || !body.concept || !body.trigger) {
     return NextResponse.json({ error: "idToken, trigger, concept required" }, { status: 400 });
   }
-  let decoded;
-  try {
-    decoded = await a.auth.verifyIdToken(body.idToken);
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
+  const auth = await verifyAuthToken(body.idToken);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const pupilSnap = await a.db.collection("pupils").doc(decoded.uid).get();
+  const pupilSnap = await a.db.collection("pupils").doc(auth.user.uid).get();
   if (!pupilSnap.exists) {
     return NextResponse.json({ error: "No pupil record" }, { status: 404 });
   }
@@ -58,7 +55,7 @@ export async function POST(req: Request) {
   // Log the firing as a Reason event in Firestore (response will land
   // later via /api/reason/evaluate which updates this same event).
   const ref = await a.db.collection("reasonEvents").add({
-    pupilId: decoded.uid,
+    pupilId: auth.user.uid,
     pupilDisplayName: displayName,
     classId,
     timestamp: Date.now(),

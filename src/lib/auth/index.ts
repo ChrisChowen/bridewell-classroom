@@ -49,15 +49,17 @@ export type VerifyResult =
   | { ok: true; user: AuthUser }
   | { ok: false; status: number; error: string };
 
-// The one call routes make. Extracts the bearer token, verifies it through
-// the active provider, and (optionally) enforces a role. Returns a tagged
-// result with the right HTTP status so routes stay uniform.
-export async function verifyRequest(
-  req: Request,
+// Verify a RAW token string through the active provider, with an optional
+// role gate. This is the seam's core; both entry points below delegate to
+// it. Routes that carry the token in the JSON body (the older pupil/teacher
+// routes use `{ idToken }`) call this directly; routes that use the
+// Authorization header call verifyRequest. Either way the identity backend
+// is the swappable seam — no route touches Firebase directly.
+export async function verifyAuthToken(
+  token: string | null | undefined,
   opts?: { role?: string },
 ): Promise<VerifyResult> {
-  const token = bearerToken(req);
-  if (!token) return { ok: false, status: 401, error: "Missing Authorization bearer token" };
+  if (!token) return { ok: false, status: 401, error: "Missing token" };
 
   let user: AuthUser | null;
   try {
@@ -70,6 +72,18 @@ export async function verifyRequest(
     return { ok: false, status: 403, error: `${opts.role} role required` };
   }
   return { ok: true, user };
+}
+
+// The header-based entry point. Extracts the bearer token, then delegates
+// to verifyAuthToken. Returns a tagged result with the right HTTP status so
+// routes stay uniform.
+export async function verifyRequest(
+  req: Request,
+  opts?: { role?: string },
+): Promise<VerifyResult> {
+  const token = bearerToken(req);
+  if (!token) return { ok: false, status: 401, error: "Missing Authorization bearer token" };
+  return verifyAuthToken(token, opts);
 }
 
 export type { AuthProvider, AuthUser } from "./types";

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
+import { verifyAuthToken } from "@/lib/auth";
 
 // POST /api/conversation/append
 //
@@ -25,20 +26,17 @@ export async function POST(req: Request) {
   if (!body?.idToken || !body.content || !body.role) {
     return NextResponse.json({ error: "idToken, role, content required" }, { status: 400 });
   }
-  let decoded;
-  try {
-    decoded = await a.auth.verifyIdToken(body.idToken);
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
+  const auth = await verifyAuthToken(body.idToken);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const uid = auth.user.uid;
 
-  const pupilSnap = await a.db.collection("pupils").doc(decoded.uid).get();
+  const pupilSnap = await a.db.collection("pupils").doc(uid).get();
   if (!pupilSnap.exists) {
     return NextResponse.json({ error: "No pupil record" }, { status: 404 });
   }
   const { classId } = pupilSnap.data() as { classId: string };
 
-  const docId = `${classId}_${decoded.uid}`;
+  const docId = `${classId}_${uid}`;
   const ref = a.db.collection("conversations").doc(docId).collection("messages");
   await ref.add({
     role: body.role,
