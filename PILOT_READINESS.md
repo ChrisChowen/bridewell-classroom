@@ -35,7 +35,7 @@ once added)._
 | No PII in logs | 🟡 | Needs an audit pass; some `console.error` paths log content. |
 | Safeguarding: audit-trail doc on medium/high | 🟡 | Classifier emits flag; dashboard surfaces it (`LivePupilPanel`); routing to a named DSL + intervention history not built. |
 | Safeguarding: automated test (seeded disclosure surfaces + logs) | 🔴 | Not written. |
-| Auth rules scoped (teacher reads only own classes) | 🔴 | `firestore.rules` still permissive on teacher reads. |
+| Auth rules scoped (teacher reads only own classes) | 🟢 | `firestore.rules` v3: teacher reads only owned classes/pupils/conversations; teacher-email PII leak closed; server-only collections (snapshots/reason/safeguarding/profiles/interventions) denied to all clients. Emulator-tested (`npm run test:rules`, 18 assertions incl. live query shapes); deployed + verified live (dashboard + class detail load, no permission errors). RTDB rules (`database.rules.json`) not yet reviewed. |
 | Durable rate limiter (survives cold starts) | 🔴 | Still in-memory per Node instance. |
 | Join-code enumeration protected | 🟡 | Rate-limit helper exists; not wired to the join path. |
 | Graceful degradation tested | 🟡 | LLM fallback now covered by `llm.test.ts` (unavailable / throwing / unknown-provider all degrade); UI-level degradation indicators not yet asserted. |
