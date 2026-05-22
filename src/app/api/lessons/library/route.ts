@@ -23,10 +23,24 @@ export async function GET(req: Request) {
   let q: FirebaseFirestore.Query = a.db.collection("lessonLibrary");
   if (school) q = q.where("school", "==", school);
   if (syllabusId) q = q.where("syllabusId", "==", syllabusId);
-  const snap = await q.limit(40).get();
+  // Two equality filters don't normally need a composite index, but degrade
+  // gracefully if Firestore ever demands one for this combination: fall back
+  // to the school filter alone (then filter syllabus in memory) rather than
+  // 500 the wizard's "suggested plans" panel.
+  let snap;
+  try {
+    snap = await q.limit(40).get();
+  } catch {
+    let fb: FirebaseFirestore.Query = a.db.collection("lessonLibrary");
+    if (school) fb = fb.where("school", "==", school);
+    snap = await fb.limit(80).get();
+  }
 
   const entries = snap.docs
     .map((d) => d.data())
+    // Apply the syllabus filter in memory too — harmless on the happy path
+    // (already filtered by the query) and correct on the index-fallback path.
+    .filter((e) => !syllabusId || e.syllabusId === syllabusId)
     .sort((p, q) => {
       const pr = (p.appraisal?.rating ?? 0) as number;
       const qr = (q.appraisal?.rating ?? 0) as number;

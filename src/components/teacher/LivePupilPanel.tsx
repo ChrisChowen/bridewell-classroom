@@ -603,7 +603,10 @@ function GdprExport({ pupilId, pupilName }: { pupilId: string; pupilName: string
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `pupil-${pupilId}-export.json`;
+      // Fixed, non-identifying filename (matches the server's
+      // Content-Disposition) — don't bake the raw UID into a file that may be
+      // forwarded to fulfil a subject-access request.
+      a.download = "subject-access-export.json";
       document.body.appendChild(a);
       a.click();
       a.remove();

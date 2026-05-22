@@ -19,8 +19,12 @@ export async function GET(
   const data = await gatherPupilData(auth.admin.db, pupilId);
   return NextResponse.json(data, {
     headers: {
-      // Encourage the browser to download it as a file.
-      "Content-Disposition": `attachment; filename="pupil-${pupilId}-export.json"`,
+      // Encourage the browser to download it as a file. Use a fixed,
+      // non-identifying filename — this file is handed to a data subject, so
+      // we don't want the raw Firestore UID baked into the name on disk. The
+      // pupil's identity is inside the JSON (a lawful Art. 15 disclosure),
+      // not advertised by the filename.
+      "Content-Disposition": `attachment; filename="subject-access-export.json"`,
     },
   });
 }
