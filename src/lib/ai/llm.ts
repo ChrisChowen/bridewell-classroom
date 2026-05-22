@@ -1,35 +1,31 @@
-// LLM client — Gemini. Server-only.
+// LLM client — provider-agnostic. Server-only.
 //
-// Single typed entry point used by every API route and every layers/ module.
-// Hides the SDK so we can swap providers later without touching callers.
+// Single typed entry point used by every API route and every layers/
+// module. callLLM resolves a named model key to a concrete model id and
+// delegates the actual generation to whichever LLMProvider is selected
+// by LLM_PROVIDER (default: gemini). The provider seam (./providers/) is
+// the handover point: Unified Projects ships an adapter, sets the env
+// var, and the whole app repoints with no caller changes.
 //
 // Capabilities surfaced through callLLM:
 //   • Plain chat (tutor + scaffolding)
 //   • Structured JSON output via responseSchema (classifier, Reason evaluator)
 //   • Google Search grounding (expert tutor mode, Reason fact-check) — returns
 //     citation metadata alongside the text
-//   • Explicit thinkingBudget control (Gemini 2.5 thinks by default; tutor
-//     turns want 0, classifier and Reason evaluator want it on)
+//   • Explicit thinkingBudget control
 //
-// Returns a deterministic stub when GEMINI_API_KEY is missing so the UI
-// stays exercisable without a key (graceful degradation per CLAUDE.md §O).
+// Returns a deterministic stub when the provider is unavailable (e.g. no
+// API key) or errors, so the UI stays exercisable (graceful degradation
+// per CLAUDE.md §O).
 
 import "server-only";
-import { GoogleGenAI } from "@google/genai";
 import { MODELS, type ModelKey } from "./models";
+import { resolveProvider } from "./providers";
+import type { LLMMessage, LLMCitation } from "./providers/types";
 
-export interface LLMMessage {
-  role: "user" | "assistant";
-  content: string;
-}
-
-export interface LLMCitation {
-  uri?: string;
-  title?: string;
-  // The slice of the response text this citation applies to.
-  startIndex?: number;
-  endIndex?: number;
-}
+// Re-export the wire types so existing importers (`import { LLMMessage }
+// from "@/lib/ai/llm"`) keep working unchanged.
+export type { LLMMessage, LLMCitation } from "./providers/types";
 
 export interface LLMCallOptions {
   use: ModelKey;
@@ -43,7 +39,7 @@ export interface LLMCallOptions {
   // Gemini 2.5 thinks by default. Pass 0 for fast tutor turns; leave
   // undefined (or pass a non-zero budget) for analysis tasks.
   thinkingBudget?: number;
-  // Google Search grounding. Off by default to keep tutor turns cheap and
+  // Web-search grounding. Off by default to keep tutor turns cheap and
   // local; turn on for Expert mode and for Reason fact-checking.
   grounding?: boolean;
 }
@@ -54,8 +50,7 @@ export interface LLMCallResult {
   fallbackUsed: boolean;
   json?: unknown;
   citations?: LLMCitation[];
-  // Google Search query strings the model actually executed, if grounding
-  // fired. Useful for the Verified affordance in the UI.
+  // Search query strings the model actually executed, if grounding fired.
   searchQueries?: string[];
   usage?: {
     inputTokens?: number;
@@ -63,103 +58,50 @@ export interface LLMCallResult {
   };
 }
 
-let client: GoogleGenAI | null = null;
-
-function getClient(): GoogleGenAI | null {
-  if (client) return client;
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-  client = new GoogleGenAI({ apiKey });
-  return client;
-}
-
 export async function callLLM(opts: LLMCallOptions): Promise<LLMCallResult> {
   const model = MODELS[opts.use];
-  const c = getClient();
-  if (!c) return fallback(opts, model, "GEMINI_API_KEY not set");
+
+  let provider;
+  try {
+    provider = resolveProvider();
+  } catch (err) {
+    // Unknown/misconfigured LLM_PROVIDER — degrade gracefully.
+    return fallback(opts, model, err instanceof Error ? err.message : String(err));
+  }
+
+  if (!provider.available()) {
+    return fallback(opts, model, `${provider.name} provider unavailable`);
+  }
 
   try {
-    const contents = opts.messages.map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
-
-    // Grounding and structured output are mutually exclusive in the Gemini
-    // API. The model can search OR return JSON, not both in one call.
-    const wantsGrounding = !!opts.grounding && !opts.responseSchema;
-
-    const config: Record<string, unknown> = {
-      systemInstruction: opts.system,
+    const result = await provider.generate({
+      model,
+      system: opts.system,
+      messages: opts.messages,
       maxOutputTokens: opts.maxOutputTokens ?? 1024,
       temperature: opts.temperature ?? 0.6,
-    };
-    if (opts.thinkingBudget !== undefined) {
-      config.thinkingConfig = { thinkingBudget: opts.thinkingBudget };
-    }
-    if (opts.responseSchema) {
-      config.responseMimeType = "application/json";
-      config.responseSchema = opts.responseSchema;
-    }
-    if (wantsGrounding) {
-      config.tools = [{ googleSearch: {} }];
-    }
-
-    const response = await c.models.generateContent({ model, contents, config });
-    const text = response.text ?? "";
+      thinkingBudget: opts.thinkingBudget,
+      responseSchema: opts.responseSchema,
+      grounding: !!opts.grounding,
+    });
 
     let json: unknown | undefined;
     if (opts.responseSchema) {
       try {
-        json = JSON.parse(text);
+        json = JSON.parse(result.text);
       } catch {
         json = undefined;
       }
     }
 
-    // Grounding metadata: the candidate carries groundingMetadata with
-    // groundingChunks (web sources) and groundingSupports (which text spans
-    // are backed by which chunks). Flatten into LLMCitation[] for the UI.
-    const candidate = response.candidates?.[0];
-    const gm = candidate?.groundingMetadata;
-    let citations: LLMCitation[] | undefined;
-    let searchQueries: string[] | undefined;
-    if (gm) {
-      searchQueries = gm.webSearchQueries ?? undefined;
-      const chunks = gm.groundingChunks ?? [];
-      const supports = gm.groundingSupports ?? [];
-      if (supports.length > 0) {
-        citations = supports.flatMap((s) => {
-          const idxs = s.groundingChunkIndices ?? [];
-          return idxs
-            .map((i) => chunks[i]?.web)
-            .filter((w): w is { uri?: string; title?: string } => !!w)
-            .map((w) => ({
-              uri: w.uri,
-              title: w.title,
-              startIndex: s.segment?.startIndex,
-              endIndex: s.segment?.endIndex,
-            }));
-        });
-      } else if (chunks.length > 0) {
-        // No span-level supports but sources exist — surface them anyway.
-        citations = chunks
-          .map((ch) => ch.web)
-          .filter((w): w is { uri?: string; title?: string } => !!w)
-          .map((w) => ({ uri: w.uri, title: w.title }));
-      }
-    }
-
     return {
-      text,
+      text: result.text,
       modelUsed: model,
       fallbackUsed: false,
       json,
-      citations,
-      searchQueries,
-      usage: {
-        inputTokens: response.usageMetadata?.promptTokenCount,
-        outputTokens: response.usageMetadata?.candidatesTokenCount,
-      },
+      citations: result.citations,
+      searchQueries: result.searchQueries,
+      usage: result.usage,
     };
   } catch (err) {
     return fallback(opts, model, err instanceof Error ? err.message : String(err));

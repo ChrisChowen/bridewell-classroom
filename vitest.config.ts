@@ -21,6 +21,8 @@ export default defineConfig({
         "src/lib/joinCode.ts",
         "src/lib/rate-limit.ts",
         "src/lib/ai/prompts.ts",
+        "src/lib/ai/llm.ts",
+        "src/lib/ai/providers/index.ts",
       ],
       reporter: ["text", "json-summary"],
     },

@@ -17,7 +17,7 @@ once added)._
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Single provider-agnostic model seam (`src/lib/ai/llm.ts`, named keys) | 🟡 | All calls route through `callLLM`; needs a documented swap test proving a key can be repointed with zero `src/layers` changes. |
+| Single provider-agnostic model seam (`src/lib/ai/llm.ts`, named keys) | 🟢 | `LLMProvider` interface (`src/lib/ai/providers/`); Gemini is one adapter; backend selected by `LLM_PROVIDER`. Swap proven by `src/lib/ai/llm.test.ts` (stub provider flows through callLLM unchanged + graceful fallback). |
 | Auth seam behind one interface | 🔴 | `getFirebase()` / `getAdmin()` used directly in feature code; not yet abstracted for Entra/SAML/OIDC substitution. |
 | Data seam behind one interface | 🔴 | Firestore/RTDB calls scattered; not yet behind a documented datastore interface. |
 | `HANDOVER.md` integration contract | 🔴 | Not written. |
@@ -38,7 +38,7 @@ once added)._
 | Auth rules scoped (teacher reads only own classes) | 🔴 | `firestore.rules` still permissive on teacher reads. |
 | Durable rate limiter (survives cold starts) | 🔴 | Still in-memory per Node instance. |
 | Join-code enumeration protected | 🟡 | Rate-limit helper exists; not wired to the join path. |
-| Graceful degradation tested | 🟡 | Deterministic LLM fallback exists in `callLLM`; not covered by a test. |
+| Graceful degradation tested | 🟡 | LLM fallback now covered by `llm.test.ts` (unavailable / throwing / unknown-provider all degrade); UI-level degradation indicators not yet asserted. |
 | Error boundaries on routes | 🟢 | `(student)/session` + `(teacher)/class/[id]` boundaries present. |
 | Structured logging / error reporting | 🔴 | None. |
 | Per-class/teacher cost tracking | 🔴 | None. |
@@ -85,7 +85,7 @@ once added)._
 - [ ] `PILOT_READINESS.md` green on every **engineering** gate; all 🔒 items clearly amber/red with the human action named.
 - [x] CI runs typecheck + unit tests + build on every push to main. _(green this commit)_
 - [ ] Playwright A/B/C pass in CI.
-- [ ] Model-swap test passes (repoint a model key, app still runs).
+- [x] Model-swap test passes (repoint the backend via `LLM_PROVIDER`, app still runs). _(src/lib/ai/llm.test.ts)_
 - [ ] `docs/reason-evidence.md` states a met, reproducible accuracy claim.
 - [ ] Clean Chrome end-to-end walkthrough: teacher register → lesson → run class; pupil (separate profile) join → chat → Reason → live dashboard — no operator workarounds.
 - [ ] `HANDOVER.md` exists and survives a "could Unified integrate in a day?" read-through.
