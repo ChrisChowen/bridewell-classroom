@@ -5,6 +5,7 @@ import { verifyAuthToken } from "@/lib/auth";
 import { resolveDataStore } from "@/lib/data";
 import { callLLM } from "@/lib/ai/llm";
 import { consolidateLearnerProfile } from "@/lib/learner-profile-store";
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 // POST /api/session/consolidate
 //
@@ -68,6 +69,9 @@ export async function POST(req: Request) {
 }
 
 async function handle(req: Request) {
+  const limited = await enforceRateLimit(req, RATE_LIMITS.consolidate);
+  if (limited) return limited;
+
   const a = getAdmin();
   if (!a.ready) return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });
 

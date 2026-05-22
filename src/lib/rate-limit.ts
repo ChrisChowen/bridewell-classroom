@@ -204,4 +204,10 @@ export const RATE_LIMITS = {
   tts: { bucket: "tts", limit: 60, windowMs: 60_000 } satisfies RateLimitConfig,
   // Conversation persistence — a few writes per turn; generous but bounded.
   conversationAppend: { bucket: "conversation-append", limit: 120, windowMs: 60_000 } satisfies RateLimitConfig,
+  // Close-of-lesson consolidation — a Gemini-Pro path fired automatically
+  // from the pupil's closing screen on mount. One legitimate call per
+  // lesson end; a low cap blunts a refresh loop hammering an expensive model.
+  consolidate: { bucket: "consolidate", limit: 6, windowMs: 60_000 } satisfies RateLimitConfig,
+  // Reason fire — records a reasonEvent; bounded so a client can't spam writes.
+  reasonFire: { bucket: "reason-fire", limit: 30, windowMs: 60_000 } satisfies RateLimitConfig,
 };

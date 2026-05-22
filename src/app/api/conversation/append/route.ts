@@ -41,13 +41,27 @@ export async function POST(req: Request) {
   }
   const { classId } = pupil;
 
+  // Bound the client-supplied meta: it's small flags in normal use
+  // (scaffold type, reason branch), but it's untrusted client input, so
+  // cap its serialised size to keep a malicious client from writing
+  // arbitrarily large blobs into Firestore.
+  let meta: Record<string, unknown> | null = null;
+  if (body.meta && typeof body.meta === "object") {
+    try {
+      const serialised = JSON.stringify(body.meta);
+      if (serialised.length <= 2000) meta = body.meta;
+    } catch {
+      // non-serialisable meta is dropped
+    }
+  }
+
   const docId = `${classId}_${uid}`;
   const ref = a.db.collection("conversations").doc(docId).collection("messages");
   await ref.add({
     role: body.role,
     content: body.content.slice(0, 4000),
     timestamp: Date.now(),
-    meta: body.meta ?? null,
+    meta,
   });
 
   return NextResponse.json({ ok: true });

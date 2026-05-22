@@ -3,6 +3,7 @@ import { getAdmin } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/auth";
 import { resolveDataStore } from "@/lib/data";
 import { selectReasonPrompt } from "@/layers/prompts";
+import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import type { ReasonPromptType } from "@/types";
 
 // POST /api/reason/fire
@@ -30,6 +31,9 @@ interface Body {
 }
 
 export async function POST(req: Request) {
+  const limited = await enforceRateLimit(req, RATE_LIMITS.reasonFire);
+  if (limited) return limited;
+
   const a = getAdmin();
   if (!a.ready) return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });
 

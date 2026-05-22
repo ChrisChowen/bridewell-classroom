@@ -53,6 +53,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "classId and type required" }, { status: 400 });
   }
 
+  // Cap the free-text fields. These come from a trusted (teacher) client,
+  // but bounding them keeps a buggy or compromised client from writing
+  // oversized strings into the pupil's live mirror and the audit log.
+  const cap = (s: string | undefined, n: number) =>
+    typeof s === "string" ? s.slice(0, n) : undefined;
+  body.text = cap(body.text, 2000);
+  body.rationale = cap(body.rationale, 1000);
+  body.pairWith = cap(body.pairWith, 120);
+
   const store = resolveDataStore();
   const cls = await store.getClass(body.classId);
   if (!cls) return NextResponse.json({ error: "Class not found" }, { status: 404 });

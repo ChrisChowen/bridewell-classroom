@@ -71,8 +71,17 @@ export async function POST(req: Request) {
     status: "answered",
   };
 
+  // The client supplies eventId (from /api/reason/fire) so we update the
+  // same doc. But a malicious pupil could pass another pupil's eventId to
+  // clobber their reasonEvent. Verify ownership before merging; if the doc
+  // doesn't exist or belongs to someone else, write a fresh event instead.
   if (body.eventId) {
-    await a.db.collection("reasonEvents").doc(body.eventId).set(eventPayload, { merge: true });
+    const existing = await a.db.collection("reasonEvents").doc(body.eventId).get();
+    if (existing.exists && (existing.data() as { pupilId?: string }).pupilId === uid) {
+      await existing.ref.set(eventPayload, { merge: true });
+    } else {
+      await a.db.collection("reasonEvents").add(eventPayload);
+    }
   } else {
     await a.db.collection("reasonEvents").add(eventPayload);
   }
