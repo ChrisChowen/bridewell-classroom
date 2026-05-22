@@ -52,11 +52,11 @@ once added)._
 
 | Item | Status | Notes |
 |------|--------|-------|
-| LLM-judge eval harness | 🟡 | `scripts/pedagogy-judge.mjs` scores tutor turns; baseline→after measured (4.30→5.17/6). |
-| Human-labelled ground truth | 🔴 | No labelled transcript set yet; current judge is LLM-vs-LLM. |
-| Stated, met precision/recall claim | 🔴 | Not yet (needs ground truth). |
-| Confidence calibration (middle band) | 🔴 | Bimodal-clustering risk flagged in audit, not measured. |
-| `docs/reason-evidence.md` | 🔴 | Not written. |
+| LLM-judge eval harness | 🟢 | Two harnesses: `scripts/pedagogy-judge.mjs` (tutor-turn quality, 4.30→5.17/6) and the new **ground-truth harness** `scripts/reason-eval.mjs` — grades the **real** classifier (via `POST /api/engagement/classify`, not a re-implementation) against human labels, emitting P/R/F1 per state, the productive_struggle-vs-wheel_spinning pairwise claim, confusion matrix + calibration. Metric maths in `scripts/reason-eval-metrics.mjs`, unit-tested (5 tests). |
+| Human-labelled ground truth | 🔴🔒 | **Human action named.** Labelling schema, instructions, and a format-example file are ready (`docs/reason-eval/README.md` + `transcripts.example.jsonl`). Needs a person (ideally two, with κ) to label ≥~60 real/realistic windows blind to the model — the one genuinely human-blocked item. |
+| Stated, met precision/recall claim | 🔴🔒 | Blocked only on the labels above. The moment `transcripts.jsonl` exists, `node scripts/reason-eval.mjs` produces the numbers; `docs/reason-evidence.md` has the claim template + results table waiting to be filled. |
+| Confidence calibration (middle band) | 🟡 | **Now measurable** — the harness computes per-bucket accuracy + Expected Calibration Error, directly testing the bimodal-clustering risk. Not yet measured (needs labels). |
+| `docs/reason-evidence.md` | 🟡 | **Written** — contribution stated honestly, reproducible method, threats-to-validity, and a results table marked _pending ground truth_ (deliberately no met claim before labels exist). Becomes 🟢 when the table is filled from a harness run. |
 
 ## D. Capability extended
 
