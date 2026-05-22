@@ -43,6 +43,7 @@ export default function ClassDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [sessionStatus, setSessionStatus] = useState<SessionStatus | null>(null);
   const [classCtrlBusy, setClassCtrlBusy] = useState<string | null>(null);
+  const [confirmEnd, setConfirmEnd] = useState(false);
 
   // Auth guard
   useEffect(() => {
@@ -219,11 +220,7 @@ export default function ClassDetailPage() {
                   )}
                 {sessionStatus && sessionStatus.value !== "not_started" && (
                   <button
-                    onClick={() => {
-                      if (confirm("End the class? Pupils will see a closing screen and can't reply further.")) {
-                        fireClassControl("end");
-                      }
-                    }}
+                    onClick={() => setConfirmEnd(true)}
                     disabled={classCtrlBusy === "end"}
                     className="bw-btn-secondary"
                     style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6, color: "var(--color-crimson)" }}
@@ -614,6 +611,53 @@ export default function ClassDetailPage() {
           )}
         </div>
       </div>
+
+      {confirmEnd && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="End the class"
+          onClick={() => setConfirmEnd(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 60,
+            display: "grid",
+            placeItems: "center",
+            padding: 24,
+            background: "rgba(15,26,46,0.45)",
+            backdropFilter: "blur(2px)",
+            animation: "bw-fade-in 160ms ease",
+          }}
+        >
+          <div
+            className="bw-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 420, width: "100%", padding: 24 }}
+          >
+            <div className="bw-display" style={{ fontSize: 20, marginBottom: 8 }}>End the class?</div>
+            <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.5, marginBottom: 20 }}>
+              Pupils will see a closing screen and won&apos;t be able to reply further. You can&apos;t
+              undo this for the current session.
+            </p>
+            <div className="flex items-center" style={{ gap: 10, justifyContent: "flex-end" }}>
+              <button onClick={() => setConfirmEnd(false)} className="bw-btn-secondary" style={{ fontSize: 13 }}>
+                Keep going
+              </button>
+              <button
+                onClick={() => {
+                  setConfirmEnd(false);
+                  fireClassControl("end");
+                }}
+                className="bw-btn-secondary"
+                style={{ fontSize: 13, color: "var(--color-crimson)", borderColor: "var(--color-crimson)" }}
+              >
+                End class
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
