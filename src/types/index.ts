@@ -3,6 +3,10 @@
 
 import type { EngagementState } from "@/lib/brand";
 
+// Re-exported so domain modules can depend on @/types alone for the
+// engagement vocabulary (the canonical definition lives in lib/brand).
+export type { EngagementState };
+
 export type Role = "teacher" | "pupil" | "tutor" | "system" | "reason";
 
 export type TutorMode = "coach" | "expert";
@@ -270,4 +274,60 @@ export interface PupilRecord {
     outputFormat?: "short" | "bullets" | "structured" | "visual";
     scaffoldingLevel?: 1 | 2 | 3 | 4 | 5;
   };
+}
+
+export type ChallengeLevel = "foundation" | "core" | "stretch";
+
+// One session's worth of evidence, folded into the longitudinal profile.
+// Deterministic — computed from the persisted trajectory + scaffold +
+// Reason events for that session. The narrative is the only LLM-written
+// field on the profile and is optional.
+export interface LearnerSessionRecord {
+  sessionId: string;
+  timestamp: number; // session end (consolidation time)
+  lessonTitle: string;
+  messageCount: number;
+  // Aggregated engagement: the most-frequent state across the session's
+  // snapshots, and the mean classifier confidence.
+  dominantState: EngagementState | null;
+  avgEngagementConfidence: number | null; // 0..1
+  // Reason: mean evaluator confidence across this session's events.
+  avgReasonConfidence: number | null; // 0..1
+  reasonEventCount: number;
+  // Scaffold reliance: total Hint/Rephrase/Simplify presses this session.
+  scaffoldPresses: number;
+  // Difficulty drift this session decided.
+  challengeBefore: ChallengeLevel;
+  challengeAfter: ChallengeLevel;
+}
+
+// Longitudinal learner profile, one document per pupil at
+// learnerProfiles/{pupilId}. Server-only (admin-written, denied to all
+// clients by the security rules). The adaptive-difficulty seam:
+// `challengeLevel` is the effective, drifted level the tutor inherits
+// per pupil, overriding the lesson-wide default. Drift is gentle — at
+// most one step per session, with hysteresis (see src/lib/learner-profile.ts).
+export interface LearnerProfile {
+  pupilId: string;
+  classId: string;
+  displayName?: string;
+  // Effective per-pupil challenge level, drifted on evidence. The tutor
+  // uses this in place of the lesson-wide default.
+  challengeLevel: ChallengeLevel;
+  sessionsObserved: number;
+  // Rolling, deterministic evidence summary (latest values).
+  metrics: {
+    avgReasonConfidence: number | null; // 0..1, across observed sessions
+    avgScaffoldPresses: number | null; // mean presses per session
+    dominantStates: EngagementState[]; // most frequent states, ranked
+    lastUpdated: number;
+  };
+  // Short teacher-facing narrative written by the LLM at consolidation
+  // (never shown to the pupil). Optional — absent on the deterministic
+  // fallback path.
+  narrative?: string;
+  // Per-session trajectory for the teacher drill-down (capped, newest last).
+  sessions: LearnerSessionRecord[];
+  createdAt: number;
+  updatedAt: number;
 }
