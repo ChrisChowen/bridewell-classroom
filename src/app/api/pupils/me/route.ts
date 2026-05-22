@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
-import type { ClassRecord, PupilRecord } from "@/types";
+import { getEffectiveChallengeLevel } from "@/lib/learner-profile-store";
+import type { ChallengeLevel, ClassRecord, PupilRecord } from "@/types";
 
 // GET /api/pupils/me
 //
@@ -37,5 +38,17 @@ export async function GET(req: Request) {
   }
   const cls = classSnap.data() as ClassRecord;
 
-  return NextResponse.json({ pupil, class: cls });
+  // Adaptive difficulty: the pupil inherits their drifted, per-pupil
+  // challenge level (falls back to the lesson-wide default if we've never
+  // profiled them). The session page passes this into the tutor as
+  // lesson.challengeLevel so coaching is pitched per pupil, not per class.
+  const lessonLevel = (cls.lessonPlan?.challengeLevel as ChallengeLevel | undefined) ?? "core";
+  let effectiveChallengeLevel: ChallengeLevel = lessonLevel;
+  try {
+    effectiveChallengeLevel = await getEffectiveChallengeLevel(a.db, decoded.uid, lessonLevel);
+  } catch {
+    // Non-fatal: fall back to the lesson-wide level.
+  }
+
+  return NextResponse.json({ pupil, class: cls, effectiveChallengeLevel });
 }

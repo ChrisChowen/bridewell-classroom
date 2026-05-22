@@ -45,9 +45,13 @@ interface ChatSurfaceProps {
   // When undefined, the surface runs against the demo lesson so the
   // preview at /session keeps working without a real class.
   klass?: ClassRecord;
+  // The pupil's effective, per-pupil challenge level (adaptive difficulty,
+  // drifted across sessions). Overrides the lesson-wide default so the
+  // tutor pitches per pupil. Falls back to the lesson plan's level.
+  effectiveChallengeLevel?: "foundation" | "core" | "stretch";
 }
 
-export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
+export function ChatSurface({ klass, effectiveChallengeLevel }: ChatSurfaceProps = {}) {
   const lessonPlan: LessonPlan | undefined = klass?.lessonPlan;
   const openingText =
     lessonPlan?.sequence?.[0]?.openingPrompt ?? demoTutorOpening;
@@ -152,7 +156,8 @@ export function ChatSurface({ klass }: ChatSurfaceProps = {}) {
         criticalConcepts: lessonPlan.criticalConcepts,
         keyVocabulary: lessonPlan.keyVocabulary,
         tutorAddendum: lessonPlan.tutorAddendum,
-        challengeLevel: lessonPlan.challengeLevel,
+        // Per-pupil drifted level wins over the lesson-wide default.
+        challengeLevel: effectiveChallengeLevel ?? lessonPlan.challengeLevel,
       }
     : {
         title: demoLesson.title,

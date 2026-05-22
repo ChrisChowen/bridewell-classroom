@@ -62,8 +62,8 @@ once added)._
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Adaptive per-pupil difficulty | 🔴 | `challengeLevel` is lesson-wide, not per-pupil drift. |
-| Longitudinal learner profile (`/api/session/consolidate`) | 🔴 | Stubbed; does not rewrite `LearnerProfile`. |
+| Adaptive per-pupil difficulty | 🟡 | Per-pupil `challengeLevel` now **drifts on evidence** (Reason confidence + dominant engagement state + scaffold reliance) via the pure engine `src/lib/learner-profile.ts` — gentle (≤1 step/session, moves only when ≥2 of 3 signals agree, holds on thin sessions). Fed to the tutor through `/api/pupils/me`→`effectiveChallengeLevel`→`ChatSurface`→`lesson.challengeLevel`. Engine unit-tested (17) + store emulator-tested (drift up/down + no-op). _Follow-up: teacher-facing surface in the drill-down + teacher override._ |
+| Longitudinal learner profile (`/api/session/consolidate`) | 🟡 | **No longer stubbed.** `consolidateLearnerProfile` (`src/lib/learner-profile-store.ts`) folds each session's evidence into `learnerProfiles/{uid}` (capped trajectory + rolling metrics), reading only activity since the last consolidation (idempotent — a re-tapped "end lesson" is a no-op). Wired into `/api/session/consolidate`. Emulator-proven. _Follow-up: LLM-written teacher narrative + the across-sessions trajectory view in the drill-down._ |
 | British voice I/O | 🔴 | Not built (British-only constraint recorded in memory). |
 | SEND adaptation + accessibility menu | 🔴 | `pupilProfile` seam exists in prompt builder; UI + profile construction not built. |
 | Cross-subject robustness proven | 🟡 | Works on Biology in sims; Maths/English/History not evaluated. |

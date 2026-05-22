@@ -27,6 +27,9 @@ export default function SessionPage() {
   const { user, status, displayName } = useAuth();
   const [klass, setKlass] = useState<ClassRecord | null>(null);
   const [pupil, setPupil] = useState<PupilRecord | null>(null);
+  const [effectiveChallengeLevel, setEffectiveChallengeLevel] = useState<
+    "foundation" | "core" | "stretch" | undefined
+  >(undefined);
   const [loadState, setLoadState] = useState<"idle" | "loading" | "ready" | "preview" | "error">(
     "idle"
   );
@@ -83,6 +86,7 @@ export default function SessionPage() {
         if (cancelled) return;
         setKlass(data.class as ClassRecord);
         setPupil(data.pupil as PupilRecord);
+        setEffectiveChallengeLevel(data.effectiveChallengeLevel);
         setLoadState("ready");
       } catch (e) {
         if (cancelled) return;
@@ -238,7 +242,10 @@ export default function SessionPage() {
             <ClosingScreen />
           ) : (
             <div style={{ position: "relative", display: "grid", gridTemplateRows: "1fr", height: "100%" }}>
-              <ChatSurface klass={klass ?? undefined} />
+              <ChatSurface
+              klass={klass ?? undefined}
+              effectiveChallengeLevel={effectiveChallengeLevel}
+            />
               {/* Lobby / paused / wrap-up overlay. A missing status doc
                   is treated as "not_started" — the teacher hasn't hit
                   Start class yet, so the chat stays locked. */}

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 import { callLLM } from "@/lib/ai/llm";
+import { consolidateLearnerProfile } from "@/lib/learner-profile-store";
+import type { ChallengeLevel } from "@/types";
 
 // POST /api/session/consolidate
 //
@@ -85,7 +87,7 @@ async function handle(req: Request) {
 
   const classSnap = await a.db.collection("classes").doc(classId).get();
   if (!classSnap.exists) return NextResponse.json({ error: "Class not found" }, { status: 404 });
-  const cls = classSnap.data() as { lessonPlan?: { title: string; learningObjectives?: string[]; criticalConcepts?: string[]; sequence?: Array<{ title: string }> } };
+  const cls = classSnap.data() as { lessonPlan?: { title: string; learningObjectives?: string[]; criticalConcepts?: string[]; sequence?: Array<{ title: string }>; challengeLevel?: ChallengeLevel } };
 
   // Pull the conversation (newest first via the same path the panel uses).
   const conversationDocId = `${classId}_${decoded.uid}`;
@@ -138,6 +140,22 @@ async function handle(req: Request) {
     temperature: 0.45,
     thinkingBudget: 512,
   });
+
+  // Fold this session's evidence into the longitudinal learner profile and
+  // let the per-pupil challenge level drift. Best-effort: a failure here
+  // must never break the pupil's close-of-lesson screen, so we catch and
+  // log the message only (no PII).
+  try {
+    await consolidateLearnerProfile(a.db, {
+      pupilId: decoded.uid,
+      classId,
+      lessonTitle: cls.lessonPlan?.title ?? "Untitled lesson",
+      lessonLevel: cls.lessonPlan?.challengeLevel ?? "core",
+      displayName,
+    });
+  } catch (err) {
+    console.error("learner-profile consolidation skipped:", err instanceof Error ? err.message : "unknown");
+  }
 
   if (result.fallbackUsed || !result.json) {
     return NextResponse.json({

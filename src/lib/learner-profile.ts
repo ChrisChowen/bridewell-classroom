@@ -194,14 +194,19 @@ export function foldSession(
 
   const sessions = [...(prev?.sessions ?? []), record].slice(-MAX_SESSIONS_RETAINED);
 
+  // Optional fields are OMITTED when absent rather than set to undefined —
+  // Firestore rejects undefined values.
+  const displayName = identity.displayName ?? prev?.displayName;
+  const nextNarrative = narrative ?? prev?.narrative;
+
   return {
     pupilId: identity.pupilId,
     classId: identity.classId,
-    displayName: identity.displayName ?? prev?.displayName,
+    ...(displayName !== undefined ? { displayName } : {}),
     challengeLevel: decision.next,
     sessionsObserved: (prev?.sessionsObserved ?? 0) + 1,
     metrics: recomputeMetrics(sessions),
-    narrative: narrative ?? prev?.narrative,
+    ...(nextNarrative !== undefined ? { narrative: nextNarrative } : {}),
     sessions,
     createdAt: prev?.createdAt ?? ev.timestamp,
     updatedAt: ev.timestamp,
