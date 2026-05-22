@@ -1314,7 +1314,45 @@ function ReviewStep({
         style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}
       >
         <Stat label="Estimated time">{plan.estimatedMinutes} min</Stat>
-        <Stat label="Scaffold ceiling">{plan.scaffoldCeiling}</Stat>
+        <div
+          style={{
+            padding: "10px 12px",
+            border: "1px solid var(--line)",
+            borderRadius: 8,
+            background: "var(--surface)",
+          }}
+        >
+          <label
+            htmlFor="scaffold-ceiling"
+            className="bw-section-label"
+            style={{ display: "block", marginBottom: 6 }}
+          >
+            Scaffold ceiling
+          </label>
+          <select
+            id="scaffold-ceiling"
+            value={plan.scaffoldCeiling}
+            onChange={(e) => setPlan({ ...plan, scaffoldCeiling: Number(e.target.value) })}
+            title="How many Hint/Rephrase/Simplify presses before Reason fires"
+            style={{
+              width: "100%",
+              padding: "6px 8px",
+              border: "1px solid var(--line)",
+              borderRadius: 6,
+              background: "var(--surface-elev)",
+              color: "var(--text)",
+              fontSize: 14,
+              fontFamily: "var(--font-sans)",
+              appearance: "auto",
+            }}
+          >
+            {[2, 3, 4, 5].map((n) => (
+              <option key={n} value={n}>
+                {n} {n === 1 ? "press" : "presses"}
+              </option>
+            ))}
+          </select>
+        </div>
         <Stat label="Critical concepts">{plan.criticalConcepts.length}</Stat>
       </div>
 
