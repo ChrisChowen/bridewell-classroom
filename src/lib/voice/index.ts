@@ -32,10 +32,19 @@ export async function speak(text: string): Promise<boolean> {
       const blob = await r.blob();
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
-      currentAudio = audio;
       audio.addEventListener("ended", () => URL.revokeObjectURL(url), { once: true });
-      await audio.play();
-      return true;
+      try {
+        // play() can reject (autoplay policy, decode error). On rejection we
+        // must revoke the blob URL ourselves (the `ended` listener won't fire)
+        // and only THEN fall back to the browser voice — otherwise we'd leak
+        // the object URL and risk doubled audio if playback had partly begun.
+        await audio.play();
+        currentAudio = audio; // only track it once it's actually playing
+        return true;
+      } catch {
+        URL.revokeObjectURL(url);
+        // fall through to the browser voice
+      }
     }
     // 503 (not configured) / any non-OK → browser fallback.
   } catch {

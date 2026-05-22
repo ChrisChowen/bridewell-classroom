@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Crest } from "@/components/shared/Crest";
 import { ClassField } from "@/components/teacher/ClassField";
 import { statePill, type EngagementState } from "@/lib/brand";
-import { subscribeToLiveClass, type LiveClass } from "@/lib/firebase/live";
+import { subscribeToLiveClass, type LiveClass, type LivePupil } from "@/lib/firebase/live";
 import { getFirebase } from "@/lib/firebase/client";
 import { signInAnonymously } from "firebase/auth";
 
@@ -505,8 +505,6 @@ function ClassClock() {
 // through to a default when nothing notable is happening.
 
 type Moment = { id: string; text: string };
-
-import type { LivePupil } from "@/lib/firebase/live";
 
 function isEngaged(p: LivePupil): boolean {
   return p.state === "flowing" || p.state === "productive_struggle";
