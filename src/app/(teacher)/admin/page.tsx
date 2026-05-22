@@ -46,6 +46,9 @@ export default function AdminPage() {
   const [myUid, setMyUid] = useState<string>("");
   const [newEmail, setNewEmail] = useState("");
   const [newAdmin, setNewAdmin] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [bulkAdmin, setBulkAdmin] = useState(false);
+  const [bulkMsg, setBulkMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [rosterMsg, setRosterMsg] = useState<string | null>(null);
@@ -120,6 +123,36 @@ export default function AdminPage() {
     if (!msg) {
       setNewEmail("");
       setNewAdmin(false);
+    }
+  }
+
+  async function bulkAdd() {
+    if (busy) return;
+    // Accept newline-, comma-, space-, or semicolon-separated lists.
+    const emails = bulkText.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean);
+    if (emails.length === 0) {
+      setBulkMsg("Paste one or more emails / domains, one per line.");
+      return;
+    }
+    setBusy("bulk");
+    setBulkMsg(null);
+    try {
+      const t = await token();
+      const r = await fetch("/api/admin/allowlist/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+        body: JSON.stringify({ emails, isAdmin: bulkAdmin }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error ?? "Bulk import failed");
+      const s = data.summary;
+      setBulkMsg(`Added ${s.added}, already present ${s.skipped}, invalid ${s.invalid}.`);
+      if (s.added > 0) setBulkText("");
+      await load();
+    } catch (err) {
+      setBulkMsg(err instanceof Error ? err.message : "Bulk import failed");
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -258,6 +291,46 @@ export default function AdminPage() {
                 </div>
                 {msg && <div style={{ fontSize: 12, color: "var(--color-crimson)" }}>{msg}</div>}
               </form>
+
+              {/* Bulk roster import */}
+              <details className="bw-card" style={{ padding: 16, marginBottom: 18 }}>
+                <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                  Bulk import — paste a list of staff emails
+                </summary>
+                <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                  <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
+                    One per line (or comma/space separated). Emails and `*@domain` wildcards both
+                    work. Up to 500 at a time; duplicates and invalid entries are skipped.
+                  </p>
+                  <textarea
+                    value={bulkText}
+                    onChange={(e) => setBulkText(e.target.value)}
+                    rows={5}
+                    placeholder={"jane.wells@kesw.org\nsam.lee@kesw.org\n*@barrowhills.sch.uk"}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      border: "1px solid var(--line)",
+                      borderRadius: 6,
+                      background: "var(--surface)",
+                      color: "var(--text)",
+                      fontSize: 13,
+                      fontFamily: "var(--font-mono)",
+                      resize: "vertical",
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                    <label className="flex items-center gap-2" style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                      <input type="checkbox" checked={bulkAdmin} onChange={(e) => setBulkAdmin(e.target.checked)} />
+                      Make all admins
+                    </label>
+                    <button type="button" onClick={bulkAdd} className="bw-btn-primary flex items-center" disabled={busy === "bulk"} style={{ gap: 6, fontSize: 13 }}>
+                      {busy === "bulk" ? <Loader2 size={14} className="bw-spin" /> : <Users size={14} />} Import list
+                    </button>
+                  </div>
+                  {bulkMsg && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{bulkMsg}</div>}
+                </div>
+              </details>
 
               <div className="bw-card" style={{ padding: 0, overflow: "hidden" }}>
                 <RowHead cols={["Email / domain", "Type", "Admin", ""]} />
