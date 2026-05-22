@@ -135,7 +135,7 @@ async function handle(req: Request) {
     .join("\n\n");
 
   const result = await callLLM({
-    use: "reasonEvaluator",
+    use: "sessionClose",
     system: SYSTEM,
     messages: [{ role: "user", content: userBlock }],
     responseSchema: SCHEMA as unknown as Record<string, unknown>,

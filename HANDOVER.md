@@ -32,7 +32,10 @@ these; leave the rest.
   planner — goes through it. Nothing else imports an LLM SDK.
 - **Job → model mapping:** `src/lib/ai/models.ts` (`MODELS` keyed by job:
   `tutor`, `scaffold`, `classifierFlash`, `classifier`, `reasonEvaluator`,
-  `profileUpdater`). Repoint a job to a different model by editing this map.
+  `profileUpdater`, `lessonPlanner`, `appraiser`, `sessionClose`). Each
+  call-type has its own key — none are conflated — so a job can be repointed
+  to a different model (and attributed/cost-tracked) independently by editing
+  this map.
 - **Provider:** `src/lib/ai/providers/`. `LLMProvider` interface in `types.ts`;
   Gemini adapter in `gemini.ts`; registry + selector in `index.ts`.
 - **To use your own backend (Vertex / Bedrock / in-house gateway):**

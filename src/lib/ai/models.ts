@@ -30,6 +30,12 @@ export const MODELS = {
   // rate-limiting/caching.
   lessonPlanner: "gemini-2.5-pro",
   appraiser: "gemini-2.5-pro",
+  // Close-of-lesson pupil-facing summary (session/consolidate). Its own key
+  // for the same reason as lessonPlanner/appraiser — it previously borrowed
+  // `reasonEvaluator`, which conflated a warm generative task with structured
+  // Reason evaluation under one key (wrong for cost attribution + a clean
+  // handover where Unified can repoint each purpose independently).
+  sessionClose: "gemini-2.5-pro",
 } as const;
 
 export type ModelKey = keyof typeof MODELS;
