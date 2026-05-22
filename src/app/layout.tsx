@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 // previously the dark choice didn't carry to /login, /join, etc. This
 // blocking inline script reads the persisted choice and sets the
 // attribute on <html> before the body renders — no flash, all pages.
-const THEME_INIT = `try{var t=localStorage.getItem('bw-theme');if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}`;
+const THEME_INIT = `try{var t=localStorage.getItem('bw-theme');var e=document.documentElement;if(t==='dark'){e.setAttribute('data-theme','dark');}else{e.removeAttribute('data-theme');}}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

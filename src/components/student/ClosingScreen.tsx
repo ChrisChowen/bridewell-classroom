@@ -132,8 +132,8 @@ export function ClosingScreen() {
 
             <Section title="What you showed today">
               <ul style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 8 }}>
-                {close.achievements.map((a, i) => (
-                  <li key={i} style={{ fontSize: 14, lineHeight: 1.5 }}>{a}</li>
+                {close.achievements.map((a) => (
+                  <li key={a} style={{ fontSize: 14, lineHeight: 1.5 }}>{a}</li>
                 ))}
               </ul>
             </Section>
