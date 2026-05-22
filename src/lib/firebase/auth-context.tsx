@@ -29,6 +29,26 @@ import {
 } from "firebase/auth";
 import { getFirebase } from "./client";
 
+// Reject a promise if it doesn't settle within `ms`, so a hung network call
+// (e.g. a throttled/slow anonymous sign-in) surfaces a clear error instead of
+// hanging the UI indefinitely. The underlying promise is left to settle on its
+// own — we just stop awaiting it.
+function withTimeout<T>(p: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    p.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      }
+    );
+  });
+}
+
 type AuthStatus = "loading" | "anonymous" | "teacher" | "pupil" | "out";
 
 interface AuthValue {
@@ -160,7 +180,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInPupil = useCallback(async (displayName: string) => {
     const fb = getFirebase();
     if (!fb.ready) throw new Error("Firebase not configured");
-    const cred = await signInAnonymously(fb.auth);
+    // Guard the anonymous sign-in with a timeout. Without it a hung
+    // signInAnonymously — Firebase throttling a burst of pupils all joining
+    // at once, or flaky school Wi-Fi — leaves the pupil on "Joining…"
+    // forever with no feedback (the join `finally` never runs). Surface a
+    // clear, retryable error instead so they can tap Join again.
+    const cred = await withTimeout(
+      signInAnonymously(fb.auth),
+      15_000,
+      "Couldn't sign in — the connection may be busy. Please try again."
+    );
     // Best-effort: the displayName the join route actually persists comes from
     // the typed name, so a failed profile update (network blip) must NOT block
     // the join — otherwise the pupil is signed in but stuck. Proceed regardless.
