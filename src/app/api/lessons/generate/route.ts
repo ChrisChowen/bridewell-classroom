@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { generateLessonPlan } from "@/lib/ai/lessonPlanner";
 import { findSyllabus } from "@/lib/syllabi/library";
 import { getAdmin } from "@/lib/firebase/admin";
+import { verifyRequest } from "@/lib/auth";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 // POST /api/lessons/generate
@@ -37,20 +38,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });
   }
 
-  const authHeader = req.headers.get("authorization") ?? "";
-  const idToken = authHeader.replace(/^Bearer\s+/i, "");
-  if (!idToken) {
-    return NextResponse.json({ error: "Missing Authorization bearer token" }, { status: 401 });
-  }
-  let decoded;
-  try {
-    decoded = await a.auth.verifyIdToken(idToken);
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
-  if (decoded.role !== "teacher") {
-    return NextResponse.json({ error: "Teacher role required" }, { status: 403 });
-  }
+  const authed = await verifyRequest(req, { role: "teacher" });
+  if (!authed.ok) return NextResponse.json({ error: authed.error }, { status: authed.status });
 
   const body = (await req.json().catch(() => null)) as Body | null;
   if (!body?.syllabusId || !body.teacherIntent?.trim()) {

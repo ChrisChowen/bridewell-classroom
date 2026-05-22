@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
+import { verifyAuthToken } from "@/lib/auth";
 import { normaliseJoinCode } from "@/lib/joinCode";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import type { PupilRecord } from "@/types";
@@ -33,12 +34,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "idToken, joinCode, displayName required" }, { status: 400 });
   }
 
-  let decoded;
-  try {
-    decoded = await a.auth.verifyIdToken(body.idToken);
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
+  const authed = await verifyAuthToken(body.idToken);
+  if (!authed.ok) return NextResponse.json({ error: authed.error }, { status: authed.status });
+  const uid = authed.user.uid;
 
   const code = normaliseJoinCode(body.joinCode);
   const codeDoc = await a.db.collection("joinCodes").doc(code).get();
@@ -55,16 +53,16 @@ export async function POST(req: Request) {
 
   // If the pupil is switching classes, clear their old RTDB live entry
   // so the previous teacher's dashboard doesn't keep showing them.
-  const existing = await a.db.collection("pupils").doc(decoded.uid).get();
+  const existing = await a.db.collection("pupils").doc(uid).get();
   if (existing.exists) {
     const prev = existing.data() as { classId?: string };
     if (prev.classId && prev.classId !== classId) {
-      await a.rtdb.ref(`liveSessions/${prev.classId}/pupils/${decoded.uid}`).remove().catch(() => {});
+      await a.rtdb.ref(`liveSessions/${prev.classId}/pupils/${uid}`).remove().catch(() => {});
     }
   }
 
   const pupil: PupilRecord = {
-    id: decoded.uid,
+    id: uid,
     classId,
     displayName: body.displayName.trim().slice(0, 64),
     joinedAt: Date.now(),
@@ -73,7 +71,7 @@ export async function POST(req: Request) {
       : {}),
   };
 
-  await a.db.collection("pupils").doc(decoded.uid).set(pupil, { merge: true });
+  await a.db.collection("pupils").doc(uid).set(pupil, { merge: true });
 
   return NextResponse.json({ ok: true, pupil, class: cls });
 }

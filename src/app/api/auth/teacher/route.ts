@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
+import { verifyAuthToken } from "@/lib/auth";
 import type { School, TeacherRecord } from "@/types";
 
 // POST /api/auth/teacher
@@ -28,21 +29,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "idToken, displayName, school required" }, { status: 400 });
   }
 
-  let decoded;
-  try {
-    decoded = await a.auth.verifyIdToken(body.idToken);
-  } catch (err) {
-    return NextResponse.json(
-      { error: `Invalid ID token: ${err instanceof Error ? err.message : "unknown"}` },
-      { status: 401 }
-    );
-  }
+  // Verify the freshly-minted token through the auth seam. No role gate:
+  // this is the route that GRANTS the teacher role, so the caller won't
+  // have it yet. (Identity *provisioning* below — setCustomUserClaims —
+  // is inherently backend-specific and stays on the Firebase admin SDK;
+  // a different identity backend would replace this route wholesale.)
+  const authed = await verifyAuthToken(body.idToken);
+  if (!authed.ok) return NextResponse.json({ error: authed.error }, { status: authed.status });
+  const uid = authed.user.uid;
 
   // Email allowlist — only addresses on `allowedTeacherEmails` (managed
   // by the Bridewell admin out of band) can become teachers. Prevents
   // pupils from upgrading themselves to teacher accounts. The allowlist
   // is keyed by lower-cased email; the doc id IS the email.
-  const email = (decoded.email ?? "").toLowerCase().trim();
+  const email = (authed.user.email ?? "").toLowerCase().trim();
   if (!email) {
     return NextResponse.json({ error: "No email on token" }, { status: 400 });
   }
@@ -93,17 +93,17 @@ export async function POST(req: Request) {
   }
 
   try {
-    await a.auth.setCustomUserClaims(decoded.uid, { role: "teacher" });
+    await a.auth.setCustomUserClaims(uid, { role: "teacher" });
 
     const teacher: TeacherRecord = {
-      id: decoded.uid,
-      email: decoded.email ?? "",
+      id: uid,
+      email: authed.user.email ?? "",
       displayName: body.displayName,
       school: body.school,
       role: body.role || "Teacher",
       createdAt: Date.now(),
     };
-    await a.db.collection("teachers").doc(decoded.uid).set(teacher);
+    await a.db.collection("teachers").doc(uid).set(teacher);
     return NextResponse.json({ ok: true, teacher });
   } catch (err) {
     return NextResponse.json(

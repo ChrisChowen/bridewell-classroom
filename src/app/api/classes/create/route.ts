@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
+import { verifyRequest } from "@/lib/auth";
 import { generateJoinCode } from "@/lib/joinCode";
 import type { ClassRecord, LessonPlan, School } from "@/types";
 
@@ -24,19 +25,9 @@ export async function POST(req: Request) {
   const a = getAdmin();
   if (!a.ready) return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });
 
-  const authHeader = req.headers.get("authorization") ?? "";
-  const idToken = authHeader.replace(/^Bearer\s+/i, "");
-  if (!idToken) return NextResponse.json({ error: "Missing Authorization bearer token" }, { status: 401 });
-
-  let decoded;
-  try {
-    decoded = await a.auth.verifyIdToken(idToken);
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
-  if (decoded.role !== "teacher") {
-    return NextResponse.json({ error: "Teacher role required" }, { status: 403 });
-  }
+  const authed = await verifyRequest(req, { role: "teacher" });
+  if (!authed.ok) return NextResponse.json({ error: authed.error }, { status: authed.status });
+  const teacherUid = authed.user.uid;
 
   const body = (await req.json().catch(() => null)) as Body | null;
   if (!body?.name || !body.subject || !body.school) {
@@ -62,7 +53,7 @@ export async function POST(req: Request) {
     ? {
         ...body.lessonPlan,
         approvedAt: Date.now(),
-        approvedBy: decoded.uid,
+        approvedBy: teacherUid,
       }
     : undefined;
 
@@ -77,7 +68,7 @@ export async function POST(req: Request) {
   const id = a.db.collection("classes").doc().id;
   const cls: ClassRecord = {
     id,
-    teacherId: decoded.uid,
+    teacherId: teacherUid,
     school: body.school,
     name: body.name,
     subject: body.subject,
@@ -91,7 +82,7 @@ export async function POST(req: Request) {
   batch.set(a.db.collection("classes").doc(id), cls);
   batch.set(a.db.collection("joinCodes").doc(joinCode), {
     classId: id,
-    teacherId: decoded.uid,
+    teacherId: teacherUid,
     createdAt: cls.createdAt,
   });
   await batch.commit();
@@ -102,7 +93,7 @@ export async function POST(req: Request) {
   // live cards. Best-effort: a failure here doesn't fail class creation
   // (the engagement-run route also self-heals meta on first snapshot).
   try {
-    await a.rtdb.ref(`liveSessions/${id}/meta`).set({ teacherId: decoded.uid });
+    await a.rtdb.ref(`liveSessions/${id}/meta`).set({ teacherId: teacherUid });
   } catch {
     /* non-fatal — engagement/run writes meta defensively too */
   }

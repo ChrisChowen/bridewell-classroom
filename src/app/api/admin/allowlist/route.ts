@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
+import { verifyRequest } from "@/lib/auth";
 
 // POST /api/admin/allowlist — add an email to the teacher allowlist.
 // GET  /api/admin/allowlist — list the allowlist.
@@ -19,29 +20,18 @@ async function authedAdmin(req: Request) {
   const a = getAdmin();
   if (!a.ready) return { error: NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 }) };
 
-  const authHeader = req.headers.get("authorization") ?? "";
-  const idToken = authHeader.replace(/^Bearer\s+/i, "");
-  if (!idToken) return { error: NextResponse.json({ error: "Missing bearer token" }, { status: 401 }) };
-
-  let decoded;
-  try {
-    decoded = await a.auth.verifyIdToken(idToken);
-  } catch {
-    return { error: NextResponse.json({ error: "Invalid token" }, { status: 401 }) };
-  }
-  if (decoded.role !== "teacher") {
-    return { error: NextResponse.json({ error: "Teacher role required" }, { status: 403 }) };
-  }
-  if (!(await isAdmin(decoded, a))) {
+  const authed = await verifyRequest(req, { role: "teacher" });
+  if (!authed.ok) return { error: NextResponse.json({ error: authed.error }, { status: authed.status }) };
+  if (!(await isAdmin(authed.user, a))) {
     return { error: NextResponse.json({ error: "Admin teacher required" }, { status: 403 }) };
   }
-  return { a, decoded };
+  return { a, user: authed.user };
 }
 
 export async function POST(req: Request) {
   const ctx = await authedAdmin(req);
   if ("error" in ctx) return ctx.error;
-  const { a, decoded } = ctx;
+  const { a, user } = ctx;
 
   const body = (await req.json().catch(() => null)) as { email?: string; isAdmin?: boolean } | null;
   const raw = body?.email?.toLowerCase().trim();
@@ -67,7 +57,7 @@ export async function POST(req: Request) {
     {
       email: raw,
       addedAt: Date.now(),
-      addedBy: decoded.uid,
+      addedBy: user.uid,
       isAdmin: body?.isAdmin === true,
       ...(isWildcard ? { wildcard: true, domain: raw.slice(2) } : {}),
     },

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
+import { verifyRequest } from "@/lib/auth";
 import type { ClassRecord, LessonAppraisal, LessonLibraryEntry } from "@/types";
 
 // POST /api/lessons/save-to-library
@@ -19,18 +20,9 @@ export async function POST(req: Request) {
   const a = getAdmin();
   if (!a.ready) return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });
 
-  const authHeader = req.headers.get("authorization") ?? "";
-  const idToken = authHeader.replace(/^Bearer\s+/i, "");
-  if (!idToken) return NextResponse.json({ error: "Missing bearer token" }, { status: 401 });
-  let decoded;
-  try {
-    decoded = await a.auth.verifyIdToken(idToken);
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
-  if (decoded.role !== "teacher") {
-    return NextResponse.json({ error: "Teacher role required" }, { status: 403 });
-  }
+  const authed = await verifyRequest(req, { role: "teacher" });
+  if (!authed.ok) return NextResponse.json({ error: authed.error }, { status: authed.status });
+  const teacherUid = authed.user.uid;
 
   const body = (await req.json().catch(() => null)) as Body | null;
   if (!body?.classId || !body.appraisal) {
@@ -40,7 +32,7 @@ export async function POST(req: Request) {
   const classSnap = await a.db.collection("classes").doc(body.classId).get();
   if (!classSnap.exists) return NextResponse.json({ error: "Class not found" }, { status: 404 });
   const cls = classSnap.data() as ClassRecord;
-  if (cls.teacherId !== decoded.uid) {
+  if (cls.teacherId !== teacherUid) {
     return NextResponse.json({ error: "Not your class" }, { status: 403 });
   }
   if (!cls.lessonPlan) {
@@ -48,7 +40,7 @@ export async function POST(req: Request) {
   }
 
   // Fetch the teacher record for displayName.
-  const teacherSnap = await a.db.collection("teachers").doc(decoded.uid).get();
+  const teacherSnap = await a.db.collection("teachers").doc(teacherUid).get();
   const teacher = teacherSnap.exists ? (teacherSnap.data() as { displayName?: string }) : undefined;
 
   const id = a.db.collection("lessonLibrary").doc().id;
@@ -58,7 +50,7 @@ export async function POST(req: Request) {
     appraisal: body.appraisal,
     school: cls.school,
     savedAt: Date.now(),
-    savedByTeacherId: decoded.uid,
+    savedByTeacherId: teacherUid,
     savedByTeacherName: teacher?.displayName ?? "Teacher",
     sourceClassId: body.classId,
     syllabusId: cls.lessonPlan.syllabusId,

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
+import { verifyRequest } from "@/lib/auth";
 
 // GET /api/lessons/library?syllabusId=...&school=...
 //
@@ -12,18 +13,8 @@ export async function GET(req: Request) {
   const a = getAdmin();
   if (!a.ready) return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });
 
-  const authHeader = req.headers.get("authorization") ?? "";
-  const idToken = authHeader.replace(/^Bearer\s+/i, "");
-  if (!idToken) return NextResponse.json({ error: "Missing bearer token" }, { status: 401 });
-  let decoded;
-  try {
-    decoded = await a.auth.verifyIdToken(idToken);
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
-  if (decoded.role !== "teacher") {
-    return NextResponse.json({ error: "Teacher role required" }, { status: 403 });
-  }
+  const authed = await verifyRequest(req, { role: "teacher" });
+  if (!authed.ok) return NextResponse.json({ error: authed.error }, { status: authed.status });
 
   const url = new URL(req.url);
   const syllabusId = url.searchParams.get("syllabusId");

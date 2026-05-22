@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
+import { verifyRequest } from "@/lib/auth";
 import { markSafeguardingReviewed } from "@/lib/safeguarding";
 
 // POST /api/interventions
@@ -42,18 +43,9 @@ export async function POST(req: Request) {
   const a = getAdmin();
   if (!a.ready) return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });
 
-  const authHeader = req.headers.get("authorization") ?? "";
-  const idToken = authHeader.replace(/^Bearer\s+/i, "");
-  if (!idToken) return NextResponse.json({ error: "Missing Authorization bearer token" }, { status: 401 });
-  let decoded;
-  try {
-    decoded = await a.auth.verifyIdToken(idToken);
-  } catch {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-  }
-  if (decoded.role !== "teacher") {
-    return NextResponse.json({ error: "Teacher role required" }, { status: 403 });
-  }
+  const authed = await verifyRequest(req, { role: "teacher" });
+  if (!authed.ok) return NextResponse.json({ error: authed.error }, { status: authed.status });
+  const teacherUid = authed.user.uid;
 
   const body = (await req.json().catch(() => null)) as Body | null;
   if (!body?.classId || !body.type) {
@@ -62,7 +54,7 @@ export async function POST(req: Request) {
 
   const classSnap = await a.db.collection("classes").doc(body.classId).get();
   if (!classSnap.exists) return NextResponse.json({ error: "Class not found" }, { status: 404 });
-  if ((classSnap.data() as { teacherId: string }).teacherId !== decoded.uid) {
+  if ((classSnap.data() as { teacherId: string }).teacherId !== teacherUid) {
     return NextResponse.json({ error: "Not your class" }, { status: 403 });
   }
 
@@ -124,7 +116,7 @@ export async function POST(req: Request) {
       // this, the safeguardingEvents docs stayed reviewed:false forever
       // and the dashboard-flag clear left no accountable trail.
       await a.rtdb.ref(`liveSessions/${body.classId}/pupils/${body.pupilId}/safeguarding`).set(null);
-      await markSafeguardingReviewed(a.db, body.pupilId, decoded.uid, body.text ?? null, now);
+      await markSafeguardingReviewed(a.db, body.pupilId, teacherUid, body.text ?? null, now);
     } else {
       await a.rtdb.ref(`liveSessions/${body.classId}/interventions/${body.pupilId}`).push({
         type: body.type,
@@ -139,7 +131,7 @@ export async function POST(req: Request) {
   // Log all interventions to Firestore for the audit trail / export.
   await a.db.collection("interventions").add({
     classId: body.classId,
-    teacherId: decoded.uid,
+    teacherId: teacherUid,
     pupilId: body.pupilId ?? null,
     type: body.type,
     text: body.text ?? null,
