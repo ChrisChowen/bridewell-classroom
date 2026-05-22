@@ -194,7 +194,20 @@ export async function generateLessonPlan(
     temperature: 0.4,
   });
 
-  if (result.fallbackUsed || !result.json) {
+  // Guard the shape before we trust it. `responseSchema` asks Gemini for
+  // the right structure, but a truncated/odd response can still parse as
+  // JSON while missing `sequence` (or returning it empty / non-array) —
+  // `j.sequence.map` would then throw and bubble a 500 instead of the
+  // graceful syllabus-derived plan below. Treat a malformed shape exactly
+  // like an unavailable model.
+  const candidate = result.json as { title?: unknown; sequence?: unknown } | null;
+  const validShape =
+    !!candidate &&
+    typeof candidate.title === "string" &&
+    Array.isArray(candidate.sequence) &&
+    candidate.sequence.length > 0;
+
+  if (result.fallbackUsed || !validShape) {
     return {
       id: cryptoRandomId(),
       title: `${syllabus.topic} (fallback)`,

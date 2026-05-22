@@ -14,6 +14,7 @@
 import "server-only";
 import type { Firestore } from "firebase-admin/firestore";
 import type { Database } from "firebase-admin/database";
+import { anonKey } from "@/lib/live-keys";
 
 export interface PupilDataExport {
   pupilId: string;
@@ -155,11 +156,15 @@ export async function deletePupilData(
     await db.collection("pupils").doc(pupilId).delete();
   }
 
-  // RTDB live entries.
+  // RTDB live entries — the per-pupil node, the pupil's intervention queue,
+  // AND the names-stripped projector aggregate slot (keyed by the same
+  // non-reversible UID hash the classifier writes). Missing the aggregate
+  // slot would leave an orphaned, UID-derived record after erasure.
   if (classId) {
     await rtdb.ref(`liveSessions/${classId}/pupils/${pupilId}`).remove().catch(() => {});
     await rtdb.ref(`liveSessions/${classId}/interventions/${pupilId}`).remove().catch(() => {});
-    counts.rtdbNodes = 2;
+    await rtdb.ref(`liveSessions/${classId}/aggregate/${anonKey(pupilId)}`).remove().catch(() => {});
+    counts.rtdbNodes = 3;
   }
 
   return { pupilId, classId, deletedAt: Date.now(), counts };

@@ -56,14 +56,22 @@ export async function POST(req: Request) {
   const cap = (s: string | undefined, max: number) =>
     s ? s.normalize("NFKC").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max) : s;
 
-  const plan = await generateLessonPlan({
-    syllabus,
-    teacherIntent: cap(body.teacherIntent, 1500)!.trim(),
-    className: cap(body.className, 120),
-    yearGroup: body.yearGroup,
-    classNotes: cap(body.classNotes, 2000),
-    challengeLevel: body.challengeLevel,
-  });
-
-  return NextResponse.json({ plan });
+  // generateLessonPlan already degrades to a syllabus-derived fallback when
+  // the model is unavailable or returns a malformed shape, but wrap it so an
+  // unexpected throw returns a clean 500 (not an unhandled crash that breaks
+  // the wizard's res.json()). Log the message only — no PII.
+  try {
+    const plan = await generateLessonPlan({
+      syllabus,
+      teacherIntent: cap(body.teacherIntent, 1500)!.trim(),
+      className: cap(body.className, 120),
+      yearGroup: body.yearGroup,
+      classNotes: cap(body.classNotes, 2000),
+      challengeLevel: body.challengeLevel,
+    });
+    return NextResponse.json({ plan });
+  } catch (err) {
+    console.error("lesson-plan generation error:", err instanceof Error ? err.message : "unknown");
+    return NextResponse.json({ error: "Could not generate a lesson plan. Please try again." }, { status: 500 });
+  }
 }

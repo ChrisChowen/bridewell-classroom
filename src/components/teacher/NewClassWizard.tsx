@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, BookOpen, Sparkles, Check, X, AlertTriangle, Rot
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
 import { getCleanIdToken } from "@/lib/firebase/auth-fetch";
+import { useModalDialog } from "@/lib/useModalDialog";
 import { SYLLABUS_LIBRARY } from "@/lib/syllabi";
 import type { SyllabusEntry } from "@/lib/syllabi/types";
 import { ACTIVITIES, ALL_ACTIVITY_TYPES } from "@/lib/ai/activities";
@@ -26,6 +27,8 @@ type Step = "pick" | "describe" | "review" | "done";
 export function NewClassWizard({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const { user } = useAuth();
+  // Focus trap + Escape-to-close + focus restore for the dialog.
+  const dialogRef = useModalDialog<HTMLDivElement>(onClose);
 
   const [step, setStep] = useState<Step>("pick");
   const [syllabus, setSyllabus] = useState<SyllabusEntry | null>(null);
@@ -221,8 +224,6 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      role="dialog"
-      aria-modal
       className="bw-modal-shell"
       style={{
         position: "fixed",
@@ -236,6 +237,10 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Create a new class"
         className="bw-card bw-modal-frame"
         style={{
           width: "100%",

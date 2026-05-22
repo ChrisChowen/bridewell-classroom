@@ -8,6 +8,7 @@ import { TopBar } from "@/components/shared/TopBar";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
 import { getCleanIdToken } from "@/lib/firebase/auth-fetch";
+import { useModalDialog } from "@/lib/useModalDialog";
 import { subscribeToLiveClass, subscribeToSessionStatus, type LivePupil, type SessionStatus } from "@/lib/firebase/live";
 import { PupilCard } from "@/components/teacher/PupilCard";
 import { LivePupilPanel } from "@/components/teacher/LivePupilPanel";
@@ -613,52 +614,65 @@ export default function ClassDetailPage() {
       </div>
 
       {confirmEnd && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="End the class"
-          onClick={() => setConfirmEnd(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 60,
-            display: "grid",
-            placeItems: "center",
-            padding: 24,
-            background: "rgba(15,26,46,0.45)",
-            backdropFilter: "blur(2px)",
-            animation: "bw-fade-in 160ms ease",
+        <EndClassModal
+          onCancel={() => setConfirmEnd(false)}
+          onConfirm={() => {
+            setConfirmEnd(false);
+            fireClassControl("end");
           }}
-        >
-          <div
-            className="bw-card"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: 420, width: "100%", padding: 24 }}
-          >
-            <div className="bw-display" style={{ fontSize: 20, marginBottom: 8 }}>End the class?</div>
-            <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.5, marginBottom: 20 }}>
-              Pupils will see a closing screen and won&apos;t be able to reply further. You can&apos;t
-              undo this for the current session.
-            </p>
-            <div className="flex items-center" style={{ gap: 10, justifyContent: "flex-end" }}>
-              <button onClick={() => setConfirmEnd(false)} className="bw-btn-secondary" style={{ fontSize: 13 }}>
-                Keep going
-              </button>
-              <button
-                onClick={() => {
-                  setConfirmEnd(false);
-                  fireClassControl("end");
-                }}
-                className="bw-btn-secondary"
-                style={{ fontSize: 13, color: "var(--color-crimson)", borderColor: "var(--color-crimson)" }}
-              >
-                End class
-              </button>
-            </div>
-          </div>
-        </div>
+        />
       )}
     </main>
+  );
+}
+
+// End-class confirmation. Its own component so useModalDialog's focus trap /
+// Escape / focus-restore run on mount and unmount.
+function EndClassModal({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: () => void }) {
+  const dialogRef = useModalDialog<HTMLDivElement>(onCancel);
+  return (
+    <div
+      onClick={onCancel}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 60,
+        display: "grid",
+        placeItems: "center",
+        padding: 24,
+        background: "rgba(15,26,46,0.45)",
+        backdropFilter: "blur(2px)",
+        animation: "bw-fade-in 160ms ease",
+      }}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="End the class"
+        className="bw-card"
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: 420, width: "100%", padding: 24 }}
+      >
+        <div className="bw-display" style={{ fontSize: 20, marginBottom: 8 }}>End the class?</div>
+        <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.5, marginBottom: 20 }}>
+          Pupils will see a closing screen and won&apos;t be able to reply further. You can&apos;t
+          undo this for the current session.
+        </p>
+        <div className="flex items-center" style={{ gap: 10, justifyContent: "flex-end" }}>
+          <button onClick={onCancel} className="bw-btn-secondary" style={{ fontSize: 13 }}>
+            Keep going
+          </button>
+          <button
+            onClick={onConfirm}
+            className="bw-btn-secondary"
+            style={{ fontSize: 13, color: "var(--color-crimson)", borderColor: "var(--color-crimson)" }}
+          >
+            End class
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

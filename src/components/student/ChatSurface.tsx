@@ -790,6 +790,16 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
 
       <div
         ref={scrollRef}
+        // Announce new tutor/pupil turns to screen readers. role="log" +
+        // aria-live="polite" makes assistive tech read each appended message
+        // without stealing focus — the tutor's replies are otherwise silent
+        // to a blind or low-vision pupil. "additions text" keeps it to new
+        // content only, not a re-read of the whole transcript on each update.
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions text"
+        aria-label="Conversation with your tutor"
+        aria-busy={pending}
         style={{
           // The only grow child: takes all remaining height and scrolls
           // internally (flex-basis 0 + minHeight:0) so the composer below

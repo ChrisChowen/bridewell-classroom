@@ -3,6 +3,7 @@ import { initializeApp, deleteApp, type App } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { getDatabase, type Database } from "firebase-admin/database";
 import { gatherPupilData, deletePupilData } from "./pupil-data";
+import { anonKey } from "./live-keys";
 
 // Runs against the Firestore + RTDB emulators (npm run test:emulator).
 // Proves GDPR gather (Art. 15) + erasure (Art. 17): a pupil's data is
@@ -32,6 +33,8 @@ async function seed(pid: string) {
   await db.collection("interventions").add({ pupilId: pid, classId: CLASS, type: "hint" });
   await db.collection("learnerProfiles").doc(pid).set({ summary: "profile " + pid });
   await rtdb.ref(`liveSessions/${CLASS}/pupils/${pid}`).set({ displayName: pid, state: "flowing" });
+  // The names-stripped projector aggregate slot, keyed by the UID hash.
+  await rtdb.ref(`liveSessions/${CLASS}/aggregate/${anonKey(pid)}`).set({ state: "flowing", confidence: 0.8 });
 }
 
 async function totalDocs(pid: string): Promise<number> {
@@ -43,7 +46,8 @@ async function totalDocs(pid: string): Promise<number> {
   const intv = (await db.collection("interventions").where("pupilId", "==", pid).get()).size;
   const prof = (await db.collection("learnerProfiles").doc(pid).get()).exists ? 1 : 0;
   const rt = (await rtdb.ref(`liveSessions/${CLASS}/pupils/${pid}`).get()).exists() ? 1 : 0;
-  return pupil + msgs + snaps + reasons + safe + intv + prof + rt;
+  const agg = (await rtdb.ref(`liveSessions/${CLASS}/aggregate/${anonKey(pid)}`).get()).exists() ? 1 : 0;
+  return pupil + msgs + snaps + reasons + safe + intv + prof + rt + agg;
 }
 
 beforeAll(async () => {
@@ -82,7 +86,8 @@ describe("deletePupilData (GDPR Art. 17)", () => {
     expect(manifest.counts.conversationMessages).toBe(1);
     expect(manifest.counts.engagementSnapshots).toBe(1);
 
-    expect(await totalDocs(TARGET)).toBe(0); // fully erased
-    expect(await totalDocs(OTHER)).toBe(8); // isolation: other pupil intact
+    expect(manifest.counts.rtdbNodes).toBe(3); // pupils + interventions + aggregate
+    expect(await totalDocs(TARGET)).toBe(0); // fully erased (incl. aggregate slot)
+    expect(await totalDocs(OTHER)).toBe(9); // isolation: other pupil intact
   });
 });
