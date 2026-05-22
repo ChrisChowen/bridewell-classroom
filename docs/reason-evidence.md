@@ -55,22 +55,55 @@ claiming a measured, reproducible signal on a specific, hard distinction.
 
 See `docs/reason-eval/README.md` for the labelling schema + how to run it.
 
-## Results — TO BE COMPLETED AFTER LABELLING
+## Results — PoC run (bootstrap labels), pending teacher ground truth
 
-> Run `node scripts/reason-eval.mjs --file docs/reason-eval/transcripts.jsonl`
-> and paste the headline numbers here.
+> **What this is.** A first run on **N = 34** windows that were *authored
+> and labelled by Claude* (a different model family from the Gemini
+> classifier under test), spanning all five states and four subjects
+> (Biology, Maths, English, History). This bootstraps the pipeline before
+> teacher-labelled real-pilot data exists. **It is not the final claim** —
+> see the caveats, which matter more than the headline number.
 
-| Metric | Target | Measured (N = ____) |
+Command: `node scripts/reason-eval.mjs --file docs/reason-eval/transcripts.jsonl`
+(real classifier via `POST /api/engagement/classify`). Report:
+`reports/reason-eval-1779417770303.json`.
+
+| Metric | PoC result (N = 34) | Status |
 |---|---|---|
-| Overall accuracy | — | _pending_ |
-| Macro F1 (5 states) | — | _pending_ |
-| `productive_struggle` precision / recall | ≥ ___ / ≥ ___ | _pending_ |
-| `wheel_spinning` precision / recall | ≥ ___ / ≥ ___ | _pending_ |
-| Confidence calibration (ECE) | ≤ ___ | _pending_ |
-| Inter-rater agreement (κ) | ≥ 0.6 | _pending_ |
+| Overall accuracy | **100.0%** | ceiling — see caveat |
+| Macro F1 (5 states) | **100.0%** | ceiling — see caveat |
+| `productive_struggle` precision / recall | **100% / 100%** (n=9) | ceiling |
+| `wheel_spinning` precision / recall | **100% / 100%** (n=6) | ceiling |
+| Confidence calibration (ECE) | **8.2%** | mildly overconfident |
+| Inter-rater agreement (κ) | n/a (single labeller) | **pending** (needs 2 humans) |
 
-Confusion matrix + per-bucket calibration: paste from the
-`reports/reason-eval-*.json` the harness writes.
+**The honest reading.** The classifier separated these windows perfectly,
+including the hard `productive_struggle` vs `wheel_spinning` boundary the
+contribution rests on. That is encouraging but **must not be reported as
+"~100% accurate"** — it is a ceiling result on *clean, archetypal* windows
+written to instantiate the rubric. Two things make it a sanity check, not
+proof:
+
+1. **Easy distribution.** Windows authored to match the rubric are far more
+   separable than real Year-8 chat, where states blur. The 100% tells us the
+   rubric is internally consistent and the classifier applies it faithfully
+   — not that it will hit 100% (or anywhere near) on messy real data.
+2. **No mid-band evidence.** *Every* prediction landed in the 0.8–1.0
+   confidence bucket (mean 91.8%). So we have **zero** evidence about the
+   evaluator's behaviour in the middle confidence band — which is exactly
+   the bimodal-clustering risk the audit flagged. The PoC neither confirms
+   nor refutes it; real ambiguous transcripts are required to populate the
+   middle of the calibration curve.
+
+So the validated claim today is narrow and true: *the harness runs against
+the real classifier, the metrics are reproducible, and on archetypal windows
+the five-state rubric (incl. the productive_struggle/wheel_spinning split) is
+applied without error.* The **research-grade** claim — a met precision/recall
+on **human-labelled real transcripts with κ ≥ 0.6 and a populated mid-band**
+— remains open and is the teacher-labelling task in `docs/reason-eval/`.
+
+Confusion matrix: diagonal (every state predicted == gold); see the JSON
+report. Calibration: single bucket [0.8–1.0), n=34, acc=100%, meanConf=91.8%.
 
 ## Threats to validity (to address as data arrives)
 

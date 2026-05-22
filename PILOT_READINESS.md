@@ -53,10 +53,10 @@ once added)._
 | Item | Status | Notes |
 |------|--------|-------|
 | LLM-judge eval harness | 🟢 | Two harnesses: `scripts/pedagogy-judge.mjs` (tutor-turn quality, 4.30→5.17/6) and the new **ground-truth harness** `scripts/reason-eval.mjs` — grades the **real** classifier (via `POST /api/engagement/classify`, not a re-implementation) against human labels, emitting P/R/F1 per state, the productive_struggle-vs-wheel_spinning pairwise claim, confusion matrix + calibration. Metric maths in `scripts/reason-eval-metrics.mjs`, unit-tested (5 tests). |
-| Human-labelled ground truth | 🔴🔒 | **Human action named.** Labelling schema, instructions, and a format-example file are ready (`docs/reason-eval/README.md` + `transcripts.example.jsonl`). Needs a person (ideally two, with κ) to label ≥~60 real/realistic windows blind to the model — the one genuinely human-blocked item. |
-| Stated, met precision/recall claim | 🔴🔒 | Blocked only on the labels above. The moment `transcripts.jsonl` exists, `node scripts/reason-eval.mjs` produces the numbers; `docs/reason-evidence.md` has the claim template + results table waiting to be filled. |
-| Confidence calibration (middle band) | 🟡 | **Now measurable** — the harness computes per-bucket accuracy + Expected Calibration Error, directly testing the bimodal-clustering risk. Not yet measured (needs labels). |
-| `docs/reason-evidence.md` | 🟡 | **Written** — contribution stated honestly, reproducible method, threats-to-validity, and a results table marked _pending ground truth_ (deliberately no met claim before labels exist). Becomes 🟢 when the table is filled from a harness run. |
+| Human-labelled ground truth | 🟡🔒 | **PoC bootstrap done; teacher labels still required.** 34 windows authored + labelled by Claude (different model family from Gemini) across 5 states × 4 subjects → `docs/reason-eval/transcripts.jsonl`. Per Chris's go-ahead, this bootstraps C before real data. Still needs teacher-labelled real-pilot sessions (ideally 2 labellers + κ) for the research-grade claim. |
+| Stated, met precision/recall claim | 🟡 | **PoC measured** (N=34): 100% accuracy / macro-F1; productive_struggle vs wheel_spinning P/R/F1 = 100%. Reported **honestly as a ceiling on clean archetypal windows, not a research claim** — easy distribution + no mid-band confidence (see evidence note). Research-grade met-claim on real teacher-labelled data remains open. |
+| Confidence calibration (middle band) | 🟡 | **Measured on PoC**: ECE 8.2%, but **all 34 predictions fell in [0.8–1.0)** — zero mid-band, so the bimodal-clustering risk is neither confirmed nor refuted. Real ambiguous transcripts needed to populate the middle of the curve. Harness computes per-bucket accuracy + ECE. |
+| `docs/reason-evidence.md` | 🟢 | **Written + populated** with the PoC run, reproducible method, and threats-to-validity; deliberately states the narrow validated claim (harness works; rubric applied without error on clean windows) and keeps the research-grade claim open. |
 
 ## D. Capability extended
 
@@ -64,7 +64,7 @@ once added)._
 |------|--------|-------|
 | Adaptive per-pupil difficulty | 🟢 | Per-pupil `challengeLevel` **drifts on evidence** (Reason confidence + dominant engagement state + scaffold reliance) via the pure engine `src/lib/learner-profile.ts` — gentle (≤1 step/session, moves only when ≥2 of 3 signals agree, holds on thin sessions). Fed to the tutor through `/api/pupils/me`→`effectiveChallengeLevel`→`ChatSurface`→`lesson.challengeLevel`. **Teacher-visible + overridable** in the drill-down (`LivePupilPanel` "Pitch · across sessions": current level, AI-vs-you provenance, override buttons), never labelled to the pupil. Override route `POST /api/pupils/{id}/profile` (teacher-scoped, accountable). Engine unit-tested (17) + store emulator-tested (drift up/down + no-op). |
 | Longitudinal learner profile (`/api/session/consolidate`) | 🟢 | **No longer stubbed.** `consolidateLearnerProfile` (`src/lib/learner-profile-store.ts`) folds each session's evidence into `learnerProfiles/{uid}` (capped trajectory + rolling metrics), reading only activity since the last consolidation (idempotent — a re-tapped "end lesson" is a no-op). Wired into `/api/session/consolidate`; the across-sessions level trajectory shows in the teacher drill-down via `GET /api/pupils/{id}/profile`. Emulator-proven. _Follow-up: optional LLM-written teacher narrative._ |
-| British voice I/O | 🟢 | Built, **British-only enforced**. `pickBritishVoice` (`src/lib/voice/select.ts`, 6 unit tests) selects an `en-GB` voice and returns null rather than ever admitting `en-US` — callers speak in British or stay silent. Output: browser Web Speech (`speakBritish`), opt-in via the accessibility menu ("Read answers aloud"), auto-reads tutor turns. Input: `en-GB` dictation (mic button in the composer, `webkitSpeechRecognition`). Recordings never stored. Production upgrade reserved: dormant `POST /api/tts` (ElevenLabs Flash v2.5, British voice id) returns 503 until `ELEVENLABS_API_KEY` is set, and the client falls back to the browser British voice. _Human check: confirm an en-GB voice is present on the pilot devices + listen to the output accent (engineering enforces the lang tag; the audio itself wants ears)._ |
+| British voice I/O | 🟢 | Built, **British-only enforced**. `pickBritishVoice` (`src/lib/voice/select.ts`, 6 unit tests) selects an `en-GB` voice and returns null rather than ever admitting `en-US` — callers speak in British or stay silent. Output: browser Web Speech (`speakBritish`), opt-in via the accessibility menu ("Read answers aloud"), auto-reads tutor turns. Input: `en-GB` dictation (mic button in the composer, `webkitSpeechRecognition`). Recordings never stored. Production path **now live locally**: `ELEVENLABS_API_KEY` configured in `.env.local` (gitignored) so `POST /api/tts` serves ElevenLabs Flash v2.5; client still falls back to the browser en-GB voice if absent. _Deploy: set `ELEVENLABS_API_KEY` in the Cloud Function/runtime env too. Human check: listen to the output accent (engineering enforces the lang tag; audio wants ears)._ |
 | SEND adaptation + accessibility menu | 🟢 | **SEND→prompt seam built + wired.** `buildSendAdaptationBlock` (`src/lib/send.ts`, 6 unit tests) turns a pupil's structured SEND profile (output style / scaffolding level 1–5 / teacher note) into the tutor's `pupilProfile` block — adapts HOW it communicates, never what counts as understanding, never shown to the pupil. Teacher sets it in the drill-down (`LivePupilPanel` "SEND adaptation"); route `GET/POST /api/pupils/{id}/send` (teacher-scoped). Flows `/api/pupils/me`→`ChatSurface`→`/api/chat`. **Pupil-side accessibility menu** (`AccessibilityMenu`, in the session header): text size (zoom-based, scales the px-heavy UI), dyslexia-friendly spacing, reduce-motion — persisted per-device, presentation-only. _Voice is tracked separately (British voice I/O row); a bundled OpenDyslexic face is a small follow-up to the spacing implementation._ |
 | Cross-subject robustness proven | 🟡 | Works on Biology in sims; Maths/English/History not evaluated. |
 
@@ -80,6 +80,24 @@ once added)._
 | Parent/pupil consent copy | 🟡🔒 | DRAFTED (`docs/consent-and-privacy-copy-draft.md`) — age-appropriate pupil notice, parent notice, opt-in/objection form. Requires DPO + school approval + bracket-fill. |
 | Pilot runbook | 🟢 | `docs/pilot-runbook.md` — pre-conditions (gates), teacher setup, running a lesson, data-subject requests, failure handling, post-pilot. |
 | Institutional buy-in (school + Unified) | 🔴🔒 | Human-only. |
+
+## F. Accounts, identity & admin (expanded scope — Chris, this session)
+
+> Chris added these goals on top of the original spec: SEND profiles imply
+> **student accounts**, which imply an **account-management system** that
+> plugs into **Microsoft (Entra) school SSO** — with **email/password** as a
+> toggleable option for now/testing — plus a **full production-ready
+> superadmin** for account creation/deletion, profile management, and
+> permissions. This is the next major build (work-streams A auth-seam + B
+> admin), sequenced after the current seam work.
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Auth seam behind one interface (Entra/SAML/OIDC swappable) | 🔴 | `verifyIdToken` called directly in ~19 sites; needs an `AuthProvider` interface + Firebase adapter + provider registry (mirroring the model seam), so Entra/OIDC is a config+adapter swap with zero route changes. Foundation for school SSO. |
+| Student accounts (not just join-code) | 🔴 | Today pupils are anonymous + join-code. SEND/longitudinal identity wants real per-pupil accounts; needs a roster/identity model + migration from anonymous UIDs. |
+| Microsoft Entra SSO + email/password toggle | 🔴 | School-standard login; email/password kept as a toggleable fallback for testing. Depends on the auth seam. |
+| Superadmin / admin surface (account CRUD, profiles, permissions, roles) | 🔴 | Production-ready admin: create/delete accounts, manage profiles + SEND, assign roles/permissions (teacher/co-teacher/DSL/admin), multi-teacher within a school. Currently only the allowlist API exists. |
+| Final UI/UX polish pass (responsive desktop/tablet/mobile) | 🔴 | Dedicated end-phase: every page responsive across mobile/tablet/desktop; no z-index/stacking issues, clipping menus, broken scrolling, or elements blocking interaction/scaling. Audit + fix sweep with live device checks. |
 
 ---
 
