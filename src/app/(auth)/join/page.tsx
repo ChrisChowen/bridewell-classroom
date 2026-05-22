@@ -156,6 +156,19 @@ function JoinInner() {
       if (typeof window !== "undefined") {
         window.localStorage.setItem(LS_CODE, code);
         window.localStorage.setItem(LS_NAME, name);
+        // Carry the join result (pupil + class) forward so /session can render
+        // immediately WITHOUT an immediate /api/pupils/me read. The deployed
+        // backend has a read-after-write visibility lag: the just-created pupil
+        // doc isn't readable for a short window even though it's committed, so
+        // an immediate pupils/me 404s and the pupil was bounced back here.
+        try {
+          window.sessionStorage.setItem(
+            "bw-just-joined",
+            JSON.stringify({ uid: user.uid, ts: Date.now(), pupil: data.pupil, class: data.class })
+          );
+        } catch {
+          /* sessionStorage unavailable — /session falls back to pupils/me + retry */
+        }
       }
       setJoinedClass({ name: data.class.name, subject: data.class.subject });
       setStep("joined");

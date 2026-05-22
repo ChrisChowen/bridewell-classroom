@@ -70,6 +70,48 @@ export default function SessionPage() {
         return;
       }
       setLoadState("loading");
+
+      // Fast path: if we JUST joined (the join page stashed its result for THIS
+      // uid), render straight from that payload. The deployed backend has a
+      // read-after-write lag — the just-created pupil doc isn't readable via
+      // pupils/me for a short window — so an immediate read 404s and bounced
+      // the pupil back to /join. Trust the join response we already have.
+      try {
+        const raw = sessionStorage.getItem("bw-just-joined");
+        if (raw) {
+          const p = JSON.parse(raw) as {
+            uid?: string;
+            ts?: number;
+            pupil?: PupilRecord;
+            class?: ClassRecord;
+          };
+          if (p?.uid === user.uid && p.class && p.pupil && Date.now() - (p.ts ?? 0) < 120_000) {
+            sessionStorage.removeItem("bw-just-joined");
+            if (cancelled) return;
+            setKlass(p.class);
+            setPupil(p.pupil);
+            // A brand-new pupil has no learner profile or SEND profile yet, so
+            // the lesson-wide defaults are correct. pupils/me (with its richer
+            // adaptive/SEND fields) takes over on the next visit, once the doc
+            // is readable.
+            setEffectiveChallengeLevel(
+              (p.class.lessonPlan?.challengeLevel as
+                | "foundation"
+                | "core"
+                | "stretch"
+                | undefined) ?? "core"
+            );
+            setPupilProfile(undefined);
+            setLoadState("ready");
+            return;
+          }
+          // Stale or mismatched payload — drop it and fall through to pupils/me.
+          sessionStorage.removeItem("bw-just-joined");
+        }
+      } catch {
+        /* sessionStorage parse/availability issue — fall through to pupils/me */
+      }
+
       try {
         // Right after a fresh anonymous join the auth state is still settling:
         // Firebase fires an immediate securetoken refresh (which briefly leaves
