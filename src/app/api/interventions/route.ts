@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
+import { markSafeguardingReviewed } from "@/lib/safeguarding";
 
 // POST /api/interventions
 //
@@ -117,8 +118,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "That pupil is not in this class" }, { status: 403 });
     }
     if (body.type === "mark_reviewed") {
-      // Clears the safeguarding flag (if any) on the pupil's live mirror.
+      // Clears the safeguarding flag on the pupil's live mirror AND
+      // stamps the permanent audit record so we can always answer "who
+      // reviewed this disclosure, when, and what they noted." Without
+      // this, the safeguardingEvents docs stayed reviewed:false forever
+      // and the dashboard-flag clear left no accountable trail.
       await a.rtdb.ref(`liveSessions/${body.classId}/pupils/${body.pupilId}/safeguarding`).set(null);
+      await markSafeguardingReviewed(a.db, body.pupilId, decoded.uid, body.text ?? null, now);
     } else {
       await a.rtdb.ref(`liveSessions/${body.classId}/interventions/${body.pupilId}`).push({
         type: body.type,
