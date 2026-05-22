@@ -484,37 +484,51 @@ select:focus-visible {
   100% { transform: translateY(-260px) scale(1); opacity: 0; }
 }
 
+/* Projector "Field" stars — a slow, calm breathe so the chart feels
+   alive without flicker. Each star offsets its phase (see ClassField). */
+@keyframes bw-star-breathe {
+  0%, 100% { opacity: 0.8; transform: scale(0.95); }
+  50%      { opacity: 1; transform: scale(1.07); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [style*="bw-star-breathe"] { animation: none !important; }
+}
+
 /* Paper-cut mascot artwork — the Gemini-generated PNGs have soft alpha
-   edges (chroma-key fringes) that read as a dirty halo against navy. In
-   dark mode we sit them on a cream disc, which hides the fringe inside
-   the backdrop and keeps the original ink colours legible. Light mode
-   leaves the artwork untouched. */
+   edges (chroma-key fringes) that read as a dirty halo against navy. We
+   sit every mascot on a cream disc so the fringe is absorbed into the
+   backdrop and the ink colours stay legible. The disc is the SAME in
+   light and dark mode: on a cream/white surface it's all but invisible
+   (cream-on-cream), on navy it reads as a soft candlelit spotlight and
+   hides the seam. (Previously this was dark-mode-only, which left the
+   fringe showing wherever a mascot sat on navy in light mode.) */
 .bw-scholar-frame {
   display: inline-block;
-}
-[data-theme="dark"] .bw-scholar-frame {
   background: radial-gradient(
-    circle at 50% 55%,
-    var(--color-cream-50) 55%,
-    rgba(244, 235, 218, 0.85) 72%,
-    transparent 86%
+    circle at 50% 52%,
+    var(--color-cream-50) 0%,
+    var(--color-cream-50) 58%,
+    rgba(244, 235, 218, 0.9) 72%,
+    rgba(244, 235, 218, 0) 85%
   );
   border-radius: 999px;
-  padding: 8px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  padding: 10px;
+}
+[data-theme="dark"] .bw-scholar-frame {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 /* The peeking scholar on the hero pokes over the headline — a full disc
-   would look odd. We give it a softer radial fade that protects the
-   visible portion without covering the headline. */
+   would look odd. A softer elliptical fade protects the visible portion
+   (the head/shoulders) without covering the headline below. Applied in
+   both themes for the same reason as the frame. */
 .bw-scholar-peeking {
   display: inline-block;
-}
-[data-theme="dark"] .bw-scholar-peeking {
   background: radial-gradient(
-    ellipse 60% 70% at 50% 40%,
-    rgba(244, 235, 218, 0.95) 30%,
-    rgba(244, 235, 218, 0.6) 55%,
-    transparent 78%
+    ellipse 62% 72% at 50% 38%,
+    var(--color-cream-50) 0%,
+    rgba(244, 235, 218, 0.96) 34%,
+    rgba(244, 235, 218, 0.62) 56%,
+    rgba(244, 235, 218, 0) 78%
   );
 }

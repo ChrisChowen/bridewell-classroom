@@ -35,9 +35,23 @@ export const metadata: Metadata = {
   },
 };
 
+// Apply the saved theme BEFORE first paint, on every route. The theme
+// toggles (HomepageHeader / UserMenu) only mount on some surfaces, so
+// previously the dark choice didn't carry to /login, /join, etc. This
+// blocking inline script reads the persisted choice and sets the
+// attribute on <html> before the body renders — no flash, all pages.
+const THEME_INIT = `try{var t=localStorage.getItem('bw-theme');if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-GB" className={`${sans.variable} ${serif.variable} ${mono.variable}`}>
+    <html
+      lang="en-GB"
+      className={`${sans.variable} ${serif.variable} ${mono.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
+      </head>
       <body>
         <AppProviders>{children}</AppProviders>
       </body>

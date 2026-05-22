@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Crest } from "@/components/shared/Crest";
 import { ClassField } from "@/components/teacher/ClassField";
+import { statePill, type EngagementState } from "@/lib/brand";
 import { subscribeToLiveClass, type LiveClass } from "@/lib/firebase/live";
 import { getFirebase } from "@/lib/firebase/client";
 import { signInAnonymously } from "firebase/auth";
@@ -92,13 +93,6 @@ function Inner() {
   }, []);
 
   const pupils = useMemo(() => Object.values(live?.pupils ?? {}), [live]);
-  const totalCapacity = pupils.length * stepCount;
-  const marbles = useMemo(
-    () => pupils.reduce((acc, p) => acc + ((p.currentStepIndex ?? 0) + (isEngaged(p) ? 1 : 0)), 0),
-    [pupils]
-  );
-  const fillRatio = totalCapacity > 0 ? Math.min(1, marbles / totalCapacity) : 0;
-
   const moments = useMemo(() => buildMoments(pupils), [pupils]);
   const moment = moments[tickIndex % Math.max(1, moments.length)] ?? defaultMoment(pupils);
 
@@ -160,19 +154,31 @@ function Inner() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <JoinPanel joinCode={joinCode} origin={origin} connected={pupils.length} />
-          <ClassClock />
-        </div>
+        <ClassClock />
       </header>
 
-      <ClassField
-        pupils={pupils}
-        fillRatio={fillRatio}
-        marbles={marbles}
-        capacity={totalCapacity}
-        stepCount={stepCount}
-      />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1fr) 360px",
+          gap: "clamp(28px, 4vw, 56px)",
+          minHeight: 0,
+        }}
+      >
+        <ClassField pupils={pupils} stepCount={stepCount} />
+
+        <aside
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 22,
+            minHeight: 0,
+          }}
+        >
+          <JoinPanel joinCode={joinCode} origin={origin} connected={pupils.length} />
+          <StateRibbon pupils={pupils} />
+        </aside>
+      </div>
 
       <footer
         style={{
@@ -254,10 +260,10 @@ function NoClass() {
   );
 }
 
-// Join panel — top-right of the projector. The join code is read off
-// the screen by latecomers, so it must be legible from across the room
-// (≈36pt body, monospace). The connected count sits subtly below so
-// the teacher can see at a glance whether the whole class is in.
+// Join card — top of the right rail. The join code is read off the
+// screen by latecomers across the room, so it is the largest type on the
+// surface. The connected count sits below so the teacher can see at a
+// glance whether the whole class is in.
 function JoinPanel({
   joinCode,
   origin,
@@ -271,23 +277,21 @@ function JoinPanel({
   return (
     <div
       style={{
-        padding: "12px 18px",
-        borderRadius: 14,
-        background: "rgba(255,255,255,0.06)",
-        border: "1px solid rgba(255,255,255,0.16)",
-        boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset",
-        textAlign: "right",
-        minWidth: 220,
+        padding: "22px 24px 20px",
+        borderRadius: 16,
+        background: "rgba(255,255,255,0.05)",
+        border: "1px solid rgba(255,255,255,0.14)",
+        boxShadow: "0 1px 0 rgba(255,255,255,0.05) inset",
       }}
     >
       <div
         style={{
-          fontSize: 10,
-          letterSpacing: "0.22em",
+          fontSize: 11,
+          letterSpacing: "0.24em",
           textTransform: "uppercase",
-          opacity: 0.65,
+          opacity: 0.6,
           fontWeight: 600,
-          marginBottom: 4,
+          marginBottom: 10,
         }}
       >
         Join the lesson
@@ -295,11 +299,12 @@ function JoinPanel({
       <div
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 32,
+          fontSize: "clamp(40px, 4.4vw, 56px)",
           fontWeight: 700,
-          letterSpacing: "0.16em",
+          letterSpacing: "0.14em",
           color: "var(--color-gold-500)",
           lineHeight: 1,
+          textShadow: "0 0 28px rgba(216,154,47,0.28)",
         }}
       >
         {joinCode}
@@ -308,10 +313,10 @@ function JoinPanel({
         <div
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            opacity: 0.6,
-            marginTop: 6,
-            letterSpacing: "0.04em",
+            fontSize: 13,
+            opacity: 0.55,
+            marginTop: 10,
+            letterSpacing: "0.02em",
           }}
         >
           {origin}/j/{joinCode}
@@ -320,34 +325,146 @@ function JoinPanel({
       <div
         className="flex items-center"
         style={{
-          marginTop: 10,
-          paddingTop: 8,
+          marginTop: 16,
+          paddingTop: 14,
           borderTop: "1px solid rgba(255,255,255,0.12)",
-          justifyContent: "flex-end",
-          gap: 8,
-          fontSize: 12,
-          opacity: 0.85,
+          gap: 9,
+          fontSize: 14,
+          opacity: 0.9,
         }}
       >
         <span
           aria-hidden
           style={{
-            width: 7,
-            height: 7,
+            width: 8,
+            height: 8,
             borderRadius: 999,
             background:
               connected > 0 ? "var(--color-state-flowing)" : "rgba(255,255,255,0.3)",
-            boxShadow:
-              connected > 0
-                ? "0 0 8px rgba(61,143,168,0.55)"
-                : "none",
+            boxShadow: connected > 0 ? "0 0 8px rgba(61,143,168,0.55)" : "none",
             transition: "background 200ms ease",
           }}
         />
         <span>
-          <strong style={{ fontWeight: 600 }}>{connected}</strong>{" "}
+          <strong style={{ fontWeight: 700 }}>{connected}</strong>{" "}
           {connected === 1 ? "pupil" : "pupils"} connected
         </span>
+      </div>
+    </div>
+  );
+}
+
+// How the room is — an AMBIENT read, deliberately not a surveillance
+// readout. The projector is a pupil-facing surface, so we never put up a
+// count of who is "off-task" or "wheel-spinning" for the room to see. We
+// show: a proportional ribbon (you can sense the shape of the room but
+// not single anyone out), one positive collective figure (how much of
+// the class is working through the lesson), and a fixed colour key so a
+// pupil can READ the star-chart. Per-pupil detail lives on the teacher's
+// own dashboard. (CLAUDE.md §E: patterns, not alerts.)
+const RIBBON_ORDER: EngagementState[] = [
+  "flowing",
+  "productive_struggle",
+  "wheel_spinning",
+  "disengaged",
+  "off_task",
+];
+
+// Gentle, non-judgemental labels for the colour key (pupil-facing).
+const FIELD_KEY_LABEL: Record<EngagementState, string> = {
+  flowing: "Flowing",
+  productive_struggle: "Working through it",
+  wheel_spinning: "Needs a moment",
+  disengaged: "Taking a breather",
+  off_task: "Off the lesson",
+};
+
+function StateRibbon({ pupils }: { pupils: LivePupil[] }) {
+  const total = pupils.length || 1;
+  const segments = RIBBON_ORDER.map((state) => ({
+    state,
+    n: pupils.filter((p) => p.state === state).length,
+  }));
+  const working = pupils.filter(
+    (p) => p.state === "flowing" || p.state === "productive_struggle",
+  ).length;
+  const workingPct = pupils.length === 0 ? 0 : Math.round((working / pupils.length) * 100);
+
+  return (
+    <div
+      style={{
+        padding: "20px 22px 18px",
+        borderRadius: 16,
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.12)",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          letterSpacing: "0.24em",
+          textTransform: "uppercase",
+          opacity: 0.6,
+          fontWeight: 600,
+          marginBottom: 14,
+        }}
+      >
+        How the room is
+      </div>
+
+      {/* One positive collective figure. */}
+      <div style={{ marginBottom: 14 }}>
+        <span className="bw-display" style={{ fontSize: 34, lineHeight: 1 }}>
+          {pupils.length === 0 ? "—" : `${workingPct}%`}
+        </span>
+        <span style={{ fontSize: 13, opacity: 0.6, marginLeft: 8 }}>
+          working through the lesson
+        </span>
+      </div>
+
+      {/* Proportional ribbon — ambient, no numbers. */}
+      <div
+        style={{
+          display: "flex",
+          width: "100%",
+          height: 12,
+          borderRadius: 999,
+          overflow: "hidden",
+          background: "rgba(255,255,255,0.06)",
+        }}
+      >
+        {pupils.length > 0 &&
+          segments.map(({ state, n }) =>
+            n > 0 ? (
+              <div
+                key={state}
+                style={{
+                  width: `${(n / total) * 100}%`,
+                  background: statePill[state].colour,
+                  transition: "width 600ms ease",
+                }}
+              />
+            ) : null,
+          )}
+      </div>
+
+      {/* Fixed colour key so pupils can read the chart. No counts. */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 14px", marginTop: 16 }}>
+        {RIBBON_ORDER.map((state) => (
+          <span key={state} className="flex items-center" style={{ gap: 8 }}>
+            <span
+              aria-hidden
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 999,
+                background: statePill[state].colour,
+                flexShrink: 0,
+              }}
+            />
+            <span style={{ fontSize: 12, opacity: 0.7 }}>{FIELD_KEY_LABEL[state]}</span>
+          </span>
+        ))}
       </div>
     </div>
   );
