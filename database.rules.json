@@ -17,7 +17,13 @@
           ".read": "auth != null && auth.uid === root.child('liveSessions').child($sessionId).child('meta').child('teacherId').val()",
           "$pupilId": {
             ".read": "auth != null && auth.uid === $pupilId",
-            ".write": "auth != null && (auth.token.role === 'teacher' || auth.uid === $pupilId)"
+            ".write": "auth != null && auth.token.role === 'teacher'",
+            "liveMessageCount": {
+              ".write": "auth != null && auth.uid === $pupilId && newData.isNumber()"
+            },
+            "lastMessageAt": {
+              ".write": "auth != null && auth.uid === $pupilId && newData.isNumber()"
+            }
           }
         },
         "interventions": {

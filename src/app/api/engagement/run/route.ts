@@ -5,6 +5,7 @@ import { verifyAuthToken } from "@/lib/auth";
 import { resolveDataStore } from "@/lib/data";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { classifyEngagement, type ClassifierInput } from "@/layers/classifier";
+import { anonKey } from "@/lib/live-keys";
 import type { EngagementSnapshot, ClassRecord } from "@/types";
 
 // POST /api/engagement/run
@@ -205,6 +206,31 @@ export async function POST(req: Request) {
           : null,
     };
   });
+
+  // 2b. Maintain the names-stripped public aggregate the classroom
+  //     projector reads. The projector signs in anonymously and CANNOT
+  //     read the per-pupil node (rules scope that to the owning teacher),
+  //     so "The Field" would otherwise render empty. This parallel node
+  //     carries NO identifying data — no name, no message excerpt, no
+  //     safeguarding text — only what a nameless star needs: engagement
+  //     state, confidence, step, recency, and a single boolean for the
+  //     calm safeguarding vignette. Written server-side (admin) only;
+  //     the `aggregate` RTDB rule is read-only to authed clients.
+  const concern =
+    result.safeguarding.severity === "medium" || result.safeguarding.severity === "high";
+  await a.rtdb
+    .ref(`liveSessions/${pupil.classId}/aggregate/${anonKey(uid)}`)
+    .set({
+      k: anonKey(uid),
+      state: result.state,
+      confidence: result.confidence,
+      step: nextStepIndex,
+      lastActive: now,
+      concern,
+    })
+    .catch(() => {
+      /* projector aggregate is best-effort — never block the snapshot */
+    });
 
   // 3. If safeguarding fired at medium+, write a permanent event for the
   //    teacher record.

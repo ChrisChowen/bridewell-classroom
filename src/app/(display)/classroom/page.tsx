@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Crest } from "@/components/shared/Crest";
 import { ClassField } from "@/components/teacher/ClassField";
 import { statePill, type EngagementState } from "@/lib/brand";
-import { subscribeToLiveClass, type LiveClass, type LivePupil } from "@/lib/firebase/live";
+import { subscribeToLiveAggregate, type AggregatePupil, type LivePupil } from "@/lib/firebase/live";
 import { getFirebase } from "@/lib/firebase/client";
 import { signInAnonymously } from "firebase/auth";
 
@@ -49,7 +49,7 @@ function Inner() {
   const className = params.get("class") ?? "";
   const joinCode = (params.get("code") ?? "").toUpperCase();
 
-  const [live, setLive] = useState<LiveClass | null>(null);
+  const [agg, setAgg] = useState<AggregatePupil[] | null>(null);
   const [tickIndex, setTickIndex] = useState(0);
   const [origin, setOrigin] = useState("");
 
@@ -65,8 +65,10 @@ function Inner() {
   useEffect(() => {
     if (!classId) return;
     // RTDB rules require auth != null. The whiteboard view is open in
-    // the classroom (no teacher login), so we sign in anonymously
-    // before subscribing. We only ever read pupil entries, never write.
+    // the classroom (no teacher login), so we sign in anonymously before
+    // subscribing. We read the names-stripped `aggregate` node only — the
+    // per-pupil node is teacher-scoped by the rules AND carries PII the
+    // projector must never show. Read-only; we never write.
     let unsub: (() => void) | undefined;
     (async () => {
       const fb = getFirebase();
@@ -78,7 +80,7 @@ function Inner() {
              return empty — better than crashing the projector. */
         }
       }
-      unsub = subscribeToLiveClass(classId, setLive);
+      unsub = subscribeToLiveAggregate(classId, setAgg);
     })();
     return () => {
       unsub?.();
@@ -92,7 +94,27 @@ function Inner() {
     return () => clearInterval(id);
   }, []);
 
-  const pupils = useMemo(() => Object.values(live?.pupils ?? {}), [live]);
+  // Map the nameless aggregate slots into the LivePupil shape that
+  // ClassField / StateRibbon / buildMoments already consume — without
+  // ever materialising a name or excerpt. `concern` becomes a minimal
+  // safeguarding marker (severity only) purely to drive the calm edge
+  // wash; no summary or pupil text is ever present on this surface.
+  const pupils = useMemo<LivePupil[]>(
+    () =>
+      (agg ?? []).map((r) => ({
+        pupilId: r.k,
+        displayName: "",
+        state: r.state,
+        confidence: r.confidence,
+        lastActive: r.lastActive,
+        trajectory: [],
+        currentStepIndex: r.step,
+        safeguarding: r.concern
+          ? { severity: "medium", summary: "", pupilExcerpt: null, ts: 0 }
+          : null,
+      })),
+    [agg]
+  );
   const moments = useMemo(() => buildMoments(pupils), [pupils]);
   const moment = moments[tickIndex % Math.max(1, moments.length)] ?? defaultMoment(pupils);
 

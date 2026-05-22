@@ -86,6 +86,35 @@ export function subscribeToLiveClass(
   return () => off(r, "value", listener);
 }
 
+// A single nameless slot on the public `aggregate` node. This is the
+// ONLY live data the classroom projector receives — it deliberately omits
+// names, message excerpts, and safeguarding detail (see engagement/run).
+export interface AggregatePupil {
+  k: string;
+  state: EngagementState;
+  confidence: number;
+  step: number;
+  lastActive: number;
+  concern: boolean;
+}
+
+// Projector subscription. Reads `liveSessions/{id}/aggregate`, which RTDB
+// rules expose to any authed client (the projector signs in anonymously).
+// The per-pupil node is teacher-scoped and intentionally NOT read here.
+export function subscribeToLiveAggregate(
+  classId: string,
+  onUpdate: (rows: AggregatePupil[]) => void
+): () => void {
+  const fb = getFirebase();
+  if (!fb.ready || !fb.rtdb) return () => {};
+  const r = ref(fb.rtdb, `liveSessions/${classId}/aggregate`);
+  const listener = onValue(r, (snap) => {
+    const val = (snap.val() ?? {}) as Record<string, AggregatePupil>;
+    onUpdate(Object.values(val));
+  });
+  return () => off(r, "value", listener);
+}
+
 export function subscribeToSessionStatus(
   classId: string,
   onUpdate: (status: SessionStatus | null) => void
@@ -176,17 +205,22 @@ export function subscribeToPupilSelf(
 export async function bumpPupilLiveMessage(classId: string, pupilId: string) {
   const fb = getFirebase();
   if (!fb.ready || !fb.rtdb) return;
-  const r = ref(fb.rtdb, `liveSessions/${classId}/pupils/${pupilId}`);
-  await runTransaction(r, (current) => {
-    const c = (current ?? {}) as Partial<LivePupil>;
-    return {
-      ...c,
-      liveMessageCount: (c.liveMessageCount ?? 0) + 1,
-      lastMessageAt: Date.now(),
-    };
-  }).catch(() => {
-    /* non-fatal — the next snapshot will resync */
-  });
+  // Write ONLY the two optimistic leaves — never the whole node. The
+  // classifier-owned fields (state, confidence, safeguarding, …) are
+  // server-written via the admin SDK; a client transaction over the full
+  // node would let a pupil overwrite their own engagement state or clear
+  // a safeguarding flag. The RTDB rules are tightened to permit pupil
+  // writes to these two leaves only, so a full-node write is also denied
+  // at the rules layer (defence in depth).
+  const base = `liveSessions/${classId}/pupils/${pupilId}`;
+  try {
+    await runTransaction(ref(fb.rtdb, `${base}/liveMessageCount`), (n) =>
+      ((n as number | null) ?? 0) + 1
+    );
+    await set(ref(fb.rtdb, `${base}/lastMessageAt`), Date.now());
+  } catch {
+    /* non-fatal — the next classifier snapshot will resync */
+  }
 }
 
 // Re-exports so callers don't reach into firebase/database directly.
