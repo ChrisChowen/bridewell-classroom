@@ -95,12 +95,15 @@ export async function evaluateReasonResponse(
   });
 
   if (result.fallbackUsed || !result.json) {
+    // GDPR: do NOT echo result.text on fallback — it contains the prompt,
+    // which includes the pupil's response (PII). Static operational message
+    // only (mirrors the classifier's fallback scrubbing).
     return {
       confidence: 0,
       branch: "pattern_flag",
       rationale: result.fallbackUsed
-        ? `Evaluator unavailable (${result.text.slice(0, 80)}…)`
-        : "Evaluator returned non-JSON output",
+        ? "Evaluator temporarily unavailable — treated as needs-attention."
+        : "Evaluator returned non-JSON output.",
       fallbackUsed: true,
     };
   }
@@ -127,12 +130,28 @@ export async function evaluateReasonResponse(
       fallbackUsed: true,
     };
   }
+  // The model returns `branch` and `confidence` as independent fields, so it
+  // can emit a `pattern_flag` at confidence 0.9 (or `accept` at 0.2) — which
+  // would make the responder praise a pupil who failed, or flag one who
+  // succeeded. Confidence is the authoritative signal (it drives the
+  // dashboard trajectory too), so we DERIVE the branch from the clamped
+  // confidence against the documented thresholds rather than trust the
+  // model's independent choice.
+  const confidence = Math.min(1, Math.max(0, j.confidence));
   return {
-    confidence: Math.min(1, Math.max(0, j.confidence)),
-    branch: j.branch,
+    confidence,
+    branch: branchForConfidence(confidence),
     rationale: j.rationale,
     weakestSegment: j.weakest_segment,
     followUp: j.follow_up,
     fallbackUsed: false,
   };
+}
+
+// Confidence → branch, per brief/03 + the responder's bands:
+//   > 0.65 accept · 0.40–0.65 soft_challenge · < 0.40 pattern_flag.
+export function branchForConfidence(c: number): ReasonEvaluatorResult["branch"] {
+  if (c > 0.65) return "accept";
+  if (c >= 0.4) return "soft_challenge";
+  return "pattern_flag";
 }

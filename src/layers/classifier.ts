@@ -228,7 +228,7 @@ export async function classifyEngagement(input: ClassifierInput): Promise<Classi
   if (flashUncertain) {
     // Pro thinks by default; give it room but cap so the call returns
     // quickly enough for the dashboard refresh cadence.
-    result = await callLLM({
+    const pro = await callLLM({
       use: "classifier",
       system: SYSTEM,
       messages: [{ role: "user", content: userBlock }],
@@ -237,7 +237,22 @@ export async function classifyEngagement(input: ClassifierInput): Promise<Classi
       temperature: 0.2,
       thinkingBudget: 1024,
     });
-    tier = "pro";
+    if (!pro.fallbackUsed && pro.json) {
+      // Pro gave a real read — use it.
+      result = pro;
+      tier = "pro";
+    } else if (flashJson) {
+      // Pro is unavailable/malformed but Flash returned a usable (if
+      // less-confident) classification — keep it rather than discarding a
+      // real read for the low-confidence "safe placeholder" below. A
+      // transient Pro outage must not blank out an otherwise-good signal.
+      result = flash;
+      tier = "flash";
+    } else {
+      // Neither tier produced usable JSON → fall through to the placeholder.
+      result = pro;
+      tier = "pro";
+    }
   }
 
   if (result.fallbackUsed || !result.json) {

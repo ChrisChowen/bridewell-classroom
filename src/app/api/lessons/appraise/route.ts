@@ -49,8 +49,8 @@ export async function POST(req: Request) {
   ]);
 
   const snapshots = snapshotsQ.docs.map((d) => {
-    const x = d.data() as { state: string; confidence: number; rationale?: string };
-    return { state: x.state, confidence: x.confidence, rationale: x.rationale };
+    const x = d.data() as { state: string; confidence: number; rationale?: string; pupilId?: string };
+    return { state: x.state, confidence: x.confidence, rationale: x.rationale, pupilId: x.pupilId };
   });
   const reasonEvents = reasonQ.docs.map((d) => {
     const x = d.data() as { branch?: string; confidence?: number };

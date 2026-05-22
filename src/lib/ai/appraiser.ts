@@ -36,7 +36,7 @@ const SCHEMA = {
 
 export interface AppraiseInput {
   plan: LessonPlan;
-  snapshots: Array<{ state: string; confidence: number; rationale?: string }>;
+  snapshots: Array<{ state: string; confidence: number; rationale?: string; pupilId?: string }>;
   reasonEvents: Array<{ branch?: string; confidence?: number }>;
   safeguardingCount: number;
   conversationSample: string; // joined transcript, maybe truncated
@@ -55,8 +55,13 @@ export async function appraiseLesson(
     ? reasonAcceptCount / input.reasonEvents.length
     : undefined;
 
+  // Distinct pupils that produced a classifier snapshot — keyed by pupilId,
+  // NOT array index (the classifier fires several times per pupil, so an
+  // index-based set just re-counted snapshots). Falls back to the snapshot
+  // count only if no ids were supplied.
+  const pupilIds = input.snapshots.map((s) => s.pupilId).filter((id): id is string => !!id);
   const metrics: LessonAppraisal["metrics"] = {
-    pupilsClassified: new Set(input.snapshots.map((_, i) => i)).size, // proxy
+    pupilsClassified: pupilIds.length ? new Set(pupilIds).size : input.snapshots.length,
     statesObserved,
     safeguardingEvents: input.safeguardingCount,
     reasonEvents: input.reasonEvents.length,
