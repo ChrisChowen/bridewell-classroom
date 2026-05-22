@@ -32,7 +32,7 @@ export function SessionOverlay({ status, teacherName, lessonTitle, wrapUpNote }:
               ? `${teacherName} will start the lesson in a moment. The chat will open when they do.`
               : "Your teacher will start the lesson in a moment. The chat will open when they do.",
           icon: <Hourglass size={18} color="var(--color-gold-500)" />,
-          art: "/img/scholar-reading.png",
+          art: "/img/scholar-reading.webp",
           tone: "calm" as const,
         };
       case "paused":
@@ -41,7 +41,7 @@ export function SessionOverlay({ status, teacherName, lessonTitle, wrapUpNote }:
           title: "Your teacher has paused the class",
           body: "Look up — they need the room's attention. The chat will open again when the lesson resumes.",
           icon: <Pause size={18} color="var(--color-gold-500)" />,
-          art: "/img/scholar-thinking.png",
+          art: "/img/scholar-thinking.webp",
           tone: "calm" as const,
         };
       case "wrap_up":
@@ -52,7 +52,7 @@ export function SessionOverlay({ status, teacherName, lessonTitle, wrapUpNote }:
             wrapUpNote ??
             "Round off what you have so far. The chat is still open — finish your last reply and the tutor will help you summarise.",
           icon: <Sparkles size={18} color="var(--color-gold-500)" />,
-          art: "/img/scholar-teaching.png",
+          art: "/img/scholar-teaching.webp",
           tone: "gold" as const,
         };
     }

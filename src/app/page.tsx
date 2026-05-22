@@ -69,7 +69,7 @@ function Hero() {
         }}
       >
         <Image
-          src="/img/scholar-peeking.png"
+          src="/img/scholar-peeking.webp"
           alt=""
           width={240}
           height={240}
