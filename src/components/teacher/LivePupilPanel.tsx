@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, MessageSquare, Send, RefreshCcw, Users, Pause, Check, AlertTriangle, Sparkles } from "lucide-react";
+import { X, MessageSquare, Send, RefreshCcw, Users, Pause, Check, AlertTriangle, Sparkles, Download } from "lucide-react";
 import { StatePill } from "@/components/shared/StatePill";
 import { statePill, type EngagementState } from "@/lib/brand";
 import type { LivePupil } from "@/lib/firebase/live";
@@ -233,6 +233,8 @@ export function LivePupilPanel({
         <SendEditor pupilId={pupil.pupilId} pupilName={pupil.displayName} />
 
         <InterventionActions classId={classId} pupilId={pupil.pupilId} pupilName={pupil.displayName} hasSafeguarding={!!pupil.safeguarding} />
+
+        <GdprExport pupilId={pupil.pupilId} pupilName={pupil.displayName} />
 
         {loadingTurns && (
           <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading conversation…</div>
@@ -573,6 +575,61 @@ function describeSend(s: SendProfile): string | null {
   if (s.scaffoldingLevel) parts.push(`scaffolding ${s.scaffoldingLevel}/5`);
   if (s.notes) parts.push("teacher note");
   return parts.length ? parts.join(" · ") : null;
+}
+
+// GDPR subject-access (Art. 15) — teacher-facing download of everything held
+// about this pupil, fulfilling the export engine's "teacher button" follow-up.
+// Read-only: fetches the teacher-scoped export endpoint with the auth token
+// and saves the JSON locally. (Erasure/Art. 17 is a separate, deliberately
+// guarded confirm-modal action — tracked as a follow-up.)
+function GdprExport({ pupilId, pupilName }: { pupilId: string; pupilName: string }) {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function download() {
+    const fb = getFirebase();
+    if (!fb.ready || !fb.auth.currentUser) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const token = await fb.auth.currentUser.getIdToken();
+      const r = await fetch(`/api/pupils/${pupilId}/export`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        throw new Error(d.error ?? `Export failed (${r.status})`);
+      }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `pupil-${pupilId}-export.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setMsg("Downloaded.");
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="bw-section-label" style={{ marginBottom: 6 }}>Data (GDPR)</div>
+      <Action
+        icon={busy ? <Sparkles size={12} /> : <Download size={12} />}
+        label={busy ? "Preparing…" : "Download this pupil's data (JSON)"}
+        busy={busy}
+        onClick={download}
+      />
+      <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 6, lineHeight: 1.4 }}>
+        Subject-access (Art. 15) for {pupilName.split(" ")[0]} — everything held about them,
+        for a data-subject request. {msg && <strong style={{ color: "var(--color-gold-500)" }}>{msg}</strong>}
+      </p>
+    </div>
+  );
 }
 
 function InterventionActions({
