@@ -7,6 +7,7 @@ import { Crest } from "@/components/shared/Crest";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { ChatSurface } from "@/components/student/ChatSurface";
 import { ClosingScreen } from "@/components/student/ClosingScreen";
+import { AccessibilityMenu } from "@/components/student/AccessibilityMenu";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
 import { subscribeToSessionStatus, type SessionStatus } from "@/lib/firebase/live";
@@ -186,6 +187,7 @@ export default function SessionPage() {
         </div>
 
         <div className="flex items-center justify-end gap-2">
+          <AccessibilityMenu />
           <span className="bw-hide-sm"><ThemeToggle /></span>
           <Link
             href="/join"

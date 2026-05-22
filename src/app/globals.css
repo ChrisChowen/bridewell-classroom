@@ -106,6 +106,40 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── Accessibility preferences (pupil-side AccessibilityMenu) ──────────
+   Set as attributes on <html>; persisted to localStorage. The app uses
+   px sizing throughout, so text-size uses `zoom` to scale the whole
+   surface reliably rather than the root font-size. */
+html[data-font-scale="large"] { zoom: 1.12; }
+html[data-font-scale="xlarge"] { zoom: 1.25; }
+
+/* Dyslexia-friendly: evidence-based spacing + line-height + a high-
+   legibility sans. (A bundled OpenDyslexic face is a follow-up.) */
+html[data-reading="friendly"] body {
+  letter-spacing: 0.03em;
+  word-spacing: 0.09em;
+  line-height: 1.75;
+  font-family: "Atkinson Hyperlegible", "Inter", system-ui, sans-serif;
+}
+
+/* Reduce motion: neutralise animations + transitions for pupils who find
+   movement distracting (also respects the OS setting by default below). */
+html[data-reduce-motion="on"] *,
+html[data-reduce-motion="on"] *::before,
+html[data-reduce-motion="on"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
 /* Section labels — small caps, tracked, sans (BRAND.md §Typography rules) */
 .bw-section-label {
   font-family: var(--font-sans);
