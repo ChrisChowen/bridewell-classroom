@@ -73,12 +73,12 @@ once added)._
 | Item | Status | Notes |
 |------|--------|-------|
 | `PILOT_READINESS.md` (this file) | 🟢 | Established this commit. |
-| DPA draft | 🔴🔒 | Requires human/legal sign-off. |
+| DPA draft | 🟡🔒 | DRAFTED (`docs/DPA-draft.md`) — parties, processing schedule, processor obligations mapped to the build, sub-processor list, decisions for counsel, signature block. Requires legal review + execution. |
 | DPIA draft | 🟡🔒 | DRAFTED (`docs/DPIA-draft.md`) — processing description, data inventory, children's-data considerations, risk/mitigation table (the security work maps to mitigations), outstanding DPO/DSL decisions, sign-off block. Requires DPO sign-off. |
 | Data retention policy draft | 🟡🔒 | DRAFTED (`docs/data-retention-policy.md`) — proposed retention per data category, what's built (erasure/export) vs pending (scheduled purge, dry-run-first). Requires DPO sign-off + window decision. |
 | Safeguarding routing policy draft | 🟡🔒 | DRAFTED (`docs/safeguarding-routing-policy.md`) — what the software does + the institutional decisions for the DSL. Requires DSL sign-off. |
-| Parent/pupil consent copy | 🔴🔒 | Requires human + school approval. |
-| Pilot runbook | 🔴 | Not written. |
+| Parent/pupil consent copy | 🟡🔒 | DRAFTED (`docs/consent-and-privacy-copy-draft.md`) — age-appropriate pupil notice, parent notice, opt-in/objection form. Requires DPO + school approval + bracket-fill. |
+| Pilot runbook | 🟢 | `docs/pilot-runbook.md` — pre-conditions (gates), teacher setup, running a lesson, data-subject requests, failure handling, post-pilot. |
 | Institutional buy-in (school + Unified) | 🔴🔒 | Human-only. |
 
 ---
