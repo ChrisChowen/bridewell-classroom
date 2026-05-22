@@ -226,7 +226,16 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
       : undefined;
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    // A tall reply (e.g. an Expert turn with a citations block) can grow
+    // after this fires, leaving the pupil short of the true bottom. A
+    // follow-up scroll on the next frame catches the settled height.
+    const raf = requestAnimationFrame(() => {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(raf);
   }, [messages, reasonCard, pending]);
 
   // Reason auto-fire — when the pupil hits the scaffold ceiling on the

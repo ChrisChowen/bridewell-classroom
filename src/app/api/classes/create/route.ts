@@ -65,10 +65,23 @@ export async function POST(req: Request) {
     joinCode = generateJoinCode();
   }
 
+  // Denormalise the teacher's display name onto the class so pupil-facing
+  // surfaces (the lobby overlay) can name them without a second lookup.
+  // Best-effort: a missing name just falls back to generic copy downstream.
+  let teacherName: string | undefined;
+  try {
+    const tSnap = await a.db.collection("teachers").doc(teacherUid).get();
+    const dn = (tSnap.data() as { displayName?: string } | undefined)?.displayName;
+    if (dn && dn.trim()) teacherName = dn.trim().slice(0, 80);
+  } catch {
+    /* non-fatal — generic "your teacher" copy is fine */
+  }
+
   const id = a.db.collection("classes").doc().id;
   const cls: ClassRecord = {
     id,
     teacherId: teacherUid,
+    ...(teacherName ? { teacherName } : {}),
     school: body.school,
     name: body.name,
     subject: body.subject,

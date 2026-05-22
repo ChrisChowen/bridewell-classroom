@@ -252,6 +252,10 @@ export interface TeacherRecord {
 export interface ClassRecord {
   id: string;
   teacherId: string;
+  // Denormalised teacher display name, stamped at class-create so pupil
+  // surfaces (e.g. the lobby overlay) can name the teacher without a second
+  // lookup. Optional — classes created before this fall back to generic copy.
+  teacherName?: string;
   school: School;
   name: string; // "Year 8 · Set 2"
   subject: string; // "Biology"

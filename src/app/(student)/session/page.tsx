@@ -270,6 +270,7 @@ export default function SessionPage() {
                   Start class yet, so the chat stays locked. */}
               <SessionOverlay
                 status={sessionStatus?.value ?? "not_started"}
+                teacherName={klass?.teacherName}
                 lessonTitle={lessonTitle}
                 wrapUpNote={sessionStatus?.wrapUpNote ?? undefined}
               />
