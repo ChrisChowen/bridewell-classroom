@@ -135,7 +135,7 @@ export default function SessionPage() {
   const pupilName = pupil?.displayName ?? displayName ?? "you";
 
   return (
-    <main style={{ minHeight: "100dvh", display: "grid", gridTemplateRows: "auto 1fr" }}>
+    <main style={{ height: "100dvh", minHeight: 0, display: "grid", gridTemplateRows: "auto 1fr" }}>
       <header
         className="bw-topbar"
         style={{

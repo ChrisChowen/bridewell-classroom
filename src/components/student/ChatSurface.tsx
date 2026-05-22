@@ -686,7 +686,13 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
   }
 
   return (
-    <div style={{ display: "grid", gridTemplateRows: "auto auto 1fr auto", height: "100%" }}>
+    // Flex column (not a fixed grid-rows template): the step bar and live
+    // banners render conditionally, so a positional "auto auto 1fr auto"
+    // grid would misassign the messages/composer to the wrong rows and
+    // leave the 1fr expansion row empty — floating the composer up the
+    // screen. Flex with the messages area as the only grow child keeps the
+    // composer pinned to the bottom regardless of which optional rows show.
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
       {/* Step indicator — pupil can see where the tutor is in the plan.
           In extension mode, name the extension explicitly rather than
           re-showing the final lesson step title (which was confusing
@@ -752,6 +758,12 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
       <div
         ref={scrollRef}
         style={{
+          // The only grow child: takes all remaining height and scrolls
+          // internally (flex-basis 0 + minHeight:0) so the composer below
+          // stays pinned to the bottom and long conversations scroll here
+          // rather than pushing the composer off-screen.
+          flex: "1 1 0",
+          minHeight: 0,
           overflowY: "auto",
           padding: "28px 32px 18px",
           display: "flex",
@@ -842,6 +854,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
         <div
           role="alert"
           style={{
+            flexShrink: 0,
             padding: "8px 14px",
             background: "rgba(142,42,42,0.08)",
             color: "var(--color-crimson)",
@@ -855,6 +868,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
 
       <div
         style={{
+          flexShrink: 0,
           borderTop: "1px solid var(--line)",
           padding: "12px 16px",
           display: "flex",
