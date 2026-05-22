@@ -1,43 +1,28 @@
-// Lightweight per-route rate limiter for LLM-spending API routes.
+// Per-route rate limiter for LLM-spending API routes.
 //
-// The prototype is deployed at a public URL (bridewell-classroom.web.app)
-// with anonymous pupil sign-in. Without throttling, anyone with the URL
-// could pound /api/chat or /api/lessons/generate and burn the Gemini key.
-// This module enforces a soft cap per identifier (Firebase UID where
-// available, otherwise the request IP).
+// The app is deployed at a public URL with anonymous pupil sign-in.
+// Without throttling, anyone could pound /api/chat or /api/lessons/
+// generate and burn the model budget. This caps requests per identifier
+// (Firebase UID where available, else IP) per named bucket.
 //
-// Storage is in-memory per Node instance. Cloud Functions instances are
-// ephemeral, so a determined attacker spread across cold starts can
-// exceed the cap. For the 29 May demo this is acceptable — the goal is
-// to defang casual abuse, not nation-state attackers. Production
-// hardening should move this to a Firestore/RTDB transaction.
+// Storage: durable by default. Counters live in Realtime Database under
+// /rateLimits/{bucket}/{id} and are incremented inside an atomic RTDB
+// transaction, so the limit holds across Cloud Function cold starts and
+// across instances (the previous in-memory Map did not). If RTDB is
+// unavailable, we fall back to the in-memory limiter rather than fail
+// the request open or closed unpredictably — a transient datastore blip
+// must not take the tutor down.
 
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 
-interface Bucket {
+export interface Bucket {
   count: number;
   windowStartMs: number;
 }
 
-const buckets = new Map<string, Bucket>();
-
-// Periodic sweep so the Map doesn't grow without bound. Runs lazily on
-// each check; cheap (~O(active identifiers) per minute).
-let lastSweepMs = 0;
-function sweep(nowMs: number) {
-  if (nowMs - lastSweepMs < 60_000) return;
-  lastSweepMs = nowMs;
-  // Drop any bucket whose window is more than 2 hours old.
-  for (const [key, b] of buckets) {
-    if (nowMs - b.windowStartMs > 2 * 60 * 60 * 1000) buckets.delete(key);
-  }
-}
-
 export interface RateLimitConfig {
-  // Human-readable name for the bucket (e.g. "chat"). Different routes
-  // use different names so /api/chat usage doesn't deplete the budget
-  // for /api/lessons/generate.
+  // Bucket name (e.g. "chat"). Buckets are independent budgets.
   bucket: string;
   // Max requests per window per identifier.
   limit: number;
@@ -50,17 +35,85 @@ export interface RateLimitResult {
   identifier: string;
   remaining: number;
   resetMs: number;
-  // 429 response shape if !ok. Caller can spread this into NextResponse.
   retryAfterSec?: number;
 }
 
+// ── Pure decision logic (backend-agnostic, unit-tested) ───────────────
+
+/** Given the current bucket (or null), advance it for one new hit. */
+export function advanceBucket(cur: Bucket | null, now: number, cfg: RateLimitConfig): Bucket {
+  if (!cur || now - cur.windowStartMs >= cfg.windowMs) {
+    return { count: 1, windowStartMs: now };
+  }
+  return { count: cur.count + 1, windowStartMs: cur.windowStartMs };
+}
+
+/** Turn a committed bucket into the caller-facing result. */
+export function bucketToResult(
+  b: Bucket,
+  cfg: RateLimitConfig,
+  identifier: string,
+  now: number
+): RateLimitResult {
+  const resetMs = b.windowStartMs + cfg.windowMs;
+  const ok = b.count <= cfg.limit;
+  return {
+    ok,
+    identifier,
+    remaining: Math.max(0, cfg.limit - b.count),
+    resetMs,
+    retryAfterSec: ok ? undefined : Math.max(1, Math.ceil((resetMs - now) / 1000)),
+  };
+}
+
+// ── In-memory backend (dev / test / fallback) ─────────────────────────
+
+const buckets = new Map<string, Bucket>();
+let lastSweepMs = 0;
+function sweep(nowMs: number) {
+  if (nowMs - lastSweepMs < 60_000) return;
+  lastSweepMs = nowMs;
+  for (const [key, b] of buckets) {
+    if (nowMs - b.windowStartMs > 2 * 60 * 60 * 1000) buckets.delete(key);
+  }
+}
+
+export function checkRateLimit(identifier: string, cfg: RateLimitConfig): RateLimitResult {
+  const now = Date.now();
+  sweep(now);
+  const key = `${cfg.bucket}:${identifier}`;
+  const next = advanceBucket(buckets.get(key) ?? null, now, cfg);
+  buckets.set(key, next);
+  return bucketToResult(next, cfg, identifier, now);
+}
+
+// ── Durable backend (RTDB transaction) ────────────────────────────────
+
+// RTDB keys may not contain . # $ [ ] / — sanitise the identifier.
+function rtdbKey(identifier: string): string {
+  return identifier.replace(/[.#$/[\]]/g, "_");
+}
+
+export async function checkRateLimitDurable(
+  identifier: string,
+  cfg: RateLimitConfig
+): Promise<RateLimitResult> {
+  const admin = getAdmin();
+  if (!admin.ready) throw new Error("admin not ready");
+  const now = Date.now();
+  const ref = admin.rtdb.ref(`rateLimits/${cfg.bucket}/${rtdbKey(identifier)}`);
+  const tx = await ref.transaction((cur: Bucket | null) => advanceBucket(cur, Date.now(), cfg));
+  const committed = (tx.snapshot.val() as Bucket | null) ?? advanceBucket(null, now, cfg);
+  return bucketToResult(committed, cfg, identifier, now);
+}
+
+// ── Identity + enforcement ────────────────────────────────────────────
+
 /**
- * Extract a best-effort identifier from a Request. Prefers the Firebase
- * ID token UID when present (much harder to spoof than IP); falls back
- * to the first hop in x-forwarded-for, then x-real-ip, then "anon".
+ * Best-effort identifier: Firebase UID (hard to spoof) when a valid
+ * bearer token is present, else x-forwarded-for / x-real-ip, else "anon".
  */
 export async function identifyRequester(req: Request): Promise<string> {
-  // Try Bearer token → Firebase UID.
   const authHeader = req.headers.get("authorization");
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
@@ -81,41 +134,23 @@ export async function identifyRequester(req: Request): Promise<string> {
   return "anon";
 }
 
-export function checkRateLimit(identifier: string, cfg: RateLimitConfig): RateLimitResult {
-  const now = Date.now();
-  sweep(now);
-  const key = `${cfg.bucket}:${identifier}`;
-  let b = buckets.get(key);
-  if (!b || now - b.windowStartMs >= cfg.windowMs) {
-    b = { count: 0, windowStartMs: now };
-    buckets.set(key, b);
-  }
-  b.count += 1;
-  const remaining = Math.max(0, cfg.limit - b.count);
-  const resetMs = b.windowStartMs + cfg.windowMs;
-  if (b.count > cfg.limit) {
-    return {
-      ok: false,
-      identifier,
-      remaining: 0,
-      resetMs,
-      retryAfterSec: Math.max(1, Math.ceil((resetMs - now) / 1000)),
-    };
-  }
-  return { ok: true, identifier, remaining, resetMs };
-}
-
 /**
  * One-shot helper for API routes. Returns a 429 NextResponse if over
- * limit, or null if allowed. Sets standard rate-limit headers either
- * way so the client can back off.
+ * limit, or null if allowed. Uses the durable backend; on any RTDB
+ * error, degrades to the in-memory limiter so a datastore blip never
+ * takes a route down.
  */
 export async function enforceRateLimit(
   req: Request,
-  cfg: RateLimitConfig,
+  cfg: RateLimitConfig
 ): Promise<NextResponse | null> {
   const id = await identifyRequester(req);
-  const r = checkRateLimit(id, cfg);
+  let r: RateLimitResult;
+  try {
+    r = await checkRateLimitDurable(id, cfg);
+  } catch {
+    r = checkRateLimit(id, cfg);
+  }
   if (!r.ok) {
     return NextResponse.json(
       {
@@ -131,27 +166,19 @@ export async function enforceRateLimit(
           "X-RateLimit-Remaining": "0",
           "X-RateLimit-Reset": String(Math.ceil(r.resetMs / 1000)),
         },
-      },
+      }
     );
   }
   return null;
 }
 
-// Pre-tuned config presets. Numbers err on the generous side for the
-// demo — a teacher running simulate-class.mjs against the live deploy
-// shouldn't get throttled, but a single open browser tab can't burn
-// hundreds of pounds in tokens overnight either.
+// Pre-tuned presets. Generous enough that a teacher running a real
+// class won't be throttled, tight enough that a single open tab can't
+// burn the budget overnight.
 export const RATE_LIMITS = {
-  // Tutor turns. A pupil typing fast still won't hit 40/min.
   chat: { bucket: "chat", limit: 40, windowMs: 60_000 } satisfies RateLimitConfig,
-  // Lesson plan generation. Expensive (Pro model, ~5–8s per call).
-  // Six per hour per teacher is plenty for prep; abuse cap.
   lessonsGenerate: { bucket: "lessons-generate", limit: 12, windowMs: 60 * 60_000 } satisfies RateLimitConfig,
-  // Reason evaluator. Server-to-server in normal flow but the API is
-  // reachable, so cap it.
   reasonEvaluate: { bucket: "reason-evaluate", limit: 60, windowMs: 60_000 } satisfies RateLimitConfig,
-  // Engagement classifier. Called every 5 messages or 60s — capacious.
   engagementClassify: { bucket: "engagement-classify", limit: 60, windowMs: 60_000 } satisfies RateLimitConfig,
-  // Lesson appraisal. Cheap-ish but worth capping.
   lessonsAppraise: { bucket: "lessons-appraise", limit: 20, windowMs: 60_000 } satisfies RateLimitConfig,
 };

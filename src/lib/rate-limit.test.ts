@@ -1,9 +1,56 @@
 import { describe, it, expect } from "vitest";
-import { checkRateLimit, type RateLimitConfig } from "./rate-limit";
+import {
+  checkRateLimit,
+  advanceBucket,
+  bucketToResult,
+  type RateLimitConfig,
+  type Bucket,
+} from "./rate-limit";
 
-// NB: this is the current in-memory limiter. The north-star goal calls
-// for a durable (Firestore/RTDB-backed) replacement; these tests pin the
-// observable contract so that swap can be made safely later.
+// The window/increment decision is a pure function (advanceBucket +
+// bucketToResult) shared by BOTH the in-memory and the durable
+// RTDB-transaction backends — so testing it here covers the durable
+// path's correctness without needing the emulator. checkRateLimit
+// (in-memory) is exercised end-to-end for the observable contract.
+
+const cfg = (over: Partial<RateLimitConfig> = {}): RateLimitConfig => ({
+  bucket: "u",
+  limit: 3,
+  windowMs: 60_000,
+  ...over,
+});
+
+describe("advanceBucket (pure, shared by both backends)", () => {
+  it("starts a fresh bucket at count 1", () => {
+    expect(advanceBucket(null, 1000, cfg())).toEqual({ count: 1, windowStartMs: 1000 });
+  });
+
+  it("increments within the window, preserving windowStart", () => {
+    const cur: Bucket = { count: 1, windowStartMs: 1000 };
+    expect(advanceBucket(cur, 1500, cfg())).toEqual({ count: 2, windowStartMs: 1000 });
+  });
+
+  it("resets when the window has elapsed", () => {
+    const cur: Bucket = { count: 9, windowStartMs: 1000 };
+    expect(advanceBucket(cur, 1000 + 60_000, cfg())).toEqual({ count: 1, windowStartMs: 61_000 });
+  });
+});
+
+describe("bucketToResult", () => {
+  it("ok while at/under the limit, no retryAfter", () => {
+    const r = bucketToResult({ count: 3, windowStartMs: 0 }, cfg(), "id", 100);
+    expect(r.ok).toBe(true);
+    expect(r.remaining).toBe(0);
+    expect(r.retryAfterSec).toBeUndefined();
+  });
+
+  it("blocks over the limit with a positive retryAfter", () => {
+    const r = bucketToResult({ count: 4, windowStartMs: 0 }, cfg(), "id", 100);
+    expect(r.ok).toBe(false);
+    expect(r.remaining).toBe(0);
+    expect(r.retryAfterSec).toBeGreaterThan(0);
+  });
+});
 
 describe("checkRateLimit", () => {
   it("allows up to the limit then blocks", () => {
