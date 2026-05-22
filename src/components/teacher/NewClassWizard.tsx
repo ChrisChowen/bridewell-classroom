@@ -41,6 +41,7 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [joinCode, setJoinCode] = useState<string | null>(null);
   const [libraryEntries, setLibraryEntries] = useState<LessonLibraryEntry[]>([]);
+  const [libraryFailed, setLibraryFailed] = useState(false);
 
   // Pull library entries whenever the chosen syllabus changes so we can
   // offer "build from a previous plan" as an option.
@@ -59,10 +60,20 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
           `/api/lessons/library?syllabusId=${encodeURIComponent(syllabus!.id)}&school=${encodeURIComponent(school)}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        const d = await r.json();
-        if (!cancelled && r.ok) setLibraryEntries(d.entries ?? []);
+        const d = await r.json().catch(() => ({}));
+        if (cancelled) return;
+        if (r.ok) {
+          setLibraryEntries(d.entries ?? []);
+          setLibraryFailed(false);
+        } else {
+          setLibraryEntries([]);
+          setLibraryFailed(true); // distinguish "load failed" from "genuinely none"
+        }
       } catch {
-        /* ignore */
+        if (!cancelled) {
+          setLibraryEntries([]);
+          setLibraryFailed(true);
+        }
       }
     }
     load();
@@ -269,6 +280,7 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
               setChallengeLevel={setChallengeLevel}
               generating={generating}
               libraryEntries={libraryEntries}
+              libraryFailed={libraryFailed}
               onLibraryPick={(entry) => {
                 setPlan(entry.plan);
                 setStep("review");
@@ -789,6 +801,7 @@ function DescribeStep({
   setChallengeLevel,
   generating,
   libraryEntries,
+  libraryFailed,
   onLibraryPick,
   onBack,
   onGenerate,
@@ -809,6 +822,7 @@ function DescribeStep({
   setChallengeLevel: (v: "foundation" | "core" | "stretch") => void;
   generating: boolean;
   libraryEntries: LessonLibraryEntry[];
+  libraryFailed: boolean;
   onLibraryPick: (entry: LessonLibraryEntry) => void;
   onBack: () => void;
   onGenerate: () => void;
@@ -866,6 +880,13 @@ function DescribeStep({
           {syllabus.subject} · {syllabus.keyStage} · Year {syllabus.yearGroup} · {syllabus.suggestedMinutes} min suggested
         </div>
       </div>
+
+      {libraryFailed && libraryEntries.length === 0 && (
+        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+          Couldn&apos;t load your school&apos;s saved plans just now — you can still generate or
+          start from scratch below.
+        </div>
+      )}
 
       {libraryEntries.length > 0 && (
         <div
