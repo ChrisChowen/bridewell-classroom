@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/auth";
+import { resolveDataStore } from "@/lib/data";
 import { callLLM } from "@/lib/ai/llm";
 import { consolidateLearnerProfile } from "@/lib/learner-profile-store";
-import type { ChallengeLevel } from "@/types";
 
 // POST /api/session/consolidate
 //
@@ -79,13 +79,13 @@ async function handle(req: Request) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const uid = auth.user.uid;
 
-  const pupilSnap = await a.db.collection("pupils").doc(uid).get();
-  if (!pupilSnap.exists) return NextResponse.json({ error: "No pupil record" }, { status: 404 });
-  const { classId, displayName } = pupilSnap.data() as { classId: string; displayName: string };
+  const store = resolveDataStore();
+  const pupil = await store.getPupil(uid);
+  if (!pupil) return NextResponse.json({ error: "No pupil record" }, { status: 404 });
+  const { classId, displayName } = pupil;
 
-  const classSnap = await a.db.collection("classes").doc(classId).get();
-  if (!classSnap.exists) return NextResponse.json({ error: "Class not found" }, { status: 404 });
-  const cls = classSnap.data() as { lessonPlan?: { title: string; learningObjectives?: string[]; criticalConcepts?: string[]; sequence?: Array<{ title: string }>; challengeLevel?: ChallengeLevel } };
+  const cls = await store.getClass(classId);
+  if (!cls) return NextResponse.json({ error: "Class not found" }, { status: 404 });
 
   // Pull the conversation (newest first via the same path the panel uses).
   const conversationDocId = `${classId}_${uid}`;

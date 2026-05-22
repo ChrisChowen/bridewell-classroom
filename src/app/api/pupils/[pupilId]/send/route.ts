@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { authorisePupilAccess } from "@/lib/pupil-auth";
+import { resolveDataStore } from "@/lib/data";
 import type { PupilRecord } from "@/types";
 
 // GET  /api/pupils/{pupilId}/send  — read the pupil's SEND profile.
@@ -19,8 +20,7 @@ export async function GET(
   const auth = await authorisePupilAccess(req, pupilId);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const snap = await auth.admin.db.collection("pupils").doc(pupilId).get();
-  const pupil = snap.data() as PupilRecord | undefined;
+  const pupil = await resolveDataStore().getPupil(pupilId);
   return NextResponse.json({ send: pupil?.send ?? null });
 }
 

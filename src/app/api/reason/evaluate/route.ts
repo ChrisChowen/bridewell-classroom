@@ -6,6 +6,7 @@ import {
 import { shapeResponse } from "@/layers/responder";
 import { getAdmin } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/auth";
+import { resolveDataStore } from "@/lib/data";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 // POST /api/reason/evaluate
@@ -50,8 +51,8 @@ export async function POST(req: Request) {
   const response = shapeResponse({ evaluation, concept: body.concept });
 
   // Persist onto the reasonEvent doc.
-  const pupilSnap = await a.db.collection("pupils").doc(uid).get();
-  const classId = pupilSnap.exists ? (pupilSnap.data() as { classId: string }).classId : null;
+  const pupil = await resolveDataStore().getPupil(uid);
+  const classId = pupil?.classId ?? null;
 
   const eventPayload = {
     pupilId: uid,

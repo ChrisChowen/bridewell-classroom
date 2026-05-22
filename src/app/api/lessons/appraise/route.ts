@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 import { verifyRequest } from "@/lib/auth";
 import { appraiseLesson } from "@/lib/ai/appraiser";
+import { resolveDataStore } from "@/lib/data";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import type { ClassRecord } from "@/types";
 
 // POST /api/lessons/appraise
 //
@@ -30,9 +30,8 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => null)) as Body | null;
   if (!body?.classId) return NextResponse.json({ error: "classId required" }, { status: 400 });
 
-  const classSnap = await a.db.collection("classes").doc(body.classId).get();
-  if (!classSnap.exists) return NextResponse.json({ error: "Class not found" }, { status: 404 });
-  const cls = classSnap.data() as ClassRecord;
+  const cls = await resolveDataStore().getClass(body.classId);
+  if (!cls) return NextResponse.json({ error: "Class not found" }, { status: 404 });
   if (cls.teacherId !== authed.user.uid) {
     return NextResponse.json({ error: "Not your class" }, { status: 403 });
   }

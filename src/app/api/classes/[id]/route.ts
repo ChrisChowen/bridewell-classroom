@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 import { verifyRequest } from "@/lib/auth";
+import { resolveDataStore } from "@/lib/data";
 
 // GET /api/classes/[id]
 //
@@ -19,11 +20,10 @@ export async function GET(
   const authed = await verifyRequest(req, { role: "teacher" });
   if (!authed.ok) return NextResponse.json({ error: authed.error }, { status: authed.status });
 
-  const classSnap = await a.db.collection("classes").doc(id).get();
-  if (!classSnap.exists) {
+  const cls = await resolveDataStore().getClass(id);
+  if (!cls) {
     return NextResponse.json({ error: "Class not found" }, { status: 404 });
   }
-  const cls = classSnap.data() as { teacherId: string };
   if (cls.teacherId !== authed.user.uid) {
     return NextResponse.json({ error: "Not your class" }, { status: 403 });
   }
@@ -31,5 +31,5 @@ export async function GET(
   const roster = await a.db.collection("pupils").where("classId", "==", id).get();
   const pupils = roster.docs.map((d) => d.data());
 
-  return NextResponse.json({ class: classSnap.data(), pupils });
+  return NextResponse.json({ class: cls, pupils });
 }

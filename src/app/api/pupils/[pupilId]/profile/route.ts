@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { authorisePupilAccess } from "@/lib/pupil-auth";
+import { resolveDataStore } from "@/lib/data";
 import { CHALLENGE_ORDER } from "@/lib/learner-profile";
 import type { ChallengeLevel, LearnerProfile } from "@/types";
 
@@ -20,11 +21,8 @@ export async function GET(
   const auth = await authorisePupilAccess(req, pupilId);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const snap = await auth.admin.db.collection("learnerProfiles").doc(pupilId).get();
-  if (!snap.exists) {
-    return NextResponse.json({ profile: null });
-  }
-  return NextResponse.json({ profile: snap.data() as LearnerProfile });
+  const profile = await resolveDataStore().getLearnerProfile(pupilId);
+  return NextResponse.json({ profile });
 }
 
 export async function POST(

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 import { verifyRequest } from "@/lib/auth";
+import { resolveDataStore } from "@/lib/data";
 import { markSafeguardingReviewed } from "@/lib/safeguarding";
 
 // POST /api/interventions
@@ -52,9 +53,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "classId and type required" }, { status: 400 });
   }
 
-  const classSnap = await a.db.collection("classes").doc(body.classId).get();
-  if (!classSnap.exists) return NextResponse.json({ error: "Class not found" }, { status: 404 });
-  if ((classSnap.data() as { teacherId: string }).teacherId !== teacherUid) {
+  const store = resolveDataStore();
+  const cls = await store.getClass(body.classId);
+  if (!cls) return NextResponse.json({ error: "Class not found" }, { status: 404 });
+  if (cls.teacherId !== teacherUid) {
     return NextResponse.json({ error: "Not your class" }, { status: 403 });
   }
 
@@ -105,8 +107,8 @@ export async function POST(req: Request) {
     // Verify the pupil is in this class — class ownership alone isn't
     // enough, since a teacher could otherwise act on pupils outside
     // their classroom by spoofing a pupilId.
-    const pupilSnap = await a.db.collection("pupils").doc(body.pupilId).get();
-    if (!pupilSnap.exists || (pupilSnap.data() as { classId?: string }).classId !== body.classId) {
+    const pupil = await store.getPupil(body.pupilId);
+    if (!pupil || pupil.classId !== body.classId) {
       return NextResponse.json({ error: "That pupil is not in this class" }, { status: 403 });
     }
     if (body.type === "mark_reviewed") {

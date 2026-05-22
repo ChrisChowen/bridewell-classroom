@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/auth";
+import { resolveDataStore } from "@/lib/data";
 
 // POST /api/conversation/append
 //
@@ -30,11 +31,11 @@ export async function POST(req: Request) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const uid = auth.user.uid;
 
-  const pupilSnap = await a.db.collection("pupils").doc(uid).get();
-  if (!pupilSnap.exists) {
+  const pupil = await resolveDataStore().getPupil(uid);
+  if (!pupil) {
     return NextResponse.json({ error: "No pupil record" }, { status: 404 });
   }
-  const { classId } = pupilSnap.data() as { classId: string };
+  const { classId } = pupil;
 
   const docId = `${classId}_${uid}`;
   const ref = a.db.collection("conversations").doc(docId).collection("messages");

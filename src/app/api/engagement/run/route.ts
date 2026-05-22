@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/auth";
+import { resolveDataStore } from "@/lib/data";
 import { classifyEngagement, type ClassifierInput } from "@/layers/classifier";
 import type { EngagementSnapshot, ClassRecord } from "@/types";
 
@@ -48,15 +49,15 @@ export async function POST(req: Request) {
   const uid = auth.user.uid;
 
   // Look up the pupil's class.
-  const pupilSnap = await a.db.collection("pupils").doc(uid).get();
-  if (!pupilSnap.exists) {
+  const store = resolveDataStore();
+  const pupil = await store.getPupil(uid);
+  if (!pupil) {
     return NextResponse.json({ error: "No pupil record" }, { status: 404 });
   }
-  const pupil = pupilSnap.data() as { classId: string; displayName: string };
 
   // Audit #10: verify the class hasn't been deleted mid-session before
   // we write the live mirror — otherwise we'd resurrect a stale class.
-  const classExists = (await a.db.collection("classes").doc(pupil.classId).get()).exists;
+  const classExists = (await store.getClass(pupil.classId)) !== null;
   if (!classExists) {
     return NextResponse.json({ error: "Class no longer exists" }, { status: 404 });
   }
@@ -120,8 +121,7 @@ export async function POST(req: Request) {
   let sequenceLength = 1;
   let hasExtension = false;
   try {
-    const classSnap = await a.db.collection("classes").doc(pupil.classId).get();
-    const cls = classSnap.data() as ClassRecord | undefined;
+    const cls = await store.getClass(pupil.classId);
     sequenceLength = cls?.lessonPlan?.sequence?.length ?? 1;
     hasExtension = !!cls?.lessonPlan?.extension;
     // Self-heal the RTDB live-mirror owner stamp so the hardened

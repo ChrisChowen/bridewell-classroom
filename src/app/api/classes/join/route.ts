@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/auth";
+import { resolveDataStore } from "@/lib/data";
 import { normaliseJoinCode } from "@/lib/joinCode";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import type { PupilRecord } from "@/types";
@@ -45,20 +46,17 @@ export async function POST(req: Request) {
   }
   const { classId } = codeDoc.data() as { classId: string };
 
-  const classDoc = await a.db.collection("classes").doc(classId).get();
-  if (!classDoc.exists) {
+  const store = resolveDataStore();
+  const cls = await store.getClass(classId);
+  if (!cls) {
     return NextResponse.json({ error: "Class no longer exists" }, { status: 404 });
   }
-  const cls = classDoc.data();
 
   // If the pupil is switching classes, clear their old RTDB live entry
   // so the previous teacher's dashboard doesn't keep showing them.
-  const existing = await a.db.collection("pupils").doc(uid).get();
-  if (existing.exists) {
-    const prev = existing.data() as { classId?: string };
-    if (prev.classId && prev.classId !== classId) {
-      await a.rtdb.ref(`liveSessions/${prev.classId}/pupils/${uid}`).remove().catch(() => {});
-    }
+  const existing = await store.getPupil(uid);
+  if (existing && existing.classId && existing.classId !== classId) {
+    await a.rtdb.ref(`liveSessions/${existing.classId}/pupils/${uid}`).remove().catch(() => {});
   }
 
   const pupil: PupilRecord = {

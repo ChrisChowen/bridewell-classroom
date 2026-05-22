@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/auth";
+import { resolveDataStore } from "@/lib/data";
 import { selectReasonPrompt } from "@/layers/prompts";
 import type { ReasonPromptType } from "@/types";
 
@@ -39,11 +40,11 @@ export async function POST(req: Request) {
   const auth = await verifyAuthToken(body.idToken);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const pupilSnap = await a.db.collection("pupils").doc(auth.user.uid).get();
-  if (!pupilSnap.exists) {
+  const pupil = await resolveDataStore().getPupil(auth.user.uid);
+  if (!pupil) {
     return NextResponse.json({ error: "No pupil record" }, { status: 404 });
   }
-  const { classId, displayName } = pupilSnap.data() as { classId: string; displayName: string };
+  const { classId, displayName } = pupil;
 
   const picked = selectReasonPrompt({
     concept: body.concept,
