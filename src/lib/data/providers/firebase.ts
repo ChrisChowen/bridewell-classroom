@@ -28,4 +28,16 @@ export class FirebaseDataStore implements DataStore {
     const snap = await db().collection("learnerProfiles").doc(pupilId).get();
     return snap.exists ? (snap.data() as LearnerProfile) : null;
   }
+
+  async savePupil(id: string, data: Partial<PupilRecord>, opts?: { merge?: boolean }): Promise<void> {
+    await db().collection("pupils").doc(id).set(data, { merge: opts?.merge ?? false });
+  }
+
+  async saveLearnerProfile(
+    pupilId: string,
+    data: Partial<LearnerProfile>,
+    opts?: { merge?: boolean },
+  ): Promise<void> {
+    await db().collection("learnerProfiles").doc(pupilId).set(data, { merge: opts?.merge ?? false });
+  }
 }

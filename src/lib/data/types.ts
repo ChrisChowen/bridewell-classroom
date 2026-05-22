@@ -16,4 +16,16 @@ export interface DataStore {
   getClass(id: string): Promise<ClassRecord | null>;
   getPupil(id: string): Promise<PupilRecord | null>;
   getLearnerProfile(pupilId: string): Promise<LearnerProfile | null>;
+
+  // Single-doc writes. `merge:true` patches the named fields (leaving the
+  // rest untouched); `merge:false`/omitted overwrites the doc. Multi-doc
+  // ATOMIC writes (e.g. class + join-code) are deliberately NOT modelled
+  // here yet — those stay in the routes until the seam grows a
+  // transaction primitive (tracked in PILOT_READINESS.md).
+  savePupil(id: string, data: Partial<PupilRecord>, opts?: { merge?: boolean }): Promise<void>;
+  saveLearnerProfile(
+    pupilId: string,
+    data: Partial<LearnerProfile>,
+    opts?: { merge?: boolean },
+  ): Promise<void>;
 }

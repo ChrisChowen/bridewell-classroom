@@ -42,9 +42,9 @@ export async function POST(
     );
   }
 
-  const ref = auth.admin.db.collection("learnerProfiles").doc(pupilId);
-  const snap = await ref.get();
-  if (!snap.exists) {
+  const store = resolveDataStore();
+  const existing = await store.getLearnerProfile(pupilId);
+  if (!existing) {
     return NextResponse.json(
       { error: "No profile yet — the pupil needs at least one consolidated session before you can override the pitch." },
       { status: 409 },
@@ -52,15 +52,16 @@ export async function POST(
   }
 
   const now = Date.now();
-  await ref.set(
+  await store.saveLearnerProfile(
+    pupilId,
     {
-      challengeLevel: level,
-      teacherOverride: { challengeLevel: level, by: auth.teacherUid, at: now },
+      challengeLevel: level as ChallengeLevel,
+      teacherOverride: { challengeLevel: level as ChallengeLevel, by: auth.teacherUid, at: now },
       updatedAt: now,
     },
     { merge: true },
   );
 
-  const updated = (await ref.get()).data() as LearnerProfile;
+  const updated = await store.getLearnerProfile(pupilId);
   return NextResponse.json({ profile: updated });
 }

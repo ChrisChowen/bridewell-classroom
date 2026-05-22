@@ -11,6 +11,8 @@ const ORIGINAL = process.env.DATA_PROVIDER;
 
 class StubStore implements DataStore {
   readonly name = "stub";
+  // Capture writes so the swap test can assert they flow through the seam.
+  readonly writes: Array<{ kind: string; id: string; data: unknown; merge?: boolean }> = [];
   async getClass(id: string) {
     return { id, name: "Stub Class" } as ClassRecord;
   }
@@ -19,6 +21,12 @@ class StubStore implements DataStore {
   }
   async getLearnerProfile(): Promise<LearnerProfile | null> {
     return null;
+  }
+  async savePupil(id: string, data: Partial<PupilRecord>, opts?: { merge?: boolean }) {
+    this.writes.push({ kind: "pupil", id, data, merge: opts?.merge });
+  }
+  async saveLearnerProfile(pupilId: string, data: Partial<LearnerProfile>, opts?: { merge?: boolean }) {
+    this.writes.push({ kind: "profile", id: pupilId, data, merge: opts?.merge });
   }
 }
 
@@ -49,5 +57,17 @@ describe("data seam — store swap", () => {
   it("throws for an unregistered provider", () => {
     process.env.DATA_PROVIDER = "nope";
     expect(() => resolveDataStore()).toThrow(/Unknown DATA_PROVIDER/);
+  });
+
+  it("routes single-doc writes through the swapped store", async () => {
+    const stub = new StubStore();
+    registerDataStore("stub", () => stub);
+    const store = resolveDataStore();
+    await store.savePupil("p1", { displayName: "Ada" }, { merge: true });
+    await store.saveLearnerProfile("p1", { challengeLevel: "stretch" }, { merge: true });
+    expect(stub.writes).toEqual([
+      { kind: "pupil", id: "p1", data: { displayName: "Ada" }, merge: true },
+      { kind: "profile", id: "p1", data: { challengeLevel: "stretch" }, merge: true },
+    ]);
   });
 });

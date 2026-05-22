@@ -69,7 +69,7 @@ export async function POST(req: Request) {
       : {}),
   };
 
-  await a.db.collection("pupils").doc(uid).set(pupil, { merge: true });
+  await store.savePupil(uid, pupil, { merge: true });
 
   return NextResponse.json({ ok: true, pupil, class: cls });
 }

@@ -60,6 +60,6 @@ export async function POST(
     if (note) send.notes = note;
   }
 
-  await auth.admin.db.collection("pupils").doc(pupilId).set({ send }, { merge: true });
+  await resolveDataStore().savePupil(pupilId, { send }, { merge: true });
   return NextResponse.json({ send });
 }
