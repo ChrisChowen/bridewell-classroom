@@ -57,13 +57,13 @@ export function UserMenu({
     };
   }, [open, isAdmin]);
 
-  // Mirror the current data-theme so the toggle reads + writes the same
-  // attribute the rest of the app uses (no prefers-color-scheme auto).
+  // Mirror the current data-theme so the toggle label/icon matches reality.
+  // Re-read on open (not just mount) in case the theme changed elsewhere.
   useEffect(() => {
     if (typeof document === "undefined") return;
     const current = document.documentElement.getAttribute("data-theme");
     setTheme(current === "dark" ? "dark" : "light");
-  }, []);
+  }, [open]);
 
   // Close on outside click + Escape — standard popover behaviour.
   useEffect(() => {
@@ -83,7 +83,11 @@ export function UserMenu({
   }, [open]);
 
   function toggleTheme() {
-    const next = theme === "dark" ? "light" : "dark";
+    // Read the LIVE attribute, not the (possibly stale) mounted state — the
+    // theme can be changed by the homepage ThemeToggle or another tab, which
+    // would otherwise make this flip to the wrong value.
+    const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+    const next = current === "dark" ? "light" : "dark";
     setTheme(next);
     document.documentElement.setAttribute("data-theme", next);
     try {

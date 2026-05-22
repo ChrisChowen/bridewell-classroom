@@ -15,7 +15,7 @@ import { Crest } from "./Crest";
 import { ThemeToggle } from "./ThemeToggle";
 import { UserMenu } from "./UserMenu";
 import { useAuth } from "@/lib/firebase/auth-context";
-import { getDoc, doc, getFirestore } from "firebase/firestore";
+import { getDoc, doc } from "firebase/firestore";
 import { getFirebase } from "@/lib/firebase/client";
 
 type School = "KESW" | "Barrow Hills" | "Longacre";
@@ -32,8 +32,7 @@ export function HomepageHeader() {
     if (!isTeacher || !user) return;
     const fb = getFirebase();
     if (!fb.ready) return;
-    const db = getFirestore(fb.app);
-    getDoc(doc(db, "teachers", user.uid))
+    getDoc(doc(fb.db, "teachers", user.uid))
       .then((snap) => {
         const data = snap.data();
         if (data?.school === "KESW" || data?.school === "Barrow Hills" || data?.school === "Longacre") {

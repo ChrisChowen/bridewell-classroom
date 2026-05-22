@@ -34,10 +34,12 @@ export function getFirebase() {
     app = getApps()[0] ?? initializeApp(config);
     auth = getAuth(app);
     db = getFirestore(app);
-    // Only initialise RTDB once the URL is set (Phase 1 enables RTDB in console).
-    if (config.databaseURL) {
-      rtdb = getDatabase(app);
-    }
+  }
+  // Ensure RTDB lazily whenever the URL is configured — not only on the very
+  // first init. If the app singleton was created elsewhere (getApps()[0])
+  // without rtdb, the live dashboard would otherwise silently no-op forever.
+  if (!rtdb && config.databaseURL && app) {
+    rtdb = getDatabase(app);
   }
   return { ready: true as const, app, auth: auth!, db: db!, rtdb };
 }

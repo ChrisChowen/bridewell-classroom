@@ -1,6 +1,6 @@
 "use client";
 
-import { ref, onValue, off, push, set, remove } from "firebase/database";
+import { ref, onValue, off, push, set, remove, runTransaction } from "firebase/database";
 import { getFirebase } from "./client";
 import type { EngagementState } from "@/lib/brand";
 
@@ -152,7 +152,6 @@ export function subscribeToPupilSelf(
 export async function bumpPupilLiveMessage(classId: string, pupilId: string) {
   const fb = getFirebase();
   if (!fb.ready || !fb.rtdb) return;
-  const { runTransaction } = await import("firebase/database");
   const r = ref(fb.rtdb, `liveSessions/${classId}/pupils/${pupilId}`);
   await runTransaction(r, (current) => {
     const c = (current ?? {}) as Partial<LivePupil>;

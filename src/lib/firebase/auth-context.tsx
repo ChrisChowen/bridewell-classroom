@@ -65,18 +65,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus("out");
       return;
     }
+    const resolveStatus = (u: User, role: unknown) =>
+      setStatus(role === "teacher" ? "teacher" : u.isAnonymous ? "pupil" : "anonymous");
+
     const unsub = onAuthStateChanged(fb.auth, async (u) => {
       setUser(u);
       if (!u) {
         setStatus("out");
         return;
       }
-      // Refresh the token to pick up freshly-minted custom claims.
-      const token = await u.getIdTokenResult(true);
-      const role = token.claims.role;
-      if (role === "teacher") setStatus("teacher");
-      else if (u.isAnonymous) setStatus("pupil");
-      else setStatus("anonymous");
+      // Refresh the token to pick up freshly-minted custom claims. This is a
+      // NETWORK call and can reject on an offline/flaky classroom iPad — if
+      // it does and we don't catch it, the listener's promise rejects
+      // unhandled and `setStatus` never runs, stranding the user on the
+      // loading screen forever. So: try forced refresh, fall back to the
+      // cached token, and finally infer from the user object — always resolve.
+      try {
+        const token = await u.getIdTokenResult(true);
+        resolveStatus(u, token.claims.role);
+      } catch {
+        try {
+          const cached = await u.getIdTokenResult(); // no forced network refresh
+          resolveStatus(u, cached.claims.role);
+        } catch {
+          resolveStatus(u, undefined);
+        }
+      }
     });
     return unsub;
   }, []);
@@ -147,7 +161,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fb = getFirebase();
     if (!fb.ready) throw new Error("Firebase not configured");
     const cred = await signInAnonymously(fb.auth);
-    await updateProfile(cred.user, { displayName });
+    // Best-effort: the displayName the join route actually persists comes from
+    // the typed name, so a failed profile update (network blip) must NOT block
+    // the join — otherwise the pupil is signed in but stuck. Proceed regardless.
+    try {
+      await updateProfile(cred.user, { displayName });
+    } catch {
+      /* the canonical name is set server-side by /api/classes/join */
+    }
     return cred.user;
   }, []);
 
