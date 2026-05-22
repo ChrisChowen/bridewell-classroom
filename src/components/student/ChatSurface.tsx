@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Lightbulb, RefreshCw, Type as TypeIcon, Send, ExternalLink, Sparkles, Users, Pause as PauseIcon } from "lucide-react";
+import { Lightbulb, RefreshCw, Type as TypeIcon, Send, ExternalLink, Sparkles, Users, Pause as PauseIcon, Mic, Square } from "lucide-react";
+import { speak, startBritishDictation, speechInputAvailable, type Dictation } from "@/lib/voice";
+import { VOICE_OUTPUT_KEY } from "@/components/student/AccessibilityMenu";
 import type { ClassRecord, LessonPlan, Message, ReasonPromptType } from "@/types";
 import { demoLesson, demoTutorOpening } from "@/lib/demo/data";
 import { getFirebase } from "@/lib/firebase/client";
@@ -64,6 +66,36 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
     { id: nextId(), role: "tutor", content: openingText, timestamp: Date.now() },
   ]);
   const [input, setInput] = useState("");
+  const [dictating, setDictating] = useState(false);
+  const [micAvailable, setMicAvailable] = useState(false);
+  const dictationRef = useRef<Dictation | null>(null);
+
+  useEffect(() => {
+    setMicAvailable(speechInputAvailable());
+    return () => dictationRef.current?.stop();
+  }, []);
+
+  function toggleDictation() {
+    if (dictating) {
+      dictationRef.current?.stop();
+      return;
+    }
+    const d = startBritishDictation({
+      onText: (text) => setInput((prev) => (prev ? `${prev} ${text}` : text)),
+      onEnd: () => {
+        setDictating(false);
+        dictationRef.current = null;
+      },
+      onError: () => {
+        setDictating(false);
+        dictationRef.current = null;
+      },
+    });
+    if (d) {
+      dictationRef.current = d;
+      setDictating(true);
+    }
+  }
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reasonCard, setReasonCard] = useState<{
@@ -522,6 +554,11 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
           meta: { fallback: data.fallbackUsed },
         },
       ]);
+      // Read the tutor's reply aloud (British voice) when the pupil has
+      // opted in via the accessibility menu. Best-effort, never blocks.
+      if (typeof window !== "undefined" && localStorage.getItem(VOICE_OUTPUT_KEY) === "on") {
+        void speak(tutorText);
+      }
       // ── Reason trigger book-keeping ──────────────────────────────
       // Two missing triggers, now wired:
       //
@@ -902,6 +939,25 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
               opacity: inputDisabled ? 0.6 : 1,
             }}
           />
+          {micAvailable && (
+            <button
+              onClick={toggleDictation}
+              disabled={inputDisabled}
+              className="bw-btn-secondary"
+              aria-label={dictating ? "Stop dictation" : "Dictate your reply"}
+              aria-pressed={dictating}
+              title={dictating ? "Stop" : "Speak your reply"}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: 10,
+                color: dictating ? "var(--color-crimson)" : undefined,
+                borderColor: dictating ? "var(--color-crimson)" : undefined,
+              }}
+            >
+              {dictating ? <Square size={14} /> : <Mic size={14} />}
+            </button>
+          )}
           <button
             onClick={send}
             disabled={!input.trim() || inputDisabled}

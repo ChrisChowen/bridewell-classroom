@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Accessibility, Check } from "lucide-react";
+import { speechOutputAvailable } from "@/lib/voice";
+
+// localStorage key for the "read answers aloud" preference. Read by
+// ChatSurface to decide whether to speak tutor replies (British voice).
+export const VOICE_OUTPUT_KEY = "bw-voice-output";
 
 // Pupil-side accessibility menu. Adjusts the pupil's own reading
 // experience — text size, dyslexia-friendly spacing, reduced motion —
@@ -45,6 +50,8 @@ export function AccessibilityMenu() {
   const [fontScale, setFontScale] = useState<FontScale>("normal");
   const [reading, setReading] = useState<Reading>("default");
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [voiceOut, setVoiceOut] = useState(false);
+  const [voiceAvailable, setVoiceAvailable] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useApplyAccessibilityPrefs();
@@ -54,7 +61,14 @@ export function AccessibilityMenu() {
     setFontScale((localStorage.getItem(KEYS.fontScale) as FontScale) || "normal");
     setReading((localStorage.getItem(KEYS.reading) as Reading) || "default");
     setReduceMotion(localStorage.getItem(KEYS.motion) === "on");
+    setVoiceOut(localStorage.getItem(VOICE_OUTPUT_KEY) === "on");
+    setVoiceAvailable(speechOutputAvailable());
   }, []);
+
+  function toggleVoiceOut(v: boolean) {
+    setVoiceOut(v);
+    localStorage.setItem(VOICE_OUTPUT_KEY, v ? "on" : "off");
+  }
 
   // Close on outside click / Escape.
   useEffect(() => {
@@ -151,6 +165,14 @@ export function AccessibilityMenu() {
             on={reduceMotion}
             onChange={(v) => update({ reduceMotion: v })}
           />
+          {voiceAvailable && (
+            <Toggle
+              label="Read answers aloud"
+              hint="British voice"
+              on={voiceOut}
+              onChange={toggleVoiceOut}
+            />
+          )}
 
           <p style={{ fontSize: 10, color: "var(--text-muted)", lineHeight: 1.4, margin: 0 }}>
             These settings change only how the page looks for you. They&apos;re saved on this device.
