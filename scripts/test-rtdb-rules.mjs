@@ -19,6 +19,7 @@ import {
   connectDatabaseEmulator,
   ref,
   get,
+  set,
   remove,
 } from "firebase/database";
 import {
@@ -80,6 +81,16 @@ async function expectRead(label, path, shouldAllow) {
   }
 }
 
+async function expectSet(label, path, value, shouldAllow) {
+  try {
+    await set(ref(cdb, path), value);
+    record(label, shouldAllow, true);
+  } catch (e) {
+    const denied = /permission[_ ]denied/i.test(String(e?.message || e));
+    record(label, shouldAllow, !denied, e?.message || e);
+  }
+}
+
 async function expectRemove(label, path, shouldAllow) {
   try {
     await remove(ref(cdb, path));
@@ -129,6 +140,18 @@ async function main() {
   await expectRead("pupilA reads status", "liveSessions/classA/status", true);
   await expectRead("pupilA reads OWN interventions", `liveSessions/classA/interventions/${pupilA}`, true);
   await expectRemove("pupilA acknowledges (removes) own intervention", `liveSessions/classA/interventions/${pupilA}/i1`, true);
+
+  // v3 pupil-write scoping: a pupil may bump ONLY the two optimistic numeric
+  // leaves on their own entry — never a classifier-owned field, never the
+  // whole node. This is the rule that stops a pupil forging their engagement
+  // state or clearing a safeguarding flag.
+  await expectSet("pupilA writes OWN liveMessageCount (number)", `liveSessions/classA/pupils/${pupilA}/liveMessageCount`, 3, true);
+  await expectSet("pupilA writes OWN lastMessageAt (number)", `liveSessions/classA/pupils/${pupilA}/lastMessageAt`, Date.now(), true);
+  await expectSet("pupilA writes liveMessageCount as non-number", `liveSessions/classA/pupils/${pupilA}/liveMessageCount`, "lots", false);
+  await expectSet("pupilA forges OWN engagement state (BLOCKED)", `liveSessions/classA/pupils/${pupilA}/state`, "flowing", false);
+  await expectSet("pupilA clears OWN safeguarding flag (BLOCKED)", `liveSessions/classA/pupils/${pupilA}/safeguarding`, null, false);
+  await expectSet("pupilA overwrites OWN whole node (BLOCKED)", `liveSessions/classA/pupils/${pupilA}`, { state: "flowing", liveMessageCount: 1 }, false);
+  await expectSet("pupilA writes ANOTHER pupil's leaf (BLOCKED)", `liveSessions/classA/pupils/${pupilOther}/liveMessageCount`, 9, false);
 
   await signOut(cauth).catch(() => {});
   await clientDelete(client);
