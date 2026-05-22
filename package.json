@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:rules": "firebase emulators:exec --only firestore,auth --project bridewell-classroom \"node scripts/test-rules.mjs\""
   },
   "dependencies": {
     "@google/genai": "^2.5.0",
