@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import "@/lib/cost/recorder"; // registers the best-effort LLM usage recorder (nodejs side-effect)
 import { callLLM, dedupeCitations, type LLMMessage } from "@/lib/ai/llm";
 import { buildTutorSystemPrompt, SCAFFOLD_SYSTEM } from "@/lib/ai/prompts";
+import { mentionsUnsupportedVisual } from "@/lib/ai/output-guards";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import type { ActivityType, ScaffoldAction, TutorMode } from "@/types";
 
@@ -84,6 +85,12 @@ export async function POST(req: Request) {
     });
     const { fallbackReason, ...safe } = result;
     if (fallbackReason) console.warn("scaffold fallback:", fallbackReason); // operational, no PII
+    // Defence-in-depth: the text-only tutor must never promise a visual it
+    // can't deliver. The prompt forbids it; this measures slips. Log the
+    // event only (no content) so we can track frequency without storing PII.
+    if (mentionsUnsupportedVisual(result.text)) {
+      console.warn(`tutor output guard: scaffold(${body.scaffold}) promised an unsupported visual`);
+    }
     return NextResponse.json({
       ...safe,
       citations: dedupeCitations(result.citations),
@@ -130,6 +137,10 @@ export async function POST(req: Request) {
 
   const { fallbackReason, ...safe } = result;
   if (fallbackReason) console.warn("tutor fallback:", fallbackReason); // operational, no PII
+  // Defence-in-depth for the diagram-promise failure mode (see output-guards).
+  if (mentionsUnsupportedVisual(result.text)) {
+    console.warn(`tutor output guard: ${mode}-mode reply promised an unsupported visual`);
+  }
   return NextResponse.json({
     ...safe,
     mode,

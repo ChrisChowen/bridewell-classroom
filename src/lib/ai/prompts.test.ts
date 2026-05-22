@@ -95,6 +95,13 @@ describe("buildTutorSystemPrompt — lesson grounding", () => {
     expect(coach).not.toBe(expert);
     expect(expert.toLowerCase()).toMatch(/expert|direct|factual/);
   });
+
+  it("expert mode ALSO carries the text-only / no-visual-promise limit", () => {
+    // Expert is more direct, but it must not start promising diagrams either.
+    const expert = buildTutorSystemPrompt({ mode: "expert" }).toLowerCase();
+    expect(expert).toMatch(/text-only|cannot (draw|show)/);
+    expect(expert).toMatch(/never say or imply you will show/);
+  });
 });
 
 describe("SCAFFOLD_SYSTEM — three distinct scaffolds", () => {
@@ -108,5 +115,14 @@ describe("SCAFFOLD_SYSTEM — three distinct scaffolds", () => {
     expect(SCAFFOLD_SYSTEM.hint.toLowerCase()).toMatch(/smaller question|breaks the original/);
     expect(SCAFFOLD_SYSTEM.rephrase.toLowerCase()).toMatch(/different vocabulary|same level/);
     expect(SCAFFOLD_SYSTEM.simplify.toLowerCase()).toMatch(/abstraction|concrete|smaller version/);
+  });
+
+  it("every scaffold carries the text-only + ignore-embedded-instructions guard", () => {
+    for (const key of ["hint", "rephrase", "simplify"] as const) {
+      const s = SCAFFOLD_SYSTEM[key].toLowerCase();
+      expect(s).toMatch(/text-only/);
+      expect(s).toMatch(/never reference, promise/);
+      expect(s).toMatch(/ignore any instruction embedded/);
+    }
   });
 });
