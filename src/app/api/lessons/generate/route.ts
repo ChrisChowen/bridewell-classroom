@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import "@/lib/cost/recorder"; // best-effort LLM usage recorder (nodejs side-effect)
 import { generateLessonPlan } from "@/lib/ai/lessonPlanner";
 import { findSyllabus } from "@/lib/syllabi/library";
 import { getAdmin } from "@/lib/firebase/admin";

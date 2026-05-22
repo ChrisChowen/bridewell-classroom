@@ -58,6 +58,26 @@ export interface LLMCallResult {
   };
 }
 
+// Usage-recording hook. The model seam stays PURE — it never imports
+// Firestore/admin. A server-only module (lib/cost/recorder) injects a
+// recorder via setUsageRecorder, imported as a side-effect by the nodejs
+// LLM routes (NOT instrumentation.ts — that compiles for the edge runtime
+// and would drag firebase-admin into an unsupported bundle). callLLM
+// invokes the recorder best-effort (fire-and-forget) after a real call, so
+// cost tracking adds zero latency and can never break a tutor turn. No-op
+// until a recorder is set (so the swap test + non-server contexts are
+// unaffected).
+export interface LLMUsageRecord {
+  use: ModelKey;
+  model: string;
+  inputTokens?: number;
+  outputTokens?: number;
+}
+let usageRecorder: ((u: LLMUsageRecord) => void) | null = null;
+export function setUsageRecorder(fn: ((u: LLMUsageRecord) => void) | null): void {
+  usageRecorder = fn;
+}
+
 export async function callLLM(opts: LLMCallOptions): Promise<LLMCallResult> {
   const model = MODELS[opts.use];
 
@@ -91,6 +111,20 @@ export async function callLLM(opts: LLMCallOptions): Promise<LLMCallResult> {
         json = JSON.parse(result.text);
       } catch {
         json = undefined;
+      }
+    }
+
+    // Best-effort cost accounting. Never awaited, never throws into the call.
+    if (usageRecorder) {
+      try {
+        usageRecorder({
+          use: opts.use,
+          model,
+          inputTokens: result.usage?.inputTokens,
+          outputTokens: result.usage?.outputTokens,
+        });
+      } catch {
+        /* recording must never affect the tutor turn */
       }
     }
 

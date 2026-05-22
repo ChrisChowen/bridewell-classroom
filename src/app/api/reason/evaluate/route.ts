@@ -4,6 +4,7 @@ import {
   type ReasonEvaluatorInput,
 } from "@/layers/evaluator";
 import { shapeResponse } from "@/layers/responder";
+import "@/lib/cost/recorder"; // best-effort LLM usage recorder (nodejs side-effect)
 import { getAdmin } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/auth";
 import { resolveDataStore } from "@/lib/data";

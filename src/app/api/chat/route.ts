@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import "@/lib/cost/recorder"; // registers the best-effort LLM usage recorder (nodejs side-effect)
 import { callLLM, dedupeCitations, type LLMMessage } from "@/lib/ai/llm";
 import { buildTutorSystemPrompt, SCAFFOLD_SYSTEM } from "@/lib/ai/prompts";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";

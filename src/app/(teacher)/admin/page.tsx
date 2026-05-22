@@ -34,6 +34,14 @@ interface TeacherRow {
   disabled: boolean;
 }
 
+interface CostDay {
+  day: string;
+  calls?: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  costUSD?: number;
+}
+
 type Gate = "loading" | "denied" | "ok";
 
 export default function AdminPage() {
@@ -42,6 +50,7 @@ export default function AdminPage() {
   const [gate, setGate] = useState<Gate>("loading");
   const [entries, setEntries] = useState<AllowEntry[]>([]);
   const [teachers, setTeachers] = useState<TeacherRow[]>([]);
+  const [cost, setCost] = useState<{ days: CostDay[]; totals: { costUSD: number; calls: number } } | null>(null);
   const [myEmail, setMyEmail] = useState<string>("");
   const [myUid, setMyUid] = useState<string>("");
   const [newEmail, setNewEmail] = useState("");
@@ -65,9 +74,10 @@ export default function AdminPage() {
     const t = await token();
     if (!t) return;
     const headers = { Authorization: `Bearer ${t}` };
-    const [aRes, tRes] = await Promise.all([
+    const [aRes, tRes, cRes] = await Promise.all([
       fetch("/api/admin/allowlist", { headers }),
       fetch("/api/admin/teachers", { headers }),
+      fetch("/api/admin/cost", { headers }),
     ]);
     if (aRes.status === 403 || !aRes.ok) {
       setGate("denied");
@@ -78,6 +88,10 @@ export default function AdminPage() {
     if (tRes.ok) {
       const tData = await tRes.json();
       setTeachers((tData.teachers ?? []) as TeacherRow[]);
+    }
+    if (cRes.ok) {
+      const cData = await cRes.json();
+      setCost({ days: (cData.days ?? []) as CostDay[], totals: cData.totals ?? { costUSD: 0, calls: 0 } });
     }
     setGate("ok");
   }, [token]);
@@ -475,6 +489,47 @@ export default function AdminPage() {
                 )}
               </div>
             </section>
+
+            {/* Usage & estimated cost */}
+            <section style={{ marginTop: 32 }}>
+              <h2 className="bw-display" style={{ fontSize: 16, marginBottom: 4 }}>Usage &amp; estimated cost</h2>
+              <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, marginBottom: 16 }}>
+                LLM calls and an <strong>estimated</strong> spend (model-list rates, not a billing
+                source), last 14 days. Recorded best-effort per call.
+              </p>
+              {!cost || cost.days.length === 0 ? (
+                <div className="bw-card" style={{ padding: 16, fontSize: 14, color: "var(--text-muted)" }}>
+                  No usage recorded yet.
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: "flex", gap: 28, marginBottom: 14, flexWrap: "wrap" }}>
+                    <div>
+                      <span className="bw-display" style={{ fontSize: 30 }}>${cost.totals.costUSD.toFixed(2)}</span>
+                      <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: 8 }}>est. (14d)</span>
+                    </div>
+                    <div>
+                      <span className="bw-display" style={{ fontSize: 30 }}>{cost.totals.calls.toLocaleString()}</span>
+                      <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: 8 }}>LLM calls</span>
+                    </div>
+                  </div>
+                  <div className="bw-card" style={{ padding: 0, overflow: "hidden" }}>
+                    <div style={costHead}>
+                      <span>Day</span><span>Calls</span><span>In tok</span><span>Out tok</span><span>Est. $</span>
+                    </div>
+                    {cost.days.map((d) => (
+                      <div key={d.day} style={costRow}>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>{d.day}</span>
+                        <span style={mutedCell}>{(d.calls ?? 0).toLocaleString()}</span>
+                        <span style={mutedCell}>{(d.inputTokens ?? 0).toLocaleString()}</span>
+                        <span style={mutedCell}>{(d.outputTokens ?? 0).toLocaleString()}</span>
+                        <span style={{ fontSize: 12 }}>${(d.costUSD ?? 0).toFixed(4)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </section>
           </>
         )}
       </div>
@@ -501,6 +556,17 @@ const rowStyle: React.CSSProperties = {
   alignItems: "center",
 };
 const mutedCell: React.CSSProperties = { color: "var(--text-muted)", fontSize: 12 };
+
+const COST_COLS = "1.2fr 0.8fr 1fr 1fr 0.8fr";
+const costHead: React.CSSProperties = {
+  display: "grid", gridTemplateColumns: COST_COLS, gap: 12, padding: "10px 16px",
+  borderBottom: "1px solid var(--line)", fontSize: 10, letterSpacing: "0.12em",
+  textTransform: "uppercase", color: "var(--text-muted)", fontWeight: 600,
+};
+const costRow: React.CSSProperties = {
+  display: "grid", gridTemplateColumns: COST_COLS, gap: 12, padding: "9px 16px",
+  borderBottom: "1px solid var(--line)", alignItems: "center",
+};
 
 const TEACHER_COLS = "1.1fr 1.4fr 0.7fr auto auto auto";
 const teacherRowStyle: React.CSSProperties = {
