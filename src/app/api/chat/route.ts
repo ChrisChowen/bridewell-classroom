@@ -82,8 +82,10 @@ export async function POST(req: Request) {
       temperature: 0.45,
       thinkingBudget: 0,
     });
+    const { fallbackReason, ...safe } = result;
+    if (fallbackReason) console.warn("scaffold fallback:", fallbackReason); // operational, no PII
     return NextResponse.json({
-      ...result,
+      ...safe,
       citations: dedupeCitations(result.citations),
       scaffold: body.scaffold,
     });
@@ -121,8 +123,10 @@ export async function POST(req: Request) {
     grounding: mode === "expert",
   });
 
+  const { fallbackReason, ...safe } = result;
+  if (fallbackReason) console.warn("tutor fallback:", fallbackReason); // operational, no PII
   return NextResponse.json({
-    ...result,
+    ...safe,
     mode,
     citations: dedupeCitations(result.citations),
   });

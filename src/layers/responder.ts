@@ -68,12 +68,28 @@ export function shapeResponse(input: ResponderInput): ResponderOutput {
       };
     case "pattern_flag":
     default:
-      // No verdict to the pupil. We let the conversation continue normally;
-      // the signal goes to the teacher dashboard via the engagement loop.
+      // No verdict to the pupil — but they DID just answer the Reason prompt,
+      // so leaving them in silence is the wrong move (it reads as the tutor
+      // ignoring them). Give one calm, generative continuative line that
+      // keeps them working without revealing the low confidence. The signal
+      // still goes to the teacher dashboard via emitPatternFlag.
       return {
         branch: "pattern_flag",
-        tutorTurn: undefined,
+        tutorTurn: pickContinueLine(),
         emitPatternFlag: true,
       };
   }
+}
+
+// Neutral "let's keep going" lines for the pattern_flag branch. Calm, no
+// praise, no verdict, no question that demands the pupil prove the thing
+// they just struggled with — just keep the conversation moving.
+const CONTINUE_TEMPLATES = [
+  "Okay — let's keep working through this together.",
+  "Right, let's take the next step together.",
+  "Thanks for trying that. Let's carry on.",
+];
+
+function pickContinueLine(): string {
+  return CONTINUE_TEMPLATES[Math.floor(Math.random() * CONTINUE_TEMPLATES.length)];
 }

@@ -74,8 +74,13 @@ describe("callLLM — graceful degradation", () => {
       messages: [{ role: "user", content: "hello" }],
     });
     expect(r.fallbackUsed).toBe(true);
-    expect(r.text).toContain("[LLM fallback");
-    expect(r.text).toContain("hello");
+    // Pupil-facing text must be a calm generic line — NOT the model id, the
+    // raw reason, or the pupil's own message echoed back.
+    expect(r.text.toLowerCase()).toMatch(/can't reply just now|try again/);
+    expect(r.text).not.toContain("[LLM fallback");
+    expect(r.text).not.toContain("hello");
+    // The technical reason is preserved for server-side logging only.
+    expect(r.fallbackReason).toBeTruthy();
   });
 
   it("falls back when the provider throws mid-generation", async () => {
@@ -89,7 +94,9 @@ describe("callLLM — graceful degradation", () => {
     process.env.LLM_PROVIDER = "flaky";
     const r = await callLLM({ use: "scaffold", system: "x", messages: [{ role: "user", content: "hi" }] });
     expect(r.fallbackUsed).toBe(true);
-    expect(r.text).toContain("upstream 503");
+    // Reason is captured server-side, never leaked into the pupil-facing text.
+    expect(r.fallbackReason).toContain("upstream 503");
+    expect(r.text).not.toContain("upstream 503");
   });
 
   it("falls back when LLM_PROVIDER names an unregistered backend", async () => {

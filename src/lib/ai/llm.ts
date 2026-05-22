@@ -56,6 +56,9 @@ export interface LLMCallResult {
     inputTokens?: number;
     outputTokens?: number;
   };
+  // Technical reason for a fallback (server-side only — never rendered to
+  // pupils; the user-facing `text` is a calm generic line).
+  fallbackReason?: string;
 }
 
 // Usage-recording hook. The model seam stays PURE — it never imports
@@ -143,13 +146,17 @@ export async function callLLM(opts: LLMCallOptions): Promise<LLMCallResult> {
 }
 
 function fallback(opts: LLMCallOptions, model: string, reason: string): LLMCallResult {
-  const lastUser = [...opts.messages].reverse().find((m) => m.role === "user");
+  // Calm, non-technical line — this string can surface directly in the pupil
+  // chat (graceful degradation, CLAUDE.md §O). NEVER leak the model id, the
+  // raw error reason, or the pupil's own message back at them. The technical
+  // detail stays in `fallbackReason` for server logs / the dashboard's
+  // "not a real signal" indicator; callers that parse JSON check
+  // `fallbackUsed` and use their own deterministic fallback regardless.
   return {
-    text:
-      `[LLM fallback — ${model} unavailable: ${reason}] ` +
-      (lastUser?.content ?? ""),
+    text: "I can't reply just now — give it a moment and try again.",
     modelUsed: model,
     fallbackUsed: true,
+    fallbackReason: reason,
   };
 }
 

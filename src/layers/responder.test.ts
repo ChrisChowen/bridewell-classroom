@@ -3,10 +3,11 @@ import { shapeResponse, type ResponderInput } from "./responder";
 import type { ReasonEvaluatorResult } from "./evaluator";
 
 // The responder turns the evaluator's branch into the next tutor move.
-// The load-bearing invariant: pattern_flag NEVER produces a tutor turn
-// to the pupil (no verdict surfaced) but DOES emit a dashboard signal;
-// accept produces a concept-anchored acknowledgement; soft_challenge
-// produces a follow-up.
+// The load-bearing invariant: pattern_flag NEVER surfaces a verdict/score to
+// the pupil — but it MUST still keep the conversation moving with a neutral
+// continuative line (the pupil just answered; silence reads as being
+// ignored), and DOES emit a dashboard signal. accept produces a
+// concept-anchored acknowledgement; soft_challenge produces a follow-up.
 
 function evalResult(over: Partial<ReasonEvaluatorResult> = {}): ReasonEvaluatorResult {
   return { confidence: 0.5, branch: "soft_challenge", rationale: "test", fallbackUsed: false, ...over };
@@ -47,10 +48,14 @@ describe("shapeResponse", () => {
     expect(out.tutorTurn && out.tutorTurn.length).toBeGreaterThan(0);
   });
 
-  it("pattern_flag: NEVER emits a tutor turn to the pupil", () => {
+  it("pattern_flag: emits a neutral continuative line (no silence, no verdict)", () => {
     const out = shapeResponse(input({ evaluation: evalResult({ branch: "pattern_flag", confidence: 0.2 }) }));
     expect(out.branch).toBe("pattern_flag");
-    expect(out.tutorTurn).toBeUndefined();
+    // Not silence — the pupil just answered.
+    expect(out.tutorTurn && out.tutorTurn.length).toBeGreaterThan(0);
+    // No verdict / score / praise leaked.
+    const t = (out.tutorTurn ?? "").toLowerCase();
+    expect(t).not.toMatch(/wrong|incorrect|low|struggl|\d|%|score|well done|great/);
   });
 
   it("pattern_flag: DOES emit a dashboard pattern signal", () => {

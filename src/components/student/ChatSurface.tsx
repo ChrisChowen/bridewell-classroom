@@ -530,13 +530,24 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
           pupilProfile,
         }),
       });
+      if (!res.ok) {
+        // 429 (rate-limited) / 4xx / 5xx return a JSON error body with no
+        // `text`. Surface it (the catch rolls back the optimistic message
+        // and restores the input) rather than rendering "(no reply)".
+        const errBody = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+        throw new Error(
+          res.status === 429
+            ? errBody.message ?? "You're sending messages very quickly — give it a few seconds."
+            : errBody.error ?? errBody.message ?? `The tutor is unavailable right now (${res.status}).`,
+        );
+      }
       const data = (await res.json()) as {
         text: string;
         fallbackUsed: boolean;
         citations?: Citation[];
         searchQueries?: string[];
       };
-      const tutorText = data.text || "(no reply)";
+      const tutorText = data.text || "I can't reply just now — give it a moment and try again.";
       // Only surface citations when this turn was in Expert mode (or a
       // one-shot expert override fired by the teacher). Coach mode is
       // meant to be question-only; stray "Verified · N sources" chips
@@ -665,8 +676,16 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
           scaffold: kind,
         }),
       });
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+        throw new Error(
+          res.status === 429
+            ? errBody.message ?? "Too many requests just now — give it a few seconds."
+            : errBody.error ?? errBody.message ?? `Couldn't fetch a hint (${res.status}).`,
+        );
+      }
       const data = (await res.json()) as { text: string; fallbackUsed: boolean };
-      const tutorText = data.text || "(no reply)";
+      const tutorText = data.text || "I can't reply just now — give it a moment and try again.";
       setMessages((m) => [
         ...m,
         {
