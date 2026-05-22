@@ -56,8 +56,16 @@ export async function POST(req: Request) {
   });
 
   if (!r.ok) {
-    // Don't leak the upstream body (may carry account detail) — status only.
-    return NextResponse.json({ error: "tts_upstream_error", status: r.status }, { status: 502 });
+    // Auth (401) / quota (429) / payment (402) mean the provider can't
+    // serve us right now — that's "unavailable", not a server fault. Return
+    // 503 so the client treats it exactly like the no-key path and falls
+    // back to the browser British voice, and so it doesn't read as a 5xx
+    // bug in logs. Other upstream failures are genuine 502s.
+    const unavailable = r.status === 401 || r.status === 402 || r.status === 429;
+    return NextResponse.json(
+      { error: unavailable ? "tts_unavailable" : "tts_upstream_error", status: r.status },
+      { status: unavailable ? 503 : 502 },
+    );
   }
 
   return new NextResponse(r.body, {
