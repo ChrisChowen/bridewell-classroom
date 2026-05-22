@@ -97,6 +97,29 @@ export function subscribeToSessionStatus(
   return () => off(r, "value", listener);
 }
 
+// Consumed-intervention ids persist in localStorage (capped) so a remount /
+// strict-mode double-mount / pupil reconnect can't re-fire an intervention
+// that was already delivered but whose RTDB `remove` hadn't yet landed.
+function seenKey(classId: string, pupilId: string) {
+  return `bw-seen-interventions-${classId}-${pupilId}`;
+}
+function loadSeen(classId: string, pupilId: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(seenKey(classId, pupilId));
+    return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+  } catch {
+    return new Set();
+  }
+}
+function persistSeen(classId: string, pupilId: string, seen: Set<string>) {
+  try {
+    // Keep only the most recent 100 ids — interventions are few per lesson.
+    localStorage.setItem(seenKey(classId, pupilId), JSON.stringify([...seen].slice(-100)));
+  } catch {
+    /* private mode / quota — in-memory dedup still applies this session */
+  }
+}
+
 export function subscribeToPupilInterventions(
   classId: string,
   pupilId: string,
@@ -105,12 +128,13 @@ export function subscribeToPupilInterventions(
   const fb = getFirebase();
   if (!fb.ready || !fb.rtdb) return () => {};
   const r = ref(fb.rtdb, `liveSessions/${classId}/interventions/${pupilId}`);
-  const seen = new Set<string>();
+  const seen = loadSeen(classId, pupilId);
   const listener = onValue(r, (snap) => {
     const val = (snap.val() ?? {}) as Record<string, Intervention>;
     for (const [id, intervention] of Object.entries(val)) {
       if (seen.has(id)) continue;
       seen.add(id);
+      persistSeen(classId, pupilId, seen);
       onNew({ id, ...intervention });
     }
   });
