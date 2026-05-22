@@ -267,13 +267,17 @@ export default function SessionPage() {
             />
               {/* Lobby / paused / wrap-up overlay. A missing status doc
                   is treated as "not_started" — the teacher hasn't hit
-                  Start class yet, so the chat stays locked. */}
-              <SessionOverlay
-                status={sessionStatus?.value ?? "not_started"}
-                teacherName={klass?.teacherName}
-                lessonTitle={lessonTitle}
-                wrapUpNote={sessionStatus?.wrapUpNote ?? undefined}
-              />
+                  Start class yet, so the chat stays locked. Only in a REAL
+                  session (loadState "ready"); the unauthenticated design
+                  preview has no status doc and must stay exercisable. */}
+              {loadState === "ready" && (
+                <SessionOverlay
+                  status={sessionStatus?.value ?? "not_started"}
+                  teacherName={klass?.teacherName}
+                  lessonTitle={lessonTitle}
+                  wrapUpNote={sessionStatus?.wrapUpNote ?? undefined}
+                />
+              )}
             </div>
           )
         )}

@@ -94,18 +94,25 @@ export async function POST(req: Request) {
     await a.db.collection("reasonEvents").add(eventPayload);
   }
 
-  // Append to the RTDB Reason trajectory on the pupil's live mirror.
+  // Append to the RTDB Reason trajectory on the pupil's live mirror. Use a
+  // transaction (not get-then-update) so two near-simultaneous evaluate calls
+  // can't drop a trajectory entry — matching the hardened engagement/run path.
+  // (Admin SDK bypasses rules, so writing the whole node back is safe here.)
   if (classId) {
+    type ReasonPoint = { confidence: number; branch: string; t: number };
     const liveRef = a.rtdb.ref(`liveSessions/${classId}/pupils/${uid}`);
-    const cur = (await liveRef.get()).val() as { reasonTrajectory?: Array<{ confidence: number; branch: string; t: number }>} | null;
-    const next = [
-      ...((cur?.reasonTrajectory ?? []) as Array<{ confidence: number; branch: string; t: number }>),
-      { confidence: evaluation.confidence, branch: evaluation.branch, t: Date.now() },
-    ].slice(-MAX_TRAJECTORY);
-    await liveRef.update({
-      reasonTrajectory: next,
-      reasonConfidenceTrailing: evaluation.confidence,
-      reasonBranchTrailing: evaluation.branch,
+    await liveRef.transaction((cur) => {
+      const c = (cur ?? {}) as { reasonTrajectory?: ReasonPoint[] };
+      const reasonTrajectory = [
+        ...((c.reasonTrajectory ?? []) as ReasonPoint[]),
+        { confidence: evaluation.confidence, branch: evaluation.branch, t: Date.now() },
+      ].slice(-MAX_TRAJECTORY);
+      return {
+        ...c,
+        reasonTrajectory,
+        reasonConfidenceTrailing: evaluation.confidence,
+        reasonBranchTrailing: evaluation.branch,
+      };
     });
   }
 

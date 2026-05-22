@@ -164,10 +164,14 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
   const sessionEnded = sessionStatus?.value === "ended";
   const sessionWrapUp = sessionStatus?.value === "wrap_up";
   const sessionPaused = sessionStatus?.value === "paused";
-  // A missing status doc means the teacher hasn't started the class
-  // yet — pupils are in the lobby. Chat input stays locked until they
-  // do, regardless of how the pupil got here.
-  const sessionNotStarted = !sessionStatus || sessionStatus.value === "not_started";
+  // A missing status doc means the teacher hasn't started the class yet —
+  // pupils are in the lobby, chat locked until they do. BUT only when there
+  // is a real class: in the unauthenticated design-preview (`klass` is
+  // undefined) the status subscription never runs, so `sessionStatus` stays
+  // null forever — we must NOT treat that as a locked lobby, or the preview
+  // (which is meant to stay exercisable) is permanently disabled.
+  const sessionNotStarted =
+    klass != null && (!sessionStatus || sessionStatus.value === "not_started");
   const inputDisabled =
     pending || pausedByTeacher || sessionEnded || sessionPaused || sessionNotStarted;
 

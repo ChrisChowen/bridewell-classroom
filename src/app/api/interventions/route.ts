@@ -3,6 +3,7 @@ import { getAdmin } from "@/lib/firebase/admin";
 import { verifyRequest } from "@/lib/auth";
 import { resolveDataStore } from "@/lib/data";
 import { markSafeguardingReviewed } from "@/lib/safeguarding";
+import { anonKey } from "@/lib/live-keys";
 
 // POST /api/interventions
 //
@@ -127,6 +128,14 @@ export async function POST(req: Request) {
       // this, the safeguardingEvents docs stayed reviewed:false forever
       // and the dashboard-flag clear left no accountable trail.
       await a.rtdb.ref(`liveSessions/${body.classId}/pupils/${body.pupilId}/safeguarding`).set(null);
+      // Also clear the projector's concern vignette immediately — otherwise
+      // the calm crimson wash lingers on the public whiteboard until the next
+      // classifier snapshot overwrites the aggregate (up to ~60s, or never if
+      // the pupil has stopped chatting).
+      await a.rtdb
+        .ref(`liveSessions/${body.classId}/aggregate/${anonKey(body.pupilId)}/concern`)
+        .set(false)
+        .catch(() => {});
       await markSafeguardingReviewed(a.db, body.pupilId, teacherUid, body.text ?? null, now);
     } else {
       await a.rtdb.ref(`liveSessions/${body.classId}/interventions/${body.pupilId}`).push({
