@@ -7,6 +7,7 @@ import { statePill, type EngagementState } from "@/lib/brand";
 import type { LivePupil } from "@/lib/firebase/live";
 import { getRecentConversation, type ConversationTurn } from "@/lib/firebase/conversation";
 import { getFirebase } from "@/lib/firebase/client";
+import { getCleanIdToken } from "@/lib/firebase/auth-fetch";
 import type { ChallengeLevel, LearnerProfile } from "@/types";
 
 // Drill-in panel for a single live pupil. Opens to the right of the
@@ -268,7 +269,7 @@ export function AdaptivePitch({ pupilId, pupilName }: { pupilId: string; pupilNa
         return;
       }
       try {
-        const token = await fb.auth.currentUser.getIdToken();
+        const token = await getCleanIdToken();
         const r = await fetch(`/api/pupils/${pupilId}/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -288,7 +289,7 @@ export function AdaptivePitch({ pupilId, pupilName }: { pupilId: string; pupilNa
     if (!fb.ready || !fb.auth.currentUser) return;
     setBusy(true);
     try {
-      const token = await fb.auth.currentUser.getIdToken();
+      const token = await getCleanIdToken();
       const r = await fetch(`/api/pupils/${pupilId}/profile`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -431,7 +432,7 @@ export function SendEditor({ pupilId, pupilName }: { pupilId: string; pupilName:
         return;
       }
       try {
-        const token = await fb.auth.currentUser.getIdToken();
+        const token = await getCleanIdToken();
         const r = await fetch(`/api/pupils/${pupilId}/send`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -452,7 +453,7 @@ export function SendEditor({ pupilId, pupilName }: { pupilId: string; pupilName:
     setBusy(true);
     setSaved(false);
     try {
-      const token = await fb.auth.currentUser.getIdToken();
+      const token = await getCleanIdToken();
       const r = await fetch(`/api/pupils/${pupilId}/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -592,7 +593,7 @@ function GdprExport({ pupilId, pupilName }: { pupilId: string; pupilName: string
     setBusy(true);
     setMsg(null);
     try {
-      const token = await fb.auth.currentUser.getIdToken();
+      const token = await getCleanIdToken();
       const r = await fetch(`/api/pupils/${pupilId}/export`, { headers: { Authorization: `Bearer ${token}` } });
       if (!r.ok) {
         const d = await r.json().catch(() => ({}));
@@ -656,7 +657,7 @@ function InterventionActions({
     setBusy(label);
     setConfirmation(null);
     try {
-      const token = await fb.auth.currentUser.getIdToken();
+      const token = await getCleanIdToken();
       const r = await fetch("/api/interventions", {
         method: "POST",
         headers: {

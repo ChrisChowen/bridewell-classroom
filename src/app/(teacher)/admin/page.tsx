@@ -8,6 +8,7 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { Crest } from "@/components/shared/Crest";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
+import { getCleanIdToken } from "@/lib/firebase/auth-fetch";
 
 // Admin surface — teacher allowlist management + the registered-teacher
 // roster. Gated by the same isAdmin flag the /api/admin/* routes enforce
@@ -67,7 +68,8 @@ export default function AdminPage() {
     if (!fb.ready || !fb.auth.currentUser) return null;
     setMyEmail((fb.auth.currentUser.email ?? "").toLowerCase());
     setMyUid(fb.auth.currentUser.uid);
-    return fb.auth.currentUser.getIdToken();
+    // getCleanIdToken strips control chars (iOS-Safari header bug guard).
+    return getCleanIdToken();
   }, []);
 
   const load = useCallback(async () => {

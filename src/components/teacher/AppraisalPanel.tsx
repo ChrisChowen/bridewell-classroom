@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Sparkles, BookmarkPlus, Check } from "lucide-react";
 import { getFirebase } from "@/lib/firebase/client";
+import { getCleanIdToken } from "@/lib/firebase/auth-fetch";
 import type { LessonAppraisal } from "@/types";
 
 // Appears on the class detail page after the teacher ends the lesson.
@@ -24,7 +25,7 @@ export function AppraisalPanel({ classId }: { classId: string }) {
     try {
       const fb = getFirebase();
       if (!fb.ready || !fb.auth.currentUser) throw new Error("Not signed in");
-      const token = await fb.auth.currentUser.getIdToken();
+      const token = await getCleanIdToken();
       const r = await fetch("/api/lessons/appraise", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -46,7 +47,7 @@ export function AppraisalPanel({ classId }: { classId: string }) {
     try {
       const fb = getFirebase();
       if (!fb.ready || !fb.auth.currentUser) throw new Error("Not signed in");
-      const token = await fb.auth.currentUser.getIdToken();
+      const token = await getCleanIdToken();
       const r = await fetch("/api/lessons/save-to-library", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

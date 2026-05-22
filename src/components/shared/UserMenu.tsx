@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { LayoutDashboard, LogOut, Sun, Moon, ShieldCheck } from "lucide-react";
 import { UserChip } from "./UserChip";
 import { useAuth } from "@/lib/firebase/auth-context";
-import { getFirebase } from "@/lib/firebase/client";
+import { getCleanIdToken } from "@/lib/firebase/auth-fetch";
 
 type School = "KESW" | "Barrow Hills" | "Longacre";
 
@@ -40,12 +40,11 @@ export function UserMenu({
     let cancelled = false;
     (async () => {
       try {
-        const fb = getFirebase();
-        if (!fb.ready || !fb.auth.currentUser) {
+        const t = await getCleanIdToken();
+        if (!t) {
           if (!cancelled) setIsAdmin(false);
           return;
         }
-        const t = await fb.auth.currentUser.getIdToken();
         const r = await fetch("/api/admin/allowlist", { headers: { Authorization: `Bearer ${t}` } });
         if (!cancelled) setIsAdmin(r.ok);
       } catch {

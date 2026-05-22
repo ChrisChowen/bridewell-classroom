@@ -52,10 +52,9 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
     }
     let cancelled = false;
     async function load() {
-      const fb = getFirebase();
-      if (!fb.ready || !fb.auth.currentUser) return;
+      const token = await getCleanIdToken();
+      if (!token) return;
       try {
-        const token = await fb.auth.currentUser.getIdToken();
         const r = await fetch(
           `/api/lessons/library?syllabusId=${encodeURIComponent(syllabus!.id)}&school=${encodeURIComponent(school)}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -841,9 +840,8 @@ function DescribeStep({
     setSuggestions([]);
     (async () => {
       try {
-        const fb = getFirebase();
-        if (!fb.ready || !fb.auth.currentUser) return;
-        const token = await fb.auth.currentUser.getIdToken();
+        const token = await getCleanIdToken();
+        if (!token) return;
         const res = await fetch("/api/lessons/intent-suggestions", {
           method: "POST",
           headers: {

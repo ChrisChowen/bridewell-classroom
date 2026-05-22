@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Wordmark } from "@/components/shared/Wordmark";
 import { useAuth } from "@/lib/firebase/auth-context";
-import { getFirebase } from "@/lib/firebase/client";
+import { getCleanIdToken } from "@/lib/firebase/auth-fetch";
 import { normaliseJoinCode } from "@/lib/joinCode";
 
 // Local-storage keys for the "remember me" rejoin flow. Firebase Auth
@@ -56,10 +56,9 @@ function JoinInner() {
     }
     let cancelled = false;
     async function load() {
-      const fb = getFirebase();
-      if (!fb.ready || !fb.auth.currentUser) return;
+      const token = await getCleanIdToken();
+      if (!token) return;
       try {
-        const token = await fb.auth.currentUser.getIdToken();
         const r = await fetch("/api/pupils/me", { headers: { Authorization: `Bearer ${token}` } });
         if (!r.ok) return;
         const data = await r.json();
