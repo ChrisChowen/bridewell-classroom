@@ -7,6 +7,7 @@ import { statePill, type EngagementState } from "@/lib/brand";
 import type { LivePupil } from "@/lib/firebase/live";
 import { getRecentConversation, type ConversationTurn } from "@/lib/firebase/conversation";
 import { getFirebase } from "@/lib/firebase/client";
+import type { ChallengeLevel, LearnerProfile } from "@/types";
 
 // Drill-in panel for a single live pupil. Opens to the right of the
 // pupil grid. Carries the context a teacher needs to act: full
@@ -227,6 +228,8 @@ export function LivePupilPanel({
           </div>
         </div>
 
+        <AdaptivePitch pupilId={pupil.pupilId} pupilName={pupil.displayName} />
+
         <InterventionActions classId={classId} pupilId={pupil.pupilId} pupilName={pupil.displayName} hasSafeguarding={!!pupil.safeguarding} />
 
         {loadingTurns && (
@@ -236,6 +239,159 @@ export function LivePupilPanel({
     </aside>
   );
 }
+
+const CHALLENGE_LABELS: Record<ChallengeLevel, string> = {
+  foundation: "Foundation",
+  core: "Core",
+  stretch: "Stretch",
+};
+
+// Adaptive difficulty + longitudinal profile, surfaced to the teacher.
+// The pitch is AI-set on evidence and TEACHER-OVERRIDABLE. It is never
+// labelled to the pupil. Shows the across-sessions trajectory so a teacher
+// can see how a pupil's level has moved over time.
+function AdaptivePitch({ pupilId, pupilName }: { pupilId: string; pupilName: string }) {
+  const [profile, setProfile] = useState<LearnerProfile | null | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const fb = getFirebase();
+      if (!fb.ready || !fb.auth.currentUser) {
+        if (!cancelled) setProfile(null);
+        return;
+      }
+      try {
+        const token = await fb.auth.currentUser.getIdToken();
+        const r = await fetch(`/api/pupils/${pupilId}/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const d = await r.json();
+        if (!cancelled) setProfile(r.ok ? (d.profile as LearnerProfile | null) : null);
+      } catch {
+        if (!cancelled) setProfile(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pupilId]);
+
+  async function override(level: ChallengeLevel) {
+    const fb = getFirebase();
+    if (!fb.ready || !fb.auth.currentUser) return;
+    setBusy(true);
+    try {
+      const token = await fb.auth.currentUser.getIdToken();
+      const r = await fetch(`/api/pupils/${pupilId}/profile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ challengeLevel: level }),
+      });
+      const d = await r.json();
+      if (r.ok) setProfile(d.profile as LearnerProfile);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (profile === undefined) {
+    return (
+      <div>
+        <div className="bw-section-label" style={{ marginBottom: 6 }}>Pitch · across sessions</div>
+        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading…</div>
+      </div>
+    );
+  }
+
+  const current: ChallengeLevel = profile?.challengeLevel ?? "core";
+  const recent = (profile?.sessions ?? []).slice(-6);
+
+  return (
+    <div>
+      <div className="bw-section-label" style={{ marginBottom: 6 }}>Pitch · across sessions</div>
+
+      {!profile ? (
+        <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.45 }}>
+          No history yet. After {pupilName.split(" ")[0]}&apos;s first completed lesson, the AI sets a
+          per-pupil pitch from how they engaged — you can always override it.
+        </p>
+      ) : (
+        <>
+          <div className="flex items-center gap-2" style={{ marginBottom: 8 }}>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                padding: "3px 10px",
+                borderRadius: 999,
+                background: "var(--surface-elev)",
+                border: "1px solid var(--line)",
+              }}
+            >
+              {CHALLENGE_LABELS[current]}
+            </span>
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+              {profile.sessionsObserved} {profile.sessionsObserved === 1 ? "session" : "sessions"}
+              {profile.teacherOverride?.challengeLevel === current ? " · set by you" : " · AI-pitched"}
+            </span>
+          </div>
+
+          {/* Across-sessions level trajectory */}
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
+            {recent.map((s, i) => (
+              <span
+                key={i}
+                title={`${s.lessonTitle}: ${CHALLENGE_LABELS[s.challengeBefore]} → ${CHALLENGE_LABELS[s.challengeAfter]}`}
+                style={{
+                  fontSize: 10,
+                  padding: "2px 6px",
+                  borderRadius: 4,
+                  background: "var(--surface)",
+                  border: "1px solid var(--line)",
+                  color: s.challengeAfter === s.challengeBefore ? "var(--text-muted)" : "var(--text)",
+                }}
+              >
+                {s.challengeAfter === s.challengeBefore
+                  ? CHALLENGE_LABELS[s.challengeAfter]
+                  : `${CHALLENGE_LABELS[s.challengeBefore]}→${CHALLENGE_LABELS[s.challengeAfter]}`}
+              </span>
+            ))}
+          </div>
+
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8 }}>
+            {profile.metrics.avgReasonConfidence !== null
+              ? `Avg Reason ${Math.round(profile.metrics.avgReasonConfidence * 100)}%`
+              : "No Reason data"}
+            {profile.metrics.avgScaffoldPresses !== null
+              ? ` · ${profile.metrics.avgScaffoldPresses} scaffolds/session`
+              : ""}
+          </div>
+
+          <div style={{ display: "flex", gap: 6 }}>
+            {CHALLENGE_ORDER_UI.map((lvl) => (
+              <button
+                key={lvl}
+                className="bw-btn-secondary"
+                disabled={busy || lvl === current}
+                onClick={() => override(lvl)}
+                style={{ fontSize: 11, padding: "4px 10px", opacity: lvl === current ? 0.5 : 1 }}
+              >
+                {CHALLENGE_LABELS[lvl]}
+              </button>
+            ))}
+          </div>
+          <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 6, lineHeight: 1.4 }}>
+            Overriding sets the pitch until the next lesson is consolidated. Never shown to the pupil.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+const CHALLENGE_ORDER_UI: ChallengeLevel[] = ["foundation", "core", "stretch"];
 
 function InterventionActions({
   classId,

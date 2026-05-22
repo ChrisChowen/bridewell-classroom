@@ -328,6 +328,10 @@ export interface LearnerProfile {
   narrative?: string;
   // Per-session trajectory for the teacher drill-down (capped, newest last).
   sessions: LearnerSessionRecord[];
+  // Set when a teacher manually re-pitched this pupil. The override wins
+  // until the next consolidation re-evaluates the drift. Recorded for
+  // accountability (who/when).
+  teacherOverride?: { challengeLevel: ChallengeLevel; by: string; at: number };
   createdAt: number;
   updatedAt: number;
 }
