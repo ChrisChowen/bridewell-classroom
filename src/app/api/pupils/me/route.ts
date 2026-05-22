@@ -47,5 +47,10 @@ export async function GET(req: Request) {
   // pupil's structured SEND profile. Absent when the pupil has no profile.
   const pupilProfile = buildSendAdaptationBlock(pupil.send);
 
-  return NextResponse.json({ pupil, class: cls, effectiveChallengeLevel, pupilProfile });
+  // Never ship the PIN hash to the browser — it's a credential-adjacent value
+  // the client never needs.
+  const { pinHash: _pinHash, ...safePupil } = pupil;
+  void _pinHash;
+
+  return NextResponse.json({ pupil: safePupil, class: cls, effectiveChallengeLevel, pupilProfile });
 }

@@ -547,13 +547,10 @@ function buildMoments(pupils: LivePupil[]): Moment[] {
     });
   }
 
-  // 4. Safeguarding raised — calm, generic. No detail surfaced here.
-  if (pupils.some((p) => p.safeguarding && p.safeguarding.severity !== "low")) {
-    out.push({
-      id: "safe",
-      text: "Your teacher has been alerted to a private message — they will follow up.",
-    });
-  }
+  // (Safeguarding is deliberately NOT surfaced on this public, whole-class
+  // screen — even a generic line tells peers that *someone* disclosed
+  // something and can expose a vulnerable pupil. It goes to the teacher's
+  // own dashboard only. See the file header's "deliberately ABSENT" note.)
 
   // 5. Quiet — at least one pupil hasn't spoken in a while.
   const veryQuiet = pupils.filter(

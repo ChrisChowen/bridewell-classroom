@@ -110,22 +110,26 @@ export default function SessionPage() {
   useEffect(() => {
     if (!klass?.id) return;
     let cancelled = false;
+    // Hoist the unsubscribe so the EFFECT cleanup can call it. Previously the
+    // cleanup was returned from the inner async IIFE (discarded), so the
+    // Firestore listener was never detached on unmount/class-change — a leak
+    // that compounded each time the pupil switched class.
+    let unsub: (() => void) | undefined;
     (async () => {
       const fb = getFirebase();
       if (!fb.ready || !fb.db) return;
       const { doc, onSnapshot } = await import("firebase/firestore");
-      const unsub = onSnapshot(doc(fb.db, "classes", klass.id), (snap) => {
+      if (cancelled) return; // unmounted during the dynamic import
+      unsub = onSnapshot(doc(fb.db, "classes", klass.id), (snap) => {
         if (cancelled || !snap.exists()) return;
         const next = { id: snap.id, ...(snap.data() as Omit<ClassRecord, "id">) };
         setKlass(next);
       });
-      return () => {
-        cancelled = true;
-        unsub();
-      };
+      if (cancelled) unsub(); // unmounted between import and subscribe
     })();
     return () => {
       cancelled = true;
+      unsub?.();
     };
   }, [klass?.id]);
 
