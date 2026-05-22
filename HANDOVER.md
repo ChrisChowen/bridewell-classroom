@@ -45,18 +45,24 @@ these; leave the rest.
   lacks web-search grounding, return no citations — Expert mode degrades to a
   plain answer.
 
-### 2b. Auth seam — `src/lib/firebase/`
-- Client auth: `src/lib/firebase/client.ts` + `auth-context.tsx`. Teachers use
-  email/password; pupils use anonymous sign-in keyed by a class join code.
-- Server verification + privileged writes: `src/lib/firebase/admin.ts`
-  (`getAdmin()`), which sets the `role: "teacher"` custom claim and bypasses
-  rules for trusted writes.
-- **To federate (Entra ID / SAML / OIDC — what schools will want):** Firebase
-  Auth supports SAML/OIDC providers; the swap is at the sign-in call sites in
-  `auth-context.tsx` + the teacher allowlist check in
-  `src/app/api/auth/teacher/route.ts`. The custom-claim model and the
-  rules that depend on it stay. **Currently NOT abstracted behind a single
-  interface** — this is the least-clean seam; budget for it.
+### 2b. Auth seam — `src/lib/auth/` (server) + `src/lib/firebase/` (client)
+- **Server identity is now behind one interface.** `src/lib/auth/` defines
+  `AuthProvider` (`verifyToken(token) → AuthUser | null`), a Firebase adapter
+  (`providers/firebase.ts`), a registry, and `verifyRequest(req, {role})` —
+  the single call a route makes to identify + role-gate a caller. Selected by
+  `AUTH_PROVIDER` (default `firebase`). Swap proven by
+  `src/lib/auth/index.test.ts`.
+- **To federate (Entra ID / SAML / OIDC — what schools will want):** write an
+  adapter implementing `AuthProvider` (verify the school IdP's token →
+  `AuthUser` with a `role`), `registerAuthProvider("entra", …)`, set
+  `AUTH_PROVIDER=entra`. No route changes. Client sign-in still lives in
+  `auth-context.tsx`; the teacher allowlist + custom-claim set is
+  `src/app/api/auth/teacher/route.ts`.
+- Server privileged writes still use `getAdmin()` (`src/lib/firebase/admin.ts`).
+- **Migration status:** `pupil-auth.ts` (GDPR export/erasure/profile/SEND
+  routes) uses the seam; the remaining routes still call
+  `getAdmin().auth.verifyIdToken` directly and should be moved to
+  `verifyRequest` (mechanical; tracked in `PILOT_READINESS.md`).
 
 ### 2c. Data seam — `src/lib/firebase/`
 - Firestore collections: `teachers`, `classes`, `joinCodes`, `pupils`,

@@ -6,6 +6,7 @@
 
 import "server-only";
 import { getAdmin, type AdminBundle } from "@/lib/firebase/admin";
+import { verifyRequest } from "@/lib/auth";
 
 export type PupilAuthResult =
   | { ok: true; admin: Extract<AdminBundle, { ready: true }>; classId: string; teacherUid: string }
@@ -15,19 +16,14 @@ export async function authorisePupilAccess(
   req: Request,
   pupilId: string
 ): Promise<PupilAuthResult> {
+  // Identity + role go through the auth seam (swappable backend); this
+  // module keeps only the data-scoped ownership check.
+  const auth = await verifyRequest(req, { role: "teacher" });
+  if (!auth.ok) return { ok: false, status: auth.status, error: auth.error };
+  const teacherUid = auth.user.uid;
+
   const admin = getAdmin();
   if (!admin.ready) return { ok: false, status: 500, error: `Admin not ready: ${admin.reason}` };
-
-  const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-  if (!token) return { ok: false, status: 401, error: "Missing bearer token" };
-
-  let decoded;
-  try {
-    decoded = await admin.auth.verifyIdToken(token);
-  } catch {
-    return { ok: false, status: 401, error: "Invalid token" };
-  }
-  if (decoded.role !== "teacher") return { ok: false, status: 403, error: "Teacher role required" };
 
   const pupilSnap = await admin.db.collection("pupils").doc(pupilId).get();
   if (!pupilSnap.exists) return { ok: false, status: 404, error: "Pupil not found" };
@@ -35,9 +31,9 @@ export async function authorisePupilAccess(
   if (!classId) return { ok: false, status: 409, error: "Pupil has no class" };
 
   const classSnap = await admin.db.collection("classes").doc(classId).get();
-  if (!classSnap.exists || classSnap.data()?.teacherId !== decoded.uid) {
+  if (!classSnap.exists || classSnap.data()?.teacherId !== teacherUid) {
     return { ok: false, status: 403, error: "You can only access pupils in your own classes" };
   }
 
-  return { ok: true, admin, classId, teacherUid: decoded.uid };
+  return { ok: true, admin, classId, teacherUid };
 }

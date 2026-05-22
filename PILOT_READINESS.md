@@ -18,7 +18,7 @@ once added)._
 | Item | Status | Notes |
 |------|--------|-------|
 | Single provider-agnostic model seam (`src/lib/ai/llm.ts`, named keys) | 🟢 | `LLMProvider` interface (`src/lib/ai/providers/`); Gemini is one adapter; backend selected by `LLM_PROVIDER`. Swap proven by `src/lib/ai/llm.test.ts` (stub provider flows through callLLM unchanged + graceful fallback). |
-| Auth seam behind one interface | 🔴 | `getFirebase()` / `getAdmin()` used directly in feature code; not yet abstracted for Entra/SAML/OIDC substitution. |
+| Auth seam behind one interface | 🟡 | **Seam built + proven swappable.** `AuthProvider` interface + Firebase adapter + registry + `verifyRequest(req, {role})` helper (`src/lib/auth/`), mirroring the model seam — `AUTH_PROVIDER` selects the backend; Entra/OIDC is a config+adapter swap with zero route changes. Swap proven by `src/lib/auth/index.test.ts` (8 tests: stub-provider flow, role gate, 401/403/500 mapping). Migrated `pupil-auth.ts` (→ export/delete/profile/send routes) to the seam. _Remaining: migrate the other ~14 routes' direct `verifyIdToken` calls to `verifyRequest`._ |
 | Data seam behind one interface | 🔴 | Firestore/RTDB calls scattered; not yet behind a documented datastore interface. |
 | `HANDOVER.md` integration contract | 🟡 | Written: three seams (model/auth/data), env, build constraints, what-Unified-provides table, out-of-scope flags. Model seam fully clean; auth + data seams documented but not yet abstracted behind single interfaces. |
 | Prototype shortcuts quarantined | 🟡 | In-memory rate limiter + bundled key still present; `scripts/_*.mjs` throwaways cleaned per-session. |
@@ -93,7 +93,7 @@ once added)._
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Auth seam behind one interface (Entra/SAML/OIDC swappable) | 🔴 | `verifyIdToken` called directly in ~19 sites; needs an `AuthProvider` interface + Firebase adapter + provider registry (mirroring the model seam), so Entra/OIDC is a config+adapter swap with zero route changes. Foundation for school SSO. |
+| Auth seam behind one interface (Entra/SAML/OIDC swappable) | 🟡 | **Foundation landed** (`src/lib/auth/`): `AuthProvider` interface + Firebase adapter + registry + `verifyRequest` helper, swap-tested (8 tests). `pupil-auth.ts` migrated. School SSO (Entra) is now an adapter + `AUTH_PROVIDER` env away. _Remaining: migrate the rest of the routes off direct `verifyIdToken`, then add the Entra adapter._ |
 | Student accounts (not just join-code) | 🔴 | Today pupils are anonymous + join-code. SEND/longitudinal identity wants real per-pupil accounts; needs a roster/identity model + migration from anonymous UIDs. |
 | Microsoft Entra SSO + email/password toggle | 🔴 | School-standard login; email/password kept as a toggleable fallback for testing. Depends on the auth seam. |
 | Superadmin / admin surface (account CRUD, profiles, permissions, roles) | 🔴 | Production-ready admin: create/delete accounts, manage profiles + SEND, assign roles/permissions (teacher/co-teacher/DSL/admin), multi-teacher within a school. Currently only the allowlist API exists. |
