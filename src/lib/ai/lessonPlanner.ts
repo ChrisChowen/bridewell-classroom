@@ -69,6 +69,12 @@ ${activityCatalogue}
     tutor's coach-mode system prompt. Address the tutor directly
     ("Anchor the conversation around X. If the pupil says Y, gently
     probe Z."). British English, calm, no exclamations, no emoji.
+  - **The tutor is TEXT-ONLY.** It cannot show, draw, display, or link to
+    diagrams, images, videos, slides, handouts, or any visual. Opening
+    prompts and the tutor addendum must NEVER instruct the tutor to
+    reference a visual ("look at the diagram", "watch this", "see the
+    image/handout"). If a visual idea helps, phrase it as the pupil
+    drawing/picturing it themselves, or describe it in words.
   - Default scaffoldCeiling is 3. Lift to 4 only if the topic is
     unusually hard.
   - Surface anything you assumed in notesForTeacher (e.g. "I have
