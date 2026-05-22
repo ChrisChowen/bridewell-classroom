@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ShieldCheck, Plus, Loader2, Trash2, Users, KeyRound } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Plus, Loader2, Trash2, Users, KeyRound, Ban, CheckCircle2 } from "lucide-react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { Crest } from "@/components/shared/Crest";
 import { useAuth } from "@/lib/firebase/auth-context";
@@ -31,6 +31,7 @@ interface TeacherRow {
   role: string;
   createdAt: number | null;
   isAdmin: boolean;
+  disabled: boolean;
 }
 
 type Gate = "loading" | "denied" | "ok";
@@ -42,6 +43,7 @@ export default function AdminPage() {
   const [entries, setEntries] = useState<AllowEntry[]>([]);
   const [teachers, setTeachers] = useState<TeacherRow[]>([]);
   const [myEmail, setMyEmail] = useState<string>("");
+  const [myUid, setMyUid] = useState<string>("");
   const [newEmail, setNewEmail] = useState("");
   const [newAdmin, setNewAdmin] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -52,6 +54,7 @@ export default function AdminPage() {
     const fb = getFirebase();
     if (!fb.ready || !fb.auth.currentUser) return null;
     setMyEmail((fb.auth.currentUser.email ?? "").toLowerCase());
+    setMyUid(fb.auth.currentUser.uid);
     return fb.auth.currentUser.getIdToken();
   }, []);
 
@@ -122,6 +125,32 @@ export default function AdminPage() {
 
   async function toggleAdmin(entry: AllowEntry) {
     await post({ email: entry.email, isAdmin: !entry.isAdmin }, "toggle:" + entry.email);
+  }
+
+  async function setTeacherDisabled(t: TeacherRow, disabled: boolean) {
+    if (t.id === myUid) {
+      setRosterMsg("You can't disable your own account.");
+      return;
+    }
+    if (typeof window !== "undefined" && !window.confirm(`${disabled ? "Disable" : "Re-enable"} ${t.email}'s account?`)) return;
+    setBusy("disable:" + t.id);
+    setRosterMsg(null);
+    try {
+      const tok = await token();
+      const r = await fetch("/api/admin/teachers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
+        body: JSON.stringify({ uid: t.id, disabled }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error ?? "Failed");
+      setRosterMsg(`${t.email} ${disabled ? "disabled" : "re-enabled"}.`);
+      await load();
+    } catch (err) {
+      setRosterMsg(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function resetTeacherPassword(t: TeacherRow) {
@@ -304,6 +333,7 @@ export default function AdminPage() {
                   <span>Email</span>
                   <span>School</span>
                   <span>Admin</span>
+                  <span>Account</span>
                   <span>Password</span>
                 </div>
                 {teachers.length === 0 ? (
@@ -323,6 +353,29 @@ export default function AdminPage() {
                           <span style={{ color: "var(--text-muted)" }}>—</span>
                         )}
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => setTeacherDisabled(t, !t.disabled)}
+                        disabled={t.id === myUid || busy === "disable:" + t.id}
+                        title={t.id === myUid ? "You can't disable yourself" : t.disabled ? "Re-enable account" : "Disable account"}
+                        style={{
+                          background: "transparent",
+                          border: "1px solid var(--line)",
+                          borderRadius: 6,
+                          padding: "3px 8px",
+                          cursor: t.id === myUid ? "not-allowed" : "pointer",
+                          fontSize: 12,
+                          opacity: t.id === myUid ? 0.5 : 1,
+                          color: t.disabled ? "var(--color-crimson)" : "var(--text-muted)",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 5,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {busy === "disable:" + t.id ? <Loader2 size={12} className="bw-spin" /> : t.disabled ? <Ban size={12} /> : <CheckCircle2 size={12} />}
+                        {t.disabled ? "disabled" : "active"}
+                      </button>
                       <button
                         type="button"
                         onClick={() => resetTeacherPassword(t)}
@@ -376,7 +429,7 @@ const rowStyle: React.CSSProperties = {
 };
 const mutedCell: React.CSSProperties = { color: "var(--text-muted)", fontSize: 12 };
 
-const TEACHER_COLS = "1.2fr 1.6fr 0.8fr auto auto";
+const TEACHER_COLS = "1.1fr 1.4fr 0.7fr auto auto auto";
 const teacherRowStyle: React.CSSProperties = {
   display: "grid",
   gridTemplateColumns: TEACHER_COLS,
