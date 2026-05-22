@@ -878,9 +878,21 @@ function TrajectoryChart({
     state: e.state,
   }));
   const line = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+  // Text alternative — state is encoded by vertical position (not colour
+  // alone), but the SVG still needs a name + per-point titles so a screen
+  // reader / colour-blind teacher gets the same reading the chart shows.
+  const label = (s: EngagementState) => statePill[s].label;
+  const latest = trajectory[trajectory.length - 1];
+  const summary = `Engagement trajectory, ${trajectory.length} reading${trajectory.length === 1 ? "" : "s"}, most recent: ${label(latest.state)}.`;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: 90, display: "block" }}>
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      style={{ width: "100%", height: 90, display: "block" }}
+      role="img"
+      aria-label={summary}
+    >
+      <title>{summary}</title>
       {/* gridlines per state band */}
       {[0, 1, 2, 3, 4].map((k) => (
         <line
@@ -896,7 +908,9 @@ function TrajectoryChart({
       ))}
       <path d={line} stroke="var(--text)" strokeWidth="1.4" fill="none" />
       {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="2.4" fill={statePill[p.state].colour} />
+        <circle key={i} cx={p.x} cy={p.y} r="2.4" fill={statePill[p.state].colour}>
+          <title>{label(p.state)}</title>
+        </circle>
       ))}
     </svg>
   );
