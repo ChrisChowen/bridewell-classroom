@@ -92,8 +92,13 @@ export async function POST(req: Request) {
   }
 
   const mode: TutorMode = body.mode ?? "coach";
+  // `body.system` is a raw system-prompt override for local testing only.
+  // Honouring it in production would let any public caller fully reprogram
+  // the tutor (jailbreak, off-task abuse) on our model budget, so we ignore
+  // it outside development.
+  const systemOverride = process.env.NODE_ENV !== "production" ? body.system : undefined;
   const system =
-    body.system ??
+    systemOverride ??
     buildTutorSystemPrompt({
       mode,
       lessonTitle: body.lesson?.title,

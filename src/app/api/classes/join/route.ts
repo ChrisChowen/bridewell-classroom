@@ -4,8 +4,21 @@ import { verifyAuthToken } from "@/lib/auth";
 import { resolveDataStore } from "@/lib/data";
 import { normaliseJoinCode } from "@/lib/joinCode";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { anonKey } from "@/lib/live-keys";
 import type { PupilRecord } from "@/types";
 import { createHash } from "crypto";
+
+// Clean a pupil-supplied display name: NFKC-normalise, strip control and
+// zero-width characters (which would otherwise corrupt the teacher
+// dashboard layout / CSV export), collapse whitespace, and cap length.
+function cleanDisplayName(raw: string): string {
+  return raw
+    .normalize("NFKC")
+    .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028\u2029\ufeff]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 64);
+}
 
 // POST /api/classes/join
 //
@@ -56,13 +69,22 @@ export async function POST(req: Request) {
   // so the previous teacher's dashboard doesn't keep showing them.
   const existing = await store.getPupil(uid);
   if (existing && existing.classId && existing.classId !== classId) {
+    // Clear both the teacher-scoped live entry AND the public projector
+    // aggregate slot so the previous class's dashboard and whiteboard
+    // don't keep a ghost of this pupil.
     await a.rtdb.ref(`liveSessions/${existing.classId}/pupils/${uid}`).remove().catch(() => {});
+    await a.rtdb.ref(`liveSessions/${existing.classId}/aggregate/${anonKey(uid)}`).remove().catch(() => {});
+  }
+
+  const displayName = cleanDisplayName(body.displayName);
+  if (!displayName) {
+    return NextResponse.json({ error: "Please enter your name" }, { status: 400 });
   }
 
   const pupil: PupilRecord = {
     id: uid,
     classId,
-    displayName: body.displayName.trim().slice(0, 64),
+    displayName,
     joinedAt: Date.now(),
     ...(body.pin && /^\d{4}$/.test(body.pin)
       ? { pinHash: createHash("sha256").update(`bw-${classId}-${body.pin}`).digest("hex") }
