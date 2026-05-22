@@ -230,6 +230,8 @@ export function LivePupilPanel({
 
         <AdaptivePitch pupilId={pupil.pupilId} pupilName={pupil.displayName} />
 
+        <SendEditor pupilId={pupil.pupilId} pupilName={pupil.displayName} />
+
         <InterventionActions classId={classId} pupilId={pupil.pupilId} pupilName={pupil.displayName} hasSafeguarding={!!pupil.safeguarding} />
 
         {loadingTurns && (
@@ -392,6 +394,184 @@ function AdaptivePitch({ pupilId, pupilName }: { pupilId: string; pupilName: str
 }
 
 const CHALLENGE_ORDER_UI: ChallengeLevel[] = ["foundation", "core", "stretch"];
+
+type SendProfile = {
+  outputFormat?: "short" | "bullets" | "structured" | "visual";
+  scaffoldingLevel?: 1 | 2 | 3 | 4 | 5;
+  notes?: string;
+};
+
+const OUTPUT_FORMAT_OPTIONS: Array<{ value: SendProfile["outputFormat"]; label: string }> = [
+  { value: undefined, label: "Default" },
+  { value: "short", label: "Short replies" },
+  { value: "bullets", label: "Bulleted" },
+  { value: "structured", label: "Structured / signposted" },
+  { value: "visual", label: "Visual / concrete" },
+];
+
+// Teacher-set SEND profile. Adapts HOW the tutor communicates (output
+// shape, pace, support) — never what counts as understanding, never shown
+// to the pupil. Feeds the tutor via buildSendAdaptationBlock.
+function SendEditor({ pupilId, pupilName }: { pupilId: string; pupilName: string }) {
+  const [send, setSend] = useState<SendProfile | null | undefined>(undefined);
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const fb = getFirebase();
+      if (!fb.ready || !fb.auth.currentUser) {
+        if (!cancelled) setSend(null);
+        return;
+      }
+      try {
+        const token = await fb.auth.currentUser.getIdToken();
+        const r = await fetch(`/api/pupils/${pupilId}/send`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const d = await r.json();
+        if (!cancelled) setSend(r.ok ? (d.send as SendProfile | null) : null);
+      } catch {
+        if (!cancelled) setSend(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pupilId]);
+
+  async function save(next: SendProfile) {
+    const fb = getFirebase();
+    if (!fb.ready || !fb.auth.currentUser) return;
+    setBusy(true);
+    setSaved(false);
+    try {
+      const token = await fb.auth.currentUser.getIdToken();
+      const r = await fetch(`/api/pupils/${pupilId}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(next),
+      });
+      const d = await r.json();
+      if (r.ok) {
+        setSend(d.send as SendProfile);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2200);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const current = send ?? {};
+  const summary = describeSend(current);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
+        <span className="bw-section-label">SEND adaptation</span>
+        <button
+          className="bw-btn-secondary"
+          style={{ fontSize: 11, padding: "3px 8px" }}
+          onClick={() => setOpen((o) => !o)}
+          disabled={send === undefined}
+        >
+          {open ? "Done" : summary ? "Edit" : "Set up"}
+        </button>
+      </div>
+
+      {send === undefined ? (
+        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading…</div>
+      ) : !open ? (
+        <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.45 }}>
+          {summary ?? `No adaptation set. The tutor coaches ${pupilName.split(" ")[0]} with the default register.`}
+        </p>
+      ) : (
+        <div style={{ display: "grid", gap: 10 }}>
+          <label style={{ display: "grid", gap: 4, fontSize: 11, color: "var(--text-muted)" }}>
+            Output style
+            <select
+              value={current.outputFormat ?? ""}
+              onChange={(e) => save({ ...current, outputFormat: (e.target.value || undefined) as SendProfile["outputFormat"] })}
+              disabled={busy}
+              style={selectStyle}
+            >
+              {OUTPUT_FORMAT_OPTIONS.map((o) => (
+                <option key={o.label} value={o.value ?? ""}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label style={{ display: "grid", gap: 4, fontSize: 11, color: "var(--text-muted)" }}>
+            Scaffolding level {current.scaffoldingLevel ? `· ${current.scaffoldingLevel}/5` : "· default"}
+            <input
+              type="range"
+              min={0}
+              max={5}
+              step={1}
+              value={current.scaffoldingLevel ?? 0}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                save({ ...current, scaffoldingLevel: (v === 0 ? undefined : v) as SendProfile["scaffoldingLevel"] });
+              }}
+              disabled={busy}
+            />
+          </label>
+
+          <label style={{ display: "grid", gap: 4, fontSize: 11, color: "var(--text-muted)" }}>
+            Note for the tutor (not shown to the pupil)
+            <textarea
+              defaultValue={current.notes ?? ""}
+              rows={2}
+              maxLength={400}
+              placeholder="e.g. processes language slowly — give thinking time"
+              onBlur={(e) => {
+                const note = e.target.value.trim();
+                if (note !== (current.notes ?? "")) save({ ...current, notes: note });
+              }}
+              disabled={busy}
+              style={{
+                padding: 8,
+                border: "1px solid var(--line)",
+                borderRadius: 4,
+                background: "var(--surface-elev)",
+                fontSize: 12,
+                fontFamily: "var(--font-sans)",
+                resize: "vertical",
+              }}
+            />
+          </label>
+          <p style={{ fontSize: 10, color: "var(--text-muted)", lineHeight: 1.4 }}>
+            Adapts how the tutor communicates, not what counts as understanding. Applies from the pupil&apos;s next turn.
+          </p>
+        </div>
+      )}
+      {saved && <div style={{ fontSize: 11, color: "var(--color-gold-500)", marginTop: 6 }}>✓ Saved</div>}
+    </div>
+  );
+}
+
+const selectStyle: React.CSSProperties = {
+  padding: "6px 8px",
+  border: "1px solid var(--line)",
+  borderRadius: 4,
+  background: "var(--surface-elev)",
+  fontSize: 12,
+  fontFamily: "var(--font-sans)",
+};
+
+function describeSend(s: SendProfile): string | null {
+  const parts: string[] = [];
+  if (s.outputFormat) {
+    const map: Record<string, string> = { short: "short replies", bullets: "bulleted", structured: "structured", visual: "visual/concrete" };
+    parts.push(map[s.outputFormat]);
+  }
+  if (s.scaffoldingLevel) parts.push(`scaffolding ${s.scaffoldingLevel}/5`);
+  if (s.notes) parts.push("teacher note");
+  return parts.length ? parts.join(" · ") : null;
+}
 
 function InterventionActions({
   classId,

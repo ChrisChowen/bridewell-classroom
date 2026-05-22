@@ -49,9 +49,13 @@ interface ChatSurfaceProps {
   // drifted across sessions). Overrides the lesson-wide default so the
   // tutor pitches per pupil. Falls back to the lesson plan's level.
   effectiveChallengeLevel?: "foundation" | "core" | "stretch";
+  // SEND adaptation block, derived server-side from the pupil's structured
+  // SEND profile. Fed to the tutor as pupilProfile so it adapts HOW it
+  // communicates. Absent when the pupil has no SEND profile.
+  pupilProfile?: string;
 }
 
-export function ChatSurface({ klass, effectiveChallengeLevel }: ChatSurfaceProps = {}) {
+export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: ChatSurfaceProps = {}) {
   const lessonPlan: LessonPlan | undefined = klass?.lessonPlan;
   const openingText =
     lessonPlan?.sequence?.[0]?.openingPrompt ?? demoTutorOpening;
@@ -491,6 +495,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel }: ChatSurfaceProps
           lesson: lessonForApi,
           step: stepForApi,
           extension: extensionForApi,
+          pupilProfile,
         }),
       });
       const data = (await res.json()) as {

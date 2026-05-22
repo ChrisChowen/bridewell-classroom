@@ -30,6 +30,7 @@ export default function SessionPage() {
   const [effectiveChallengeLevel, setEffectiveChallengeLevel] = useState<
     "foundation" | "core" | "stretch" | undefined
   >(undefined);
+  const [pupilProfile, setPupilProfile] = useState<string | undefined>(undefined);
   const [loadState, setLoadState] = useState<"idle" | "loading" | "ready" | "preview" | "error">(
     "idle"
   );
@@ -87,6 +88,7 @@ export default function SessionPage() {
         setKlass(data.class as ClassRecord);
         setPupil(data.pupil as PupilRecord);
         setEffectiveChallengeLevel(data.effectiveChallengeLevel);
+        setPupilProfile(data.pupilProfile);
         setLoadState("ready");
       } catch (e) {
         if (cancelled) return;
@@ -245,6 +247,7 @@ export default function SessionPage() {
               <ChatSurface
               klass={klass ?? undefined}
               effectiveChallengeLevel={effectiveChallengeLevel}
+              pupilProfile={pupilProfile}
             />
               {/* Lobby / paused / wrap-up overlay. A missing status doc
                   is treated as "not_started" — the teacher hasn't hit

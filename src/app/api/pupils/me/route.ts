@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/firebase/admin";
 import { getEffectiveChallengeLevel } from "@/lib/learner-profile-store";
+import { buildSendAdaptationBlock } from "@/lib/send";
 import type { ChallengeLevel, ClassRecord, PupilRecord } from "@/types";
 
 // GET /api/pupils/me
@@ -50,5 +51,10 @@ export async function GET(req: Request) {
     // Non-fatal: fall back to the lesson-wide level.
   }
 
-  return NextResponse.json({ pupil, class: cls, effectiveChallengeLevel });
+  // SEND adaptation: derive the tutor's free-text adaptation block from the
+  // pupil's structured SEND profile (set by the teacher). Fed to the tutor
+  // via lesson chat as pupilProfile. Absent when the pupil has no profile.
+  const pupilProfile = buildSendAdaptationBlock(pupil.send);
+
+  return NextResponse.json({ pupil, class: cls, effectiveChallengeLevel, pupilProfile });
 }
