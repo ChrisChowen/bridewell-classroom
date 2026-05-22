@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { sendPasswordResetEmail } from "firebase/auth";
 import { Wordmark } from "@/components/shared/Wordmark";
 import { useAuth } from "@/lib/firebase/auth-context";
+import { getFirebase } from "@/lib/firebase/client";
 import type { School } from "@/types";
 
 type Tab = "signin" | "register";
@@ -72,6 +74,8 @@ function SignInForm() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [resetMsg, setResetMsg] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -87,6 +91,30 @@ function SignInForm() {
     }
   }
 
+  // Self-service password reset. Firebase emails the address a secure
+  // link where the teacher sets their OWN new password — we never see or
+  // set it. We always show the same neutral confirmation regardless of
+  // whether the email exists (no account-enumeration leak).
+  async function resetPassword() {
+    setErr(null);
+    setResetMsg(null);
+    const addr = email.trim();
+    if (!addr) {
+      setErr("Enter your email above first, then tap Forgot password.");
+      return;
+    }
+    setResetting(true);
+    try {
+      const fb = getFirebase();
+      if (fb.ready) await sendPasswordResetEmail(fb.auth, addr);
+    } catch {
+      /* swallow — don't reveal whether the address exists */
+    } finally {
+      setResetting(false);
+      setResetMsg(`If ${addr} has an account, a password-reset email is on its way. Check your inbox (and spam).`);
+    }
+  }
+
   return (
     <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
       <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
@@ -95,8 +123,30 @@ function SignInForm() {
       <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="jane.wells@kesw.org" />
       <Field label="Password" type="password" value={password} onChange={setPassword} placeholder="••••••••" />
       {err && <ErrorLine text={err} />}
+      {resetMsg && (
+        <div style={{ fontSize: 12, color: "var(--text-muted)", background: "rgba(181,138,60,0.08)", padding: "8px 10px", borderRadius: 6 }}>
+          {resetMsg}
+        </div>
+      )}
       <button type="submit" className="bw-btn-primary" disabled={busy} style={{ marginTop: 4 }}>
         {busy ? "Signing in…" : "Sign in"}
+      </button>
+      <button
+        type="button"
+        onClick={resetPassword}
+        disabled={resetting}
+        style={{
+          background: "none",
+          border: "none",
+          color: "var(--color-navy-700)",
+          fontSize: 12,
+          textDecoration: "underline",
+          cursor: "pointer",
+          justifySelf: "center",
+          padding: 2,
+        }}
+      >
+        {resetting ? "Sending…" : "Forgot password?"}
       </button>
     </form>
   );

@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ShieldCheck, Plus, Loader2, Trash2, Users } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Plus, Loader2, Trash2, Users, KeyRound } from "lucide-react";
+import { sendPasswordResetEmail } from "firebase/auth";
 import { Crest } from "@/components/shared/Crest";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
@@ -45,6 +46,7 @@ export default function AdminPage() {
   const [newAdmin, setNewAdmin] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [rosterMsg, setRosterMsg] = useState<string | null>(null);
 
   const token = useCallback(async () => {
     const fb = getFirebase();
@@ -120,6 +122,22 @@ export default function AdminPage() {
 
   async function toggleAdmin(entry: AllowEntry) {
     await post({ email: entry.email, isAdmin: !entry.isAdmin }, "toggle:" + entry.email);
+  }
+
+  async function resetTeacherPassword(t: TeacherRow) {
+    if (!t.email) return;
+    if (typeof window !== "undefined" && !window.confirm(`Send a password-reset email to ${t.email}?`)) return;
+    setBusy("reset:" + t.id);
+    setRosterMsg(null);
+    try {
+      const fb = getFirebase();
+      if (fb.ready) await sendPasswordResetEmail(fb.auth, t.email);
+      setRosterMsg(`Password-reset email sent to ${t.email}.`);
+    } catch (err) {
+      setRosterMsg(err instanceof Error ? err.message : "Could not send reset email");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function remove(entry: AllowEntry) {
@@ -275,13 +293,24 @@ export default function AdminPage() {
                 Teachers who have registered an account. Read-only — accounts are created when a
                 teacher signs up with an allowlisted email.
               </p>
+              {rosterMsg && (
+                <div style={{ fontSize: 12, color: "var(--text-muted)", background: "rgba(181,138,60,0.08)", padding: "8px 10px", borderRadius: 6, marginBottom: 12 }}>
+                  {rosterMsg}
+                </div>
+              )}
               <div className="bw-card" style={{ padding: 0, overflow: "hidden" }}>
-                <RowHead cols={["Name", "Email", "School", "Admin"]} />
+                <div style={teacherHead}>
+                  <span>Name</span>
+                  <span>Email</span>
+                  <span>School</span>
+                  <span>Admin</span>
+                  <span>Password</span>
+                </div>
                 {teachers.length === 0 ? (
                   <Empty label="No teachers have registered yet." />
                 ) : (
                   teachers.map((t) => (
-                    <div key={t.id} style={rowStyle}>
+                    <div key={t.id} style={teacherRowStyle}>
                       <span style={{ fontSize: 13 }}>{t.displayName || "—"}</span>
                       <span style={{ ...mutedCell, fontFamily: "var(--font-mono)", wordBreak: "break-all" }}>{t.email}</span>
                       <span style={mutedCell}>{t.school || "—"}</span>
@@ -294,6 +323,27 @@ export default function AdminPage() {
                           <span style={{ color: "var(--text-muted)" }}>—</span>
                         )}
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => resetTeacherPassword(t)}
+                        disabled={!t.email || busy === "reset:" + t.id}
+                        title="Send a password-reset email"
+                        style={{
+                          background: "transparent",
+                          border: "1px solid var(--line)",
+                          borderRadius: 6,
+                          padding: "3px 8px",
+                          cursor: "pointer",
+                          fontSize: 12,
+                          color: "var(--text-muted)",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 5,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {busy === "reset:" + t.id ? <Loader2 size={12} className="bw-spin" /> : <KeyRound size={12} />} Reset
+                      </button>
                     </div>
                   ))
                 )}
@@ -325,6 +375,28 @@ const rowStyle: React.CSSProperties = {
   alignItems: "center",
 };
 const mutedCell: React.CSSProperties = { color: "var(--text-muted)", fontSize: 12 };
+
+const TEACHER_COLS = "1.2fr 1.6fr 0.8fr auto auto";
+const teacherRowStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: TEACHER_COLS,
+  gap: 12,
+  padding: "10px 16px",
+  borderBottom: "1px solid var(--line)",
+  alignItems: "center",
+};
+const teacherHead: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: TEACHER_COLS,
+  gap: 12,
+  padding: "10px 16px",
+  borderBottom: "1px solid var(--line)",
+  fontSize: 10,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  color: "var(--text-muted)",
+  fontWeight: 600,
+};
 
 function RowHead({ cols }: { cols: string[] }) {
   return (
