@@ -4,6 +4,7 @@ import {
   type ReasonEvaluatorInput,
 } from "@/layers/evaluator";
 import { shapeResponse } from "@/layers/responder";
+import { mentionsUnsupportedVisual } from "@/lib/ai/output-guards";
 import "@/lib/cost/recorder"; // best-effort LLM usage recorder (nodejs side-effect)
 import { getAdmin } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/auth";
@@ -50,6 +51,13 @@ export async function POST(req: Request) {
 
   const evaluation = await evaluateReasonResponse(body);
   const response = shapeResponse({ evaluation, concept: body.concept });
+
+  // Same text-only defence-in-depth as /api/chat: the Reason soft-challenge
+  // follow-up is LLM-generated and shown to the pupil, so log any slip that
+  // promises a visual the tutor can't deliver (no PII — event only).
+  if (response.tutorTurn && mentionsUnsupportedVisual(response.tutorTurn)) {
+    console.warn(`tutor output guard: reason ${evaluation.branch} follow-up promised an unsupported visual`);
+  }
 
   // Persist onto the reasonEvent doc.
   const pupil = await resolveDataStore().getPupil(uid);
