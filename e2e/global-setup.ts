@@ -102,4 +102,30 @@ export default async function globalSetup() {
   const rtdb = getDatabase(app);
   await rtdb.ref(`liveSessions/${E2E.classId}/status`).set({ value: "active", ts: Date.now() });
   await rtdb.ref(`liveSessions/${E2E.classId}/meta/teacherId`).set(E2E.teacherId);
+
+  // Seed two live pupils so the teacher's class view shows real signals:
+  // one wheel-spinning, one with a safeguarding flag. Each needs a Firestore
+  // pupils doc (roster) + an RTDB live-mirror entry (state). The pupil session
+  // never changes — safeguarding surfaces ONLY to the teacher.
+  const now = Date.now();
+  await db.collection("pupils").doc("e2e-wheel").set({
+    id: "e2e-wheel", classId: E2E.classId, displayName: "Wheel Pupil", joinedAt: now,
+  });
+  await db.collection("pupils").doc("e2e-safe").set({
+    id: "e2e-safe", classId: E2E.classId, displayName: "Safe Pupil", joinedAt: now,
+  });
+  await rtdb.ref(`liveSessions/${E2E.classId}/pupils/e2e-wheel`).set({
+    pupilId: "e2e-wheel", displayName: "Wheel Pupil", state: "wheel_spinning",
+    confidence: 0.82, lastActive: now, scaffoldUsesRecent: 3, currentStepIndex: 0,
+    trajectory: [
+      { state: "productive_struggle", t: now - 120000, confidence: 0.6 },
+      { state: "wheel_spinning", t: now - 60000, confidence: 0.7 },
+      { state: "wheel_spinning", t: now, confidence: 0.82 },
+    ],
+  });
+  await rtdb.ref(`liveSessions/${E2E.classId}/pupils/e2e-safe`).set({
+    pupilId: "e2e-safe", displayName: "Safe Pupil", state: "productive_struggle",
+    confidence: 0.7, lastActive: now, currentStepIndex: 0,
+    safeguarding: { severity: "medium", summary: "Mentioned a difficult weekend at home.", ts: now },
+  });
 }
