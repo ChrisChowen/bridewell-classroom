@@ -6,7 +6,7 @@ import { resolveDataStore } from "@/lib/data";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { classifyEngagement, type ClassifierInput } from "@/layers/classifier";
 import { anonKey } from "@/lib/live-keys";
-import type { EngagementSnapshot, ClassRecord } from "@/types";
+import type { EngagementSnapshot } from "@/types";
 
 // POST /api/engagement/run
 //

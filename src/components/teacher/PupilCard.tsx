@@ -37,14 +37,16 @@ export function PupilCard({
 }) {
   const ageMs = Date.now() - (pupil.lastActive ?? 0);
   const safe = pupil.safeguarding;
-  const trajectory = pupil.trajectory ?? [];
   // Optimistic "currently typing" dot: pupil sent a message since the
   // last snapshot. We hold the dot for 30s after their last message.
   const lastMsgMs = pupil.lastMessageAt ? Date.now() - pupil.lastMessageAt : Infinity;
   const recentlyActive = lastMsgMs < 30_000;
   const stepIndex = pupil.currentStepIndex ?? 0;
 
-  const sparkline = useMemo(() => buildSparklinePath(trajectory), [trajectory]);
+  // Compute the trajectory default inside the memo: `pupil.trajectory ?? []`
+  // is a fresh array each render when undefined, which would otherwise
+  // invalidate the memo every time.
+  const sparkline = useMemo(() => buildSparklinePath(pupil.trajectory ?? []), [pupil.trajectory]);
 
   return (
     <button

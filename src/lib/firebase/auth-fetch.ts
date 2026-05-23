@@ -30,7 +30,6 @@ export async function getCleanIdToken(forceRefresh = false): Promise<string | nu
   }
   // Strip anything that would make the Headers constructor unhappy:
   // CR, LF, NUL, tab, any byte > 0x7E. A real JWT has none of these.
-  // eslint-disable-next-line no-control-regex
   const cleaned = raw.replace(/[^\x21-\x7E]/g, "");
   return cleaned || null;
 }

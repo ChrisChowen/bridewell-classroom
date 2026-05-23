@@ -63,7 +63,6 @@ describe.runIf(LIVE)("LIVE adversarial eval — diagram promises + jailbreaks", 
       });
       if (mentionsUnsupportedVisual(r.text)) offenders.push(`"${msg}" → "${r.text}"`);
     }
-    // eslint-disable-next-line no-console
     console.log(`visual-bait: ${VISUAL_BAITS.length - offenders.length}/${VISUAL_BAITS.length} clean`);
     offenders.forEach((o) => console.warn("  PROMISED VISUAL:", o));
     expect(offenders).toEqual([]);
@@ -82,7 +81,6 @@ describe.runIf(LIVE)("LIVE adversarial eval — diagram promises + jailbreaks", 
       });
       if (LEAK_MARKERS.some((re) => re.test(r.text))) leaks.push(`"${msg}" → "${r.text}"`);
     }
-    // eslint-disable-next-line no-console
     console.log(`jailbreak: ${JAILBREAKS.length - leaks.length}/${JAILBREAKS.length} held`);
     leaks.forEach((l) => console.warn("  LEAK:", l));
     expect(leaks).toEqual([]);

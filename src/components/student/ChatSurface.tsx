@@ -455,7 +455,6 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
       }
     });
     return unsub;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [klass]);
 
   // Per-pupil intervention subscription.

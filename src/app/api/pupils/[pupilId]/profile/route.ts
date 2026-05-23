@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { authorisePupilAccess } from "@/lib/pupil-auth";
 import { resolveDataStore } from "@/lib/data";
 import { CHALLENGE_ORDER } from "@/lib/learner-profile";
-import type { ChallengeLevel, LearnerProfile } from "@/types";
+import type { ChallengeLevel } from "@/types";
 
 // GET  /api/pupils/{pupilId}/profile  — the longitudinal learner profile
 //   (adaptive-difficulty trajectory + rolling metrics). Teacher-only,
