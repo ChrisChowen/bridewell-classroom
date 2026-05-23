@@ -242,6 +242,17 @@ school's shared library:
 Future class-creation flows offer high-rated library plans as starting points, so the
 system gets better with use.
 
+### Export the class for research
+
+For the PhD and the academic panel, the class header carries a **Research export**
+button. It produces a single download of the lesson's analytic record —
+engagement trajectories, Reason interactions, scaffolding presses, and teacher
+interventions — with every pupil **pseudonymised** (`P001`, `P002`, …). Real
+names, emails, and account ids never leave the server, and every cell is sanitised
+so a spreadsheet can't be tricked into running a formula a pupil typed. It's a
+clean, shareable dataset for studying how the cohort engaged, with nothing that
+identifies a child.
+
 ---
 
 ## Architecture
@@ -343,11 +354,14 @@ substituted by config alone:
   non-reversible UID hash; join-code enumeration is rate-limited by IP; the rate
   limiter is durable (RTDB-backed, survives cold starts).
 
-**Tested + gated:** a Vitest suite (150+ unit tests on the Reason layers,
-classifier, rate-limiter, cost estimator, seams, SEND/voice selection) plus
-emulator tests for the security rules and GDPR erasure, all gated by a GitHub
-Actions workflow (`.github/workflows/ci.yml`) that runs type-check + tests +
-build on every push.
+**Tested + gated:** ~200 unit tests (the Reason layers, classifier metrics
+including inter-rater agreement, rate-limiter, cost estimator, seams, SEND/voice,
+CSV-injection safety) plus emulator tests for the security rules and GDPR erasure.
+On top of that, **the five demo journeys themselves run end-to-end on every push** —
+a pupil joining, the Reason-resumes-the-lesson flow, a teacher signing in, and the
+wheel-spinning + safeguarding signals surfacing on the dashboard — alongside an
+**accessibility check** (axe) on the public pages. All gated by GitHub Actions
+(type-check, lint, tests, build, e2e, a11y); the demo can't silently regress.
 
 ---
 
@@ -374,9 +388,33 @@ Four layers, each a named module under `src/layers/`:
   the pupil (never silence, never a verdict), logged and surfaced as a *pattern*
   on the teacher dashboard rather than an alert.
 
+Once the pupil has answered, **the lesson always picks back up** — the tutor takes
+a fresh coaching turn so the conversation never dead-ends on the probe. (The "accept"
+and "pattern-flag" branches used to leave the pupil staring at a closing line with
+nothing to reply to; they now resume the lesson within a couple of seconds.)
+
 The pupil never sees a confidence score. Framing is always generative ("can you say
 more?"), never evaluative ("you don't understand this"). Reason produces evidence,
 not a verdict.
+
+### Is Reason actually working?
+
+The whole point of Reason is a claim — *can the system tell the difference between a
+pupil who is productively struggling and one who is just wheel-spinning?* We measure
+it rather than assert it. The engagement classifier was graded against a set of 124
+hand-authored conversation windows (including deliberately ambiguous ones) spanning
+**Biology, English, Maths, and History**: it reads the right state **93% of the
+time**, with every state — including the hard productive-struggle-vs-wheel-spinning
+distinction — scoring above the bar, and **every subject above 85%**. A separate
+multi-rater study (three independent AI raters from a *different* model family,
+strict/generous/balanced) agrees with itself strongly (κ ≈ 0.95), which tells us the
+states are well-defined and not arbitrary.
+
+Honest caveat, stated plainly in `docs/reason-evidence.md`: these are
+**bootstrap** numbers on authored data, not a research claim on real classrooms.
+The full validation needs real pupil transcripts labelled by real teachers — that
+pass is flagged for the human, never marked done. Full write-up:
+`docs/reason-evidence.md` + `docs/cross-subject-evidence.md`.
 
 ---
 
@@ -645,11 +683,27 @@ scripts/
 
 ## Status
 
-**22 May 2026 — deployed and live** at
+**23 May 2026 — deployed and live** at
 [bridewell-classroom.web.app](https://bridewell-classroom.web.app), against a
 real Firebase project and real LLM calls. The agent simulation runs end-to-end;
 the flows in this README are exercised by the Playwright screenshot pipeline, so
 this README doubles as a regression suite.
+
+Landed most recently (Reason proven + demo hardened):
+
+- **The Reason flow resumes cleanly** — answering a probe no longer leaves the
+  pupil at a dead-end; the tutor picks the lesson back up (proven by a test that
+  fails on the old behaviour and passes on the new)
+- **Reason's claim is measured, not asserted** — 93% engagement-state accuracy
+  across four subjects, strong inter-rater agreement; honest "needs real teacher
+  labels" caveat (`docs/reason-evidence.md`, `docs/cross-subject-evidence.md`)
+- **The five demo journeys run end-to-end on every push** — pupil-join, the
+  Reason-resumption flow, teacher sign-in, wheel-spinning + safeguarding — plus
+  an accessibility check on the public pages, all gating CI
+- **Anonymised research export** — one-click pseudonymised dataset of a class's
+  engagement for the PhD / academic panel, with no child-identifying data
+- **First-class polish pass** — accessibility-contrast fixes across the brand,
+  mobile-responsive surfaces, cost-per-class visibility for admins
 
 Landed since the v1 build week (handover, hardening, capability):
 
