@@ -96,7 +96,10 @@ export async function appraiseLesson(
     system: SYSTEM,
     messages: [{ role: "user", content: userBlock }],
     responseSchema: SCHEMA as unknown as Record<string, unknown>,
-    maxOutputTokens: 1024,
+    // Pro emits its thinking tokens against this same budget before the JSON,
+    // so 1024 (== the thinking budget) left nothing for the answer and the
+    // appraisal always fell back. CLAUDE.md: Pro JSON needs >= 2048.
+    maxOutputTokens: 2048,
     temperature: 0.4,
     thinkingBudget: 1024,
   });

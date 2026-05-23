@@ -12,7 +12,7 @@ import type { LessonAppraisal } from "@/types";
 // shared lesson library. Implements the self-improving-system loop the
 // teacher asked for.
 
-export function AppraisalPanel({ classId }: { classId: string }) {
+export function AppraisalPanel({ classId, embedded = false }: { classId: string; embedded?: boolean }) {
   const [appraisal, setAppraisal] = useState<LessonAppraisal | null>(null);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -64,6 +64,25 @@ export function AppraisalPanel({ classId }: { classId: string }) {
   }
 
   if (!appraisal && !generating && !error) {
+    // Embedded inside the class page's "After the lesson" disclosure: skip the
+    // duplicate gold header (the disclosure already carries it) and show just
+    // the description + action.
+    if (embedded) {
+      return (
+        <div className="flex items-center justify-between" style={{ gap: 12, flexWrap: "wrap" }}>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0, maxWidth: 540, lineHeight: 1.5 }}>
+            The AI reads the engagement data, Reason events, and a sample of pupil
+            conversations from this class, and writes a short appraisal of the plan you
+            can save to the school&apos;s shared library — future plan generation draws on
+            highly-rated ones.
+          </p>
+          <button onClick={generate} className="bw-btn-emphasis" style={{ fontSize: 13, whiteSpace: "nowrap" }}>
+            <Sparkles size={13} style={{ marginRight: 6 }} />
+            Generate appraisal
+          </button>
+        </div>
+      );
+    }
     return (
       <section
         className="bw-card"
@@ -124,6 +143,7 @@ export function AppraisalPanel({ classId }: { classId: string }) {
 
   return (
     <section
+      data-testid="appraisal-result"
       className="bw-card"
       style={{
         padding: 18,

@@ -109,10 +109,6 @@ counter — when they run out, the tutor pauses to check what's been understood.
 prevents the failure mode the brief calls out: pupils mashing Hint to extract the
 answer.
 
-<p align="center">
-  <img src="docs/screenshots/16-pupil-conversation-deep.png" width="720" alt="Deeper conversation with the tutor">
-</p>
-
 After three scaffold uses on the same concept, **Reason** fires inline. A gold card
 asks for a paraphrase, novel example, counterfactual, or teach-back:
 
@@ -145,12 +141,9 @@ A Bridewell admin allowlists teacher emails before any registration. The first t
 to register is bootstrapped as admin; subsequent teachers must be allowlisted by an
 existing admin — a pupil cannot upgrade themselves to a teacher account.
 
-<table>
-<tr>
-<td width="50%"><img src="docs/screenshots/02-login.png" alt="Sign-in tab"></td>
-<td width="50%"><img src="docs/screenshots/02b-register.png" alt="Register tab"></td>
-</tr>
-</table>
+<p align="center">
+  <img src="docs/screenshots/02-login.png" width="420" alt="Teacher sign-in — Sign in / Register tabs">
+</p>
 
 ### Set up a lesson — by describing it
 
@@ -158,12 +151,9 @@ The teacher does not write a system prompt. They pick a topic from the UK KS3
 syllabus library — or a plan their colleague has saved to the school's shared
 library — then write a sentence about what they want pupils to come away with:
 
-<table>
-<tr>
-<td width="50%"><img src="docs/screenshots/06-wizard-pick.png" alt="Wizard step 1 — pick a topic"></td>
-<td width="50%"><img src="docs/screenshots/07-wizard-describe.png" alt="Wizard step 2 — describe the lesson"></td>
-</tr>
-</table>
+<p align="center">
+  <img src="docs/screenshots/06-wizard-pick.png" width="820" alt="New-class wizard — pick a topic from the KS3 syllabus library">
+</p>
 
 A reasoning-tier LLM call drafts a structured lesson plan with 2–5 steps, each running a
 different **activity** drawn from a catalogue of nine (Socratic, retrieval quiz,
@@ -204,8 +194,7 @@ pauses, a full overlay lands on the pupil's chat — they're prompted to look up
 keep typing into a frozen conversation:
 
 <p align="center">
-  <img src="docs/screenshots/16a-pupil-paused.png" width="640" alt="Pupil paused overlay">
-  <img src="docs/screenshots/18b-pupil-wrap-up.png" width="640" alt="Pupil wrap-up overlay">
+  <img src="docs/screenshots/16a-pupil-paused.png" width="560" alt="Pupil paused overlay — the chat locks and asks them to look up">
 </p>
 
 When a pupil has a safeguarding flag, it shows as a crimson chip on the card itself

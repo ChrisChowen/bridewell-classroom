@@ -803,7 +803,7 @@ export default function ClassDetailPage() {
                   style={{ overflow: "hidden" }}
                 >
                   <div style={{ marginTop: 12 }}>
-                    <AppraisalPanel classId={classId} />
+                    <AppraisalPanel classId={classId} embedded />
                   </div>
                 </motion.div>
               )}
