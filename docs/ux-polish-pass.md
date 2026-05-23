@@ -35,6 +35,27 @@ it, but `next dev` did. Moved to `[id]/research-export`. (Lesson: a green
 `next build` is not sufficient for route-segment validation — boot the dev
 server.)
 
+### Accessibility sweep — axe-core gate (done, gating CI)
+
+Added `@playwright/test` + `@axe-core/playwright` and `e2e/a11y.spec.ts`,
+scanning the auth-free pages (landing / login / join) in **light + dark** and
+failing on any serious/critical violation. Wired into a dedicated CI job
+(`a11y` in `ci.yml`). The sweep caught **3 real WCAG AA contrast failures**,
+all now fixed and verified (6/6 axe checks green):
+
+1. **Footer fine-print** — `opacity:0.75` composited the muted text below AA on
+   the page surface; removed it and used the theme-aware `--text-muted`.
+2. **Small gold text** (section labels, "You"/"Tutor" tags) — brand gold
+   `#b58a3c` is only 2.9:1 on cream. New `--color-gold-text` token: a deeper
+   gold clearing 4.5:1 on cream/white **and** the gold-tint surfaces
+   (dark theme → gold-300 on navy). 34 text usages routed through it; the
+   brand mark / fills / icons keep `--color-gold-500` (BRAND untouched).
+3. **Gold text on gold-tint bubbles** — deepened `--color-gold-text` from
+   `#8a6a2e` to `#7d5f24` so it clears AA even on the ~8%-gold tint.
+
+Authed-page a11y (session / dashboard / drill-down / projector) needs the
+emulator seeded — deferred with the full demo-flow specs (`reports/blocked.md`).
+
 ## Remaining (prioritised for a focused, live-verified pass)
 
 These need a running app + visual judgement and `@axe-core/playwright` on the
