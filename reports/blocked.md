@@ -50,7 +50,38 @@ raters ≠ teachers; the human-labelled pass stays 🔒).
 
 ---
 
-## Playwright e2e gating CI (5 scenarios) — DEFERRED (infrastructure cost vs. risk)
+## Playwright e2e — HARNESS LANDED; one positive-flow assertion pending (3-strike halt)
+
+**Built this run:** a real emulator-backed e2e harness — `@playwright/test`,
+`playwright.emulator.config.ts`, `e2e/global-setup.ts` (seeds a class +
+join code into the Firestore emulator via admin), `npm run test:e2e`
+(`firebase emulators:exec … playwright test`), and **emulator-aware Firebase
+wiring** added to both `src/lib/firebase/client.ts`
+(`NEXT_PUBLIC_FIREBASE_EMULATOR=1` → `connect*Emulator`) and
+`src/lib/firebase/admin.ts` (inits with projectId only when `*_EMULATOR_HOST`
+is set). Both are strictly env-gated — dormant in prod, no live-data risk.
+
+**Working:** `e2e/pupil-join.emulator.spec.ts` "an unknown code is rejected"
+**passes** end-to-end against the emulator — proving anonymous sign-in (Auth
+emulator) + `POST /api/classes/join` + the data seam all work with no live
+backend.
+
+**Pending (`test.fixme`, 3-strike halt):** "pupil joins a seeded class with a
+valid code" reads the seeded join code as *Unknown class code* from the dev
+server, even though a standalone admin read-back of the **same** emulator
+finds it (verified), and the project ids match. Three distinct fixes were
+tried on this surface — kill stale server + `reuseExistingServer:false`;
+`env:{...process.env}`; inline `NEXT_PUBLIC_FIREBASE_EMULATOR=1` in the
+webServer command — none resolved it. Root-causing is blocked because the
+Playwright-managed Next dev server's **stdout (and a temporary JOIN_DIAG log)
+is not captured through `emulators:exec`**, so the server's runtime view of
+the emulator host env can't be observed here. Per the goal's "3 failed
+root-causes on one surface → halt, log, next stream" rule, halted. Path
+forward: run the dev server in emulator mode *standalone* (observable stdout)
+and confirm `FIRESTORE_EMULATOR_HOST` reaches it + the join lookup; then drop
+`.fixme`. The harness + seeding are committed so this is a one-bug finish.
+
+## Remaining demo-flow specs (5 scenarios) — DEFERRED on the same harness
 
 **Asked:** Playwright e2e for productive-struggle (B1), wheel-spinning,
 safeguarding, teacher-flow, pupil-join, gating CI.

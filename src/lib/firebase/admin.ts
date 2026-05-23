@@ -52,6 +52,27 @@ export function getAdmin(): AdminBundle {
     process.env.GCLOUD_PROJECT ??
     process.env.GOOGLE_CLOUD_PROJECT;
 
+  // e2e/local-only: when the Firebase emulator host env vars are present,
+  // firebase-admin routes all calls to the local emulator suite and needs NO
+  // real credential — init with just the projectId. Strictly gated on those
+  // env vars (set only by the Playwright/emulator harness), so production
+  // and live dev are unaffected and no real-pupil data is ever reachable.
+  const emulatorHost =
+    process.env.FIRESTORE_EMULATOR_HOST ||
+    process.env.FIREBASE_AUTH_EMULATOR_HOST ||
+    process.env.FIREBASE_DATABASE_EMULATOR_HOST;
+  if (emulatorHost) {
+    try {
+      app = initializeApp({ projectId: projectId ?? "bridewell-classroom", databaseURL });
+      return { ready: true, app, db: getFirestore(app), rtdb: getDatabase(app), auth: getAuth(app) };
+    } catch (err) {
+      return {
+        ready: false,
+        reason: `Failed to init admin (emulator): ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
+  }
+
   // On GCP (Cloud Run / Cloud Functions), $K_SERVICE / $FUNCTION_TARGET
   // are set. In that environment we never want to read a local
   // secrets/ file even if the build bundled an env path pointing at

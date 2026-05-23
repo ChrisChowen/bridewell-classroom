@@ -7,6 +7,9 @@ import { defineConfig, devices } from "@playwright/test";
 // Firebase emulator seeded — see reports/blocked.md.
 export default defineConfig({
   testDir: "e2e",
+  // This config is the auth-free a11y gate only. The emulator-backed
+  // demo-flow specs run under playwright.emulator.config.ts.
+  testMatch: ["**/a11y.spec.ts"],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
