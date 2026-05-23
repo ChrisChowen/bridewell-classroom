@@ -54,10 +54,14 @@ Heuristics:
 When confidence is between 0.4 and 0.65, also produce:
   - weakest_segment: the shortest slice of the pupil response that is
     weakest (a phrase, not a sentence).
-  - follow_up: one short, generative question targeting that segment.
-    No more than 22 words. British English. No exclamations. Text-only —
-    never reference, promise, or offer to show a diagram, picture, graph, or
-    any other visual; you cannot display one.
+  - follow_up: one short, generative question that QUOTES the weakest
+    segment back to the pupil and asks them to take it further — e.g.
+    "You said 'it just gets hotter' — hotter for which part, and why?".
+    Naming the segment explicitly is what makes the probe targeted rather
+    than a generic re-question ("can you say more?"), which loops without
+    deepening reasoning. No more than 22 words. British English. No
+    exclamations. Text-only — never reference, promise, or offer to show a
+    diagram, picture, graph, or any other visual; you cannot display one.
 
 Output strict JSON only.`;
 

@@ -10,7 +10,7 @@
 
 import "server-only";
 import { callLLM } from "./llm";
-import { ACTIVITIES, ALL_ACTIVITY_TYPES } from "./activities";
+import { ACTIVITIES, ALL_ACTIVITY_TYPES, varyAdjacentActivities } from "./activities";
 import type { SyllabusEntry } from "@/lib/syllabi/types";
 import type { ActivityType, LessonPlan } from "@/types";
 
@@ -281,7 +281,7 @@ export async function generateLessonPlan(
 
   // Belt-and-braces: ensure every step has an activity, defaulting to
   // socratic if the model returned a step without one.
-  const sequence = j.sequence.map((s) => ({
+  const sequenceRaw = j.sequence.map((s) => ({
     title: s.title,
     goal: s.goal,
     activityType: (s.activityType ?? "socratic") as ActivityType,
@@ -290,6 +290,10 @@ export async function generateLessonPlan(
     expectedMisconceptions: s.expectedMisconceptions,
     estimatedMinutes: s.estimatedMinutes,
   }));
+  // Enforce the "no adjacent repeats" rule the system prompt asks for —
+  // the model can still ignore it, and a monotone single-activity lesson
+  // undermines the activity-variety claim. Deterministic; teacher reviews.
+  const sequence = varyAdjacentActivities(sequenceRaw, syllabus.subject);
 
   return {
     id: cryptoRandomId(),

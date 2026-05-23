@@ -116,3 +116,36 @@ export function activityLabel(type: ActivityType): string {
 export function activityInstructions(type: ActivityType): string {
   return ACTIVITIES[type]?.tutorInstructions ?? "";
 }
+
+// Deterministically pick an activity distinct from `avoid`, preferring one
+// that suits the subject. Used to enforce the planner's "no adjacent
+// repeats" rule after generation — the LLM is told the rule but it isn't
+// schema-checked, so a model that ignores it would otherwise hand the
+// teacher a monotone single-activity lesson.
+export function alternateActivity(avoid: ActivityType, subject?: string): ActivityType {
+  const fits = (t: ActivityType) => {
+    const f = ACTIVITIES[t].subjectFit;
+    return !subject || !f || f.length === 0 || f.includes(subject);
+  };
+  const candidates = ALL_ACTIVITY_TYPES.filter((t) => t !== avoid);
+  return candidates.find(fits) ?? candidates[0] ?? avoid;
+}
+
+// Enforce activity variety: no two adjacent steps share an activityType.
+// The planner's system prompt asks for this, but the model can ignore it,
+// so we defend it deterministically after generation. The teacher still
+// reviews and can override any step.
+export function varyAdjacentActivities<T extends { activityType: ActivityType }>(
+  steps: T[],
+  subject?: string
+): T[] {
+  for (let i = 1; i < steps.length; i++) {
+    if (steps[i].activityType === steps[i - 1].activityType) {
+      steps[i] = {
+        ...steps[i],
+        activityType: alternateActivity(steps[i - 1].activityType, subject),
+      };
+    }
+  }
+  return steps;
+}
