@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Copy, Check, BookOpen, ChevronDown, ChevronRight, Pause, Play, Flag, StopCircle, MonitorPlay, Link2, Download } from "lucide-react";
+import { ArrowLeft, Copy, Check, BookOpen, ChevronDown, ChevronRight, Pause, Play, Flag, StopCircle, MonitorPlay, Link2, Download, MoreHorizontal, Sparkles } from "lucide-react";
 import { TopBar } from "@/components/shared/TopBar";
+import { ClassPulse } from "@/components/teacher/ClassPulse";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
 import { getCleanIdToken } from "@/lib/firebase/auth-fetch";
@@ -51,6 +53,9 @@ export default function ClassDetailPage() {
   const [ctrlConfirm, setCtrlConfirm] = useState<string | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [researchBusy, setResearchBusy] = useState(false);
+  // Post-lesson appraisal is collapsed by default — a quiet affordance, not the
+  // giant panel that used to dominate the top of the ended-lesson view.
+  const [appraisalOpen, setAppraisalOpen] = useState(false);
 
   // Anonymised research export (brief item N) — pseudonymised, CSV-injection
   // -safe ZIP of the class's analytic events. Teacher-scoped server-side.
@@ -186,10 +191,19 @@ export default function ClassDetailPage() {
 
   const merged = useMemo(() => mergeRosterWithLive(roster, live), [roster, live]);
   const sorted = useMemo(() => sortPupils(merged, sort), [merged, sort]);
-  const stateCounts = useMemo(() => countByState(merged), [merged]);
   const safeguardingCount = useMemo(
     () => Object.values(live).filter((p) => p.safeguarding).length,
     [live]
+  );
+  const liveActive = useMemo(() => Object.values(live), [live]);
+  // Pupils whose pattern could use a teacher's eye — anything that isn't one of
+  // the two working states (drives the calm attention strip, not an alert).
+  const needLook = useMemo(
+    () =>
+      liveActive.filter(
+        (p) => p.state !== "flowing" && p.state !== "productive_struggle"
+      ).length,
+    [liveActive]
   );
 
   if (status === "loading" || status === "out" || status === "pupil") {
@@ -217,89 +231,113 @@ export default function ClassDetailPage() {
       />
 
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 28px 56px" }}>
-        <div className="flex items-center justify-between" style={{ marginBottom: 16, gap: 12 }}>
+        {/* Slim command bar — back link on the left; status, the single
+            state-appropriate primary action, the join code, and everything
+            else folded into a quiet overflow on the right. */}
+        <div className="flex items-center justify-between" style={{ marginBottom: 18, gap: 12, flexWrap: "wrap" }}>
           <Link href="/dashboard" className="bw-btn-secondary" style={{ fontSize: 12 }}>
             <ArrowLeft size={13} style={{ marginRight: 6 }} /> All classes
           </Link>
           <div className="flex items-center gap-2" style={{ flexWrap: "wrap" }}>
             <ConnectionPill />
-            {/* Class-wide controls */}
+            {ctrlConfirm && (
+              <span
+                role="status"
+                style={{
+                  fontSize: 12,
+                  color: "var(--color-gold-text)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  animation: "bw-fade-in 200ms ease",
+                }}
+              >
+                <Check size={12} /> {ctrlConfirm}
+              </span>
+            )}
+            <StatusPill value={sessionStatus?.value ?? "not_started"} />
+
+            {/* Primary action — exactly one, chosen by session state */}
             {klass && sessionStatus?.value !== "ended" && (
-              <>
-                {!sessionStatus || sessionStatus.value === "not_started" ? (
-                  <button
-                    onClick={() => fireClassControl("start")}
-                    disabled={classCtrlBusy === "start"}
-                    className="bw-btn-emphasis"
-                    style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
-                    title="Unlock pupils' chat and start the lesson"
-                  >
-                    <Play size={12} /> Start class
-                  </button>
-                ) : sessionStatus.value === "paused" ? (
-                  <button
-                    onClick={() => fireClassControl("resume")}
-                    disabled={classCtrlBusy === "resume"}
-                    className="bw-btn-emphasis"
-                    style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
-                    title="Resume the class"
-                  >
-                    <Play size={12} /> Resume
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => fireClassControl("pause")}
-                    disabled={classCtrlBusy === "pause"}
-                    className="bw-btn-secondary"
-                    style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
-                    title="Pause everyone's chat"
-                  >
-                    <Pause size={12} /> Pause class
-                  </button>
-                )}
+              !sessionStatus || sessionStatus.value === "not_started" ? (
+                <button
+                  onClick={() => fireClassControl("start")}
+                  disabled={classCtrlBusy === "start"}
+                  className="bw-btn-emphasis"
+                  style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
+                  title="Unlock pupils' chat and start the lesson"
+                >
+                  <Play size={12} /> Start class
+                </button>
+              ) : sessionStatus.value === "paused" ? (
+                <button
+                  onClick={() => fireClassControl("resume")}
+                  disabled={classCtrlBusy === "resume"}
+                  className="bw-btn-emphasis"
+                  style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
+                  title="Resume the class"
+                >
+                  <Play size={12} /> Resume
+                </button>
+              ) : (
+                <button
+                  onClick={() => fireClassControl("pause")}
+                  disabled={classCtrlBusy === "pause"}
+                  className="bw-btn-secondary"
+                  style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
+                  title="Pause everyone's chat"
+                >
+                  <Pause size={12} /> Pause
+                </button>
+              )
+            )}
+
+            {/* Join code — kept visible; teachers read it out to the room */}
+            {klass && (
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(klass.joinCode);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1500);
+                  } catch {
+                    /* noop */
+                  }
+                }}
+                className="bw-card"
+                style={{
+                  padding: "6px 10px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  cursor: "pointer",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 13,
+                  letterSpacing: "0.1em",
+                  background: "var(--surface)",
+                }}
+                title="Copy the six-character join code"
+              >
+                <span>{klass.joinCode}</span>
+                {copied ? <Check size={11} color="var(--color-gold-500)" /> : <Copy size={11} color="var(--text-muted)" />}
+              </button>
+            )}
+
+            {/* Everything else — quiet overflow so the bar stays calm */}
+            {klass && (
+              <OverflowMenu>
                 {sessionStatus &&
                   (sessionStatus.value === "active" || sessionStatus.value === "wrap_up") && (
-                    <button
+                    <OverflowItem
+                      icon={<Flag size={13} />}
+                      label="Call wrap-up"
+                      disabled={classCtrlBusy === "wrap_up" || sessionStatus.value === "wrap_up"}
                       onClick={() => fireClassControl("wrap_up", "Five minutes left — round off what you have.")}
-                      disabled={classCtrlBusy === "wrap_up" || sessionStatus?.value === "wrap_up"}
-                      className="bw-btn-secondary"
-                      style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
-                      title="Call for the class to wrap up — pupils will be nudged to summarise"
-                    >
-                      <Flag size={12} /> Wrap-up
-                    </button>
+                    />
                   )}
-                {sessionStatus && sessionStatus.value !== "not_started" && (
-                  <button
-                    onClick={() => setConfirmEnd(true)}
-                    disabled={classCtrlBusy === "end"}
-                    className="bw-btn-secondary"
-                    style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6, color: "var(--color-crimson)" }}
-                    title="End the lesson for everyone"
-                  >
-                    <StopCircle size={12} /> End class
-                  </button>
-                )}
-                {ctrlConfirm && (
-                  <span
-                    role="status"
-                    style={{
-                      fontSize: 12,
-                      color: "var(--color-gold-text)",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4,
-                      animation: "bw-fade-in 200ms ease",
-                    }}
-                  >
-                    <Check size={12} /> {ctrlConfirm}
-                  </span>
-                )}
-              </>
-            )}
-            {klass && (
-              <>
-                <button
+                <OverflowItem
+                  icon={<MonitorPlay size={13} />}
+                  label="Open whiteboard"
                   onClick={() => {
                     const params = new URLSearchParams({
                       classId: klass.id,
@@ -310,84 +348,41 @@ export default function ClassDetailPage() {
                     });
                     window.open(`/classroom?${params.toString()}`, "bw-whiteboard", "noopener");
                   }}
-                  className="bw-btn-secondary"
-                  style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
-                  title="Open the whiteboard / projector view in a new window"
-                >
-                  <MonitorPlay size={12} /> Whiteboard
-                </button>
-                <button
-                  onClick={() => downloadResearchExport(klass.id)}
-                  disabled={researchBusy}
-                  className="bw-btn-secondary"
-                  style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
-                  title="Download an anonymised (P001…) research export of this class — engagement, Reason, scaffolding and intervention events as CSVs"
-                >
-                  <Download size={12} /> {researchBusy ? "Preparing…" : "Research export"}
-                </button>
-                <button
+                />
+                <OverflowItem
+                  icon={<Link2 size={13} />}
+                  label={linkCopied ? "Link copied" : "Copy join link"}
                   onClick={async () => {
                     try {
-                      const origin =
-                        typeof window !== "undefined" ? window.location.origin : "";
-                      await navigator.clipboard.writeText(
-                        `${origin}/j/${encodeURIComponent(klass.joinCode)}`
-                      );
+                      const origin = typeof window !== "undefined" ? window.location.origin : "";
+                      await navigator.clipboard.writeText(`${origin}/j/${encodeURIComponent(klass.joinCode)}`);
                       setLinkCopied(true);
                       setTimeout(() => setLinkCopied(false), 1500);
                     } catch {
                       /* noop */
                     }
                   }}
-                  className="bw-btn-secondary"
-                  style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
-                  title="Copy a join link pupils can open in one tap"
-                >
-                  {linkCopied ? (
-                    <>
-                      <Check size={12} color="var(--color-gold-500)" /> Link copied
-                    </>
-                  ) : (
-                    <>
-                      <Link2 size={12} /> Copy join link
-                    </>
+                />
+                <OverflowItem
+                  icon={<Download size={13} />}
+                  label={researchBusy ? "Preparing export…" : "Research export"}
+                  disabled={researchBusy}
+                  onClick={() => downloadResearchExport(klass.id)}
+                />
+                {sessionStatus &&
+                  sessionStatus.value !== "not_started" &&
+                  sessionStatus.value !== "ended" && (
+                    <OverflowItem
+                      icon={<StopCircle size={13} />}
+                      label="End class"
+                      danger
+                      onClick={() => setConfirmEnd(true)}
+                    />
                   )}
-                </button>
-                <button
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(klass.joinCode);
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 1500);
-                    } catch {
-                      /* noop */
-                    }
-                  }}
-                  className="bw-card"
-                  style={{
-                    padding: "6px 10px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    cursor: "pointer",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 13,
-                    letterSpacing: "0.1em",
-                    background: "var(--surface)",
-                  }}
-                  title="Copy the six-character code"
-                >
-                  <span>{klass.joinCode}</span>
-                  {copied ? <Check size={11} color="var(--color-gold-500)" /> : <Copy size={11} color="var(--text-muted)" />}
-                </button>
-              </>
+              </OverflowMenu>
             )}
-            {/* Sign out lives in the UserMenu (top-right user chip) now. */}
           </div>
         </div>
-
-        {/* Post-class appraisal panel — only appears once the lesson is ended. */}
-        {sessionStatus?.value === "ended" && <AppraisalPanel classId={classId} />}
 
         {/* Class status banner */}
         {(!sessionStatus || sessionStatus.value !== "active") && (
@@ -628,32 +623,28 @@ export default function ClassDetailPage() {
           </section>
         )}
 
-        {/* State strip */}
-        {Object.keys(live).length > 0 && (
-          <section className="bw-card" style={{ padding: 14, marginBottom: 18 }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
-              <span className="bw-section-label">Live class · {Object.keys(live).length} active</span>
-              <SortControl value={sort} onChange={setSort} />
-            </div>
-            <div style={{ display: "flex", height: 8, borderRadius: 999, overflow: "hidden", background: "var(--surface)" }}>
-              {(["flowing", "productive_struggle", "wheel_spinning", "disengaged", "off_task"] as const).map((s) => {
-                const n = stateCounts[s] ?? 0;
-                if (n === 0) return null;
-                const pct = (n / Object.keys(live).length) * 100;
-                return (
-                  <div
-                    key={s}
-                    title={`${statePill[s].label} · ${n}`}
-                    style={{
-                      width: `${pct}%`,
-                      background: statePill[s].colour,
-                      transition: "width var(--dur-slower) var(--ease-standard)",
-                    }}
-                  />
-                );
-              })}
-            </div>
-          </section>
+        {/* Collective pulse — the answer to "how is my class doing right now" */}
+        {liveActive.length > 0 && (
+          <div style={{ marginBottom: 18 }}>
+            <ClassPulse pupils={liveActive} stepCount={klass?.lessonPlan?.sequence?.length} />
+          </div>
+        )}
+
+        {/* Pupils — attention-sorted; the cards needing a look ride to the top */}
+        {liveActive.length > 0 && (
+          <div className="flex items-center justify-between" style={{ marginBottom: 12, gap: 12, flexWrap: "wrap" }}>
+            <span className="flex items-center gap-2">
+              <span className="bw-section-label">Pupils</span>
+              {needLook > 0 ? (
+                <span style={{ fontSize: 12, color: "var(--color-gold-text)", fontWeight: 600 }}>
+                  {needLook} could use a look — sorted to the top
+                </span>
+              ) : (
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>all working right now</span>
+              )}
+            </span>
+            <SortControl value={sort} onChange={setSort} />
+          </div>
         )}
 
         {/* Pupil grid + drill panel. On tablet/mobile the drill panel
@@ -695,6 +686,51 @@ export default function ClassDetailPage() {
             <LivePupilPanel pupil={selected} classId={classId} onClose={() => setSelectedId(null)} />
           )}
         </div>
+
+        {/* After the lesson — a quiet, collapsed affordance (not the giant
+            gold panel that used to dominate the ended-lesson view). */}
+        {sessionStatus?.value === "ended" && (
+          <section style={{ marginTop: 22 }}>
+            <button
+              onClick={() => setAppraisalOpen((o) => !o)}
+              className="bw-card"
+              aria-expanded={appraisalOpen}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 10,
+                padding: "12px 16px",
+                cursor: "pointer",
+                textAlign: "left",
+                background: "var(--surface-elev)",
+              }}
+            >
+              <span className="flex items-center gap-2">
+                <Sparkles size={14} color="var(--color-gold-500)" />
+                <span className="bw-section-label">After the lesson</span>
+                <span style={{ fontSize: 13, color: "var(--text)" }}>Appraise this lesson plan</span>
+              </span>
+              {appraisalOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            </button>
+            <AnimatePresence>
+              {appraisalOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
+                  style={{ overflow: "hidden" }}
+                >
+                  <div style={{ marginTop: 12 }}>
+                    <AppraisalPanel classId={classId} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </section>
+        )}
       </div>
 
       {confirmEnd && (
@@ -859,13 +895,159 @@ function sortPupils(items: MergedPupil[], sort: SortKey): MergedPupil[] {
   return sorted;
 }
 
-function countByState(items: MergedPupil[]): Record<string, number> {
-  const counts: Record<string, number> = {};
-  for (const it of items) {
-    if (!it.isLive) continue;
-    counts[it.live.state] = (counts[it.live.state] ?? 0) + 1;
-  }
-  return counts;
+// Session status pill — one calm read of where the lesson is, with the
+// heraldic-red pulse reserved for "live right now".
+function StatusPill({ value }: { value: SessionStatus["value"] }) {
+  const map: Record<SessionStatus["value"], { label: string; live?: boolean; ended?: boolean }> = {
+    not_started: { label: "Lobby" },
+    active: { label: "Live", live: true },
+    paused: { label: "Paused" },
+    wrap_up: { label: "Wrapping up" },
+    ended: { label: "Ended", ended: true },
+  };
+  const s = map[value];
+  return (
+    <span
+      role="status"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "5px 10px",
+        borderRadius: "var(--radius-pill)",
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: "0.04em",
+        border: "1px solid var(--line)",
+        background: s.live ? "rgba(227, 6, 19, 0.06)" : "var(--surface)",
+        color: s.ended ? "var(--text-muted)" : "var(--text)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: "var(--radius-pill)",
+          background: s.live
+            ? "var(--color-bridewell-red)"
+            : s.ended
+            ? "var(--text-muted)"
+            : "var(--color-gold-500)",
+          animation: s.live ? "bw-pulse 1.6s ease-in-out infinite" : undefined,
+        }}
+      />
+      {s.label}
+    </span>
+  );
+}
+
+// Quiet overflow menu for the secondary class controls — keeps the command
+// bar calm. Same enter/exit + outside-click pattern as the account menu.
+function OverflowMenu({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="bw-btn-secondary"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="More actions"
+        style={{ padding: 8, display: "inline-flex", alignItems: "center" }}
+      >
+        <MoreHorizontal size={14} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="menu"
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            transition={{ duration: 0.16, ease: [0, 0, 0.2, 1] }}
+            onClick={() => setOpen(false)}
+            style={{
+              transformOrigin: "top right",
+              position: "absolute",
+              top: "calc(100% + 8px)",
+              right: 0,
+              minWidth: 220,
+              background: "var(--surface)",
+              border: "1px solid var(--line)",
+              borderRadius: "var(--radius-lg)",
+              boxShadow: "var(--shadow-lg)",
+              padding: 6,
+              zIndex: 50,
+              display: "grid",
+              gap: 2,
+            }}
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function OverflowItem({
+  icon,
+  label,
+  onClick,
+  disabled,
+  danger,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      disabled={disabled}
+      className="bw-menu-item"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "8px 10px",
+        borderRadius: "var(--radius-md)",
+        fontSize: 13,
+        color: danger ? "var(--color-crimson)" : "var(--text)",
+        background: "transparent",
+        border: "none",
+        textAlign: "left",
+        width: "100%",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        transition: "background var(--dur-fast) var(--ease-standard)",
+      }}
+    >
+      {icon}
+      {label}
+    </button>
+  );
 }
 
 // LIVE badge — heraldic-red broadcast-style indicator. Visible only

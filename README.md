@@ -60,10 +60,19 @@ disengaged, safeguarding-disclosure) running against the live system. Read the c
 - **Priya Adesina** — `productive_struggle` — partial answers, willing to keep trying.
 - **Jacob Pritchard** — `disengaged` — "Can we do this later?"
 
-Each card shows a real engagement-state sparkline over the last 20 minutes, the
-pupil's last message excerpt, time since activity, and a click-to-drill action.
-The header carries class-wide controls (pause / wrap-up / end class) and the
-six-character join code teachers display on the board.
+The view opens with a **class pulse** — "*N working · M could use a look*", a
+state-palette distribution bar, and the class's average lesson position — so the
+collective answer to "how's the class?" reads in one glance. Beneath it, each
+pupil card carries an **engagement lane**: a trajectory whose height *means*
+engagement (floor = needs a look, ceiling = working well), so a struggling pupil's
+line visibly dips and a flowing pupil's rides high, with the direction named in
+plain words ("climbing" / "steady" / "slipping"). The card also shows a dominant
+state chip, the pupil's own last words as evidence, lesson position, and a
+click-to-drill action. The drill panel renders the classifier's cues in plain
+English (never raw tokens) and groups everything into *Right now → Engagement →
+Their words → What you can do*. A slim command bar carries one state-appropriate
+primary action (start / pause / resume), the join code, and a quiet overflow for
+everything else.
 
 ---
 
@@ -185,10 +194,12 @@ pupils currently inside it, with a state-coloured dot per pupil. The extension b
   <img src="docs/screenshots/11-class-detail-plan.png" width="900" alt="Class detail — plan view with per-step pupil tokens and extension brief">
 </p>
 
-Per-pupil cards live underneath, with sparklines, last-message excerpt, and state
-pill. Class-wide controls in the header: **Start class** (until the teacher hits this,
-the pupils sit in the lobby), **Pause**, **Wrap-up**, **End class**, **Whiteboard**
-(opens the projector view in a new window), and **Copy join link**. When the teacher
+Per-pupil cards live underneath, each with an engagement lane, last-message
+excerpt, and state chip. The command bar carries one state-appropriate primary
+action — **Start class** (until the teacher hits this, the pupils sit in the
+lobby) becomes **Pause** / **Resume** — with **Wrap-up**, **End class**,
+**Whiteboard** (opens the projector view in a new window), and **Copy join link**
+folded into a quiet overflow menu. When the teacher
 pauses, a full overlay lands on the pupil's chat — they're prompted to look up, not to
 keep typing into a frozen conversation:
 
@@ -282,7 +293,7 @@ identifies a child.
 ┌──────────────────────────────────────────────────────────────────────┐
 │                       Teacher dashboard                              │
 │  /class/[id]   ←  RTDB onValue listener  →  re-renders in real time  │
-│      ├ PupilCard with sparkline + last message + safeguarding chip   │
+│      ├ ClassPulse + PupilCard with engagement lane + last message    │
 │      ├ LivePupilPanel: trajectory, conversation, interventions       │
 │      └ Class-wide controls: pause / wrap-up / end / appraisal        │
 └──────────────────────────────────────────────────────────────────────┘

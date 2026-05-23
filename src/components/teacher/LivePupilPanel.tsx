@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { X, MessageSquare, Send, RefreshCcw, Users, Pause, Check, AlertTriangle, Sparkles, Download } from "lucide-react";
 import { StatePill } from "@/components/shared/StatePill";
 import { SkeletonLine } from "@/components/shared/Skeleton";
+import { humaniseCue } from "@/lib/teacher-viz";
 import { statePill, type EngagementState } from "@/lib/brand";
 import type { LivePupil } from "@/lib/firebase/live";
 import { getRecentConversation, type ConversationTurn } from "@/lib/firebase/conversation";
@@ -135,33 +136,49 @@ export function LivePupilPanel({
         )}
 
         <div>
-          <div className="bw-section-label" style={{ marginBottom: 6 }}>Current state</div>
+          <div className="bw-section-label" style={{ marginBottom: 6 }}>Right now</div>
           <div className="flex items-center gap-2">
             <StatePill state={pupil.state} />
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+              {Math.round(pupil.confidence * 100)}% sure
+            </span>
           </div>
           {pupil.rationale && (
-            <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, lineHeight: 1.4 }}>
-              <Sparkles size={10} style={{ marginRight: 4, verticalAlign: "middle", color: "var(--color-gold-text)" }} />
+            <p style={{ fontSize: 13, color: "var(--text)", marginTop: 10, lineHeight: 1.5 }}>
+              <Sparkles size={11} style={{ marginRight: 5, verticalAlign: "middle", color: "var(--color-gold-text)" }} />
               {pupil.rationale}
             </p>
           )}
+          {/* Cues — rendered in plain English, never the raw classifier tokens */}
           {pupil.cues && pupil.cues.length > 0 && (
-            <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontSize: 11, color: "var(--text-muted)" }}>
+            <div className="flex items-center gap-2" style={{ flexWrap: "wrap", marginTop: 10 }}>
               {pupil.cues.map((c, i) => (
-                <li key={i}>{c}</li>
+                <span
+                  key={i}
+                  style={{
+                    fontSize: 11,
+                    padding: "3px 9px",
+                    borderRadius: "var(--radius-pill)",
+                    background: "var(--color-gold-tint-2)",
+                    color: "var(--color-gold-text)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {humaniseCue(c)}
+                </span>
               ))}
-            </ul>
+            </div>
           )}
         </div>
 
         <div>
-          <div className="bw-section-label" style={{ marginBottom: 6 }}>Trajectory · last 20 min</div>
+          <div className="bw-section-label" style={{ marginBottom: 6 }}>Engagement · last 20 min</div>
           <TrajectoryChart trajectory={pupil.trajectory ?? []} />
         </div>
 
         <div>
           <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
-            <span className="bw-section-label">Recent conversation</span>
+            <span className="bw-section-label">Their words</span>
             {loadingTurns && (
               <span style={{ fontSize: 10, color: "var(--text-muted)" }}>refreshing…</span>
             )}
@@ -238,17 +255,25 @@ export function LivePupilPanel({
           </div>
         </div>
 
-        <AdaptivePitch pupilId={pupil.pupilId} pupilName={pupil.displayName} />
-
-        <SendEditor pupilId={pupil.pupilId} pupilName={pupil.displayName} />
-
-        <InterventionActions classId={classId} pupilId={pupil.pupilId} pupilName={pupil.displayName} hasSafeguarding={!!pupil.safeguarding} />
-
-        <GdprExport pupilId={pupil.pupilId} pupilName={pupil.displayName} />
-
-        {loadingTurns && (
-          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading conversation…</div>
-        )}
+        {/* What you can do — pitch, SEND, interventions and data, grouped
+            under one heading rather than four stacked sections. */}
+        <div
+          style={{
+            marginTop: 4,
+            paddingTop: 14,
+            borderTop: "1px solid var(--line)",
+            display: "grid",
+            gap: 14,
+          }}
+        >
+          <span className="bw-section-label" style={{ color: "var(--color-gold-text)" }}>
+            What you can do
+          </span>
+          <AdaptivePitch pupilId={pupil.pupilId} pupilName={pupil.displayName} />
+          <SendEditor pupilId={pupil.pupilId} pupilName={pupil.displayName} />
+          <InterventionActions classId={classId} pupilId={pupil.pupilId} pupilName={pupil.displayName} hasSafeguarding={!!pupil.safeguarding} />
+          <GdprExport pupilId={pupil.pupilId} pupilName={pupil.displayName} />
+        </div>
       </div>
     </aside>
   );

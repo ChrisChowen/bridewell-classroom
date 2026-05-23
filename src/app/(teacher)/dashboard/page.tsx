@@ -87,8 +87,6 @@ export default function DashboardPage() {
         <div style={{ display: "grid", gap: 18 }}>
           <ClassesPanel />
 
-          {hasClasses && <EngagementWaitingPanel classes={classes!} />}
-
           {!hasClasses && !isLoadingClasses && <FirstStepsCard />}
         </div>
       </div>
@@ -109,30 +107,6 @@ function firstName(s: string) {
   // Capitalise — a teacher with no displayName derives from their email
   // (e.g. "jane.wells@…" → "jane"); "Good morning, jane." reads off-brand.
   return first.charAt(0).toUpperCase() + first.slice(1);
-}
-
-function EngagementWaitingPanel({ classes }: { classes: ClassRecord[] }) {
-  const totalPlanned = classes.reduce((sum, c) => sum + (c.lessonPlan ? 1 : 0), 0);
-  return (
-    <section className="bw-card" style={{ padding: 22, textAlign: "center" }}>
-      <span className="bw-section-label" style={{ display: "block", marginBottom: 6 }}>
-        Live class state
-      </span>
-      <div className="bw-display" style={{ fontSize: 18, marginBottom: 6 }}>
-        Waiting for pupils to join
-      </div>
-      <p style={{ color: "var(--text-muted)", fontSize: 13, maxWidth: 540, margin: "0 auto" }}>
-        {totalPlanned} of your {classes.length} {classes.length === 1 ? "class has" : "classes have"} an approved lesson plan ready.
-        Share the join code with your class and the engagement stream will appear here as
-        pupils start chatting with the tutor.
-      </p>
-      <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 12 }}>
-        Once pupils start joining and chatting, the dashboard will populate live —
-        per-pupil cards, engagement sparklines, and safeguarding flags will appear as
-        they happen.
-      </p>
-    </section>
-  );
 }
 
 function FirstStepsCard() {
