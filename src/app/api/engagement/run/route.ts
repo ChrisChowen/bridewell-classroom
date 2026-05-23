@@ -6,6 +6,7 @@ import { resolveDataStore } from "@/lib/data";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { classifyEngagement, type ClassifierInput } from "@/layers/classifier";
 import { anonKey } from "@/lib/live-keys";
+import { logInfo } from "@/lib/log";
 import type { EngagementSnapshot } from "@/types";
 
 // POST /api/engagement/run
@@ -37,6 +38,7 @@ interface Body extends ClassifierInput {
 const MAX_TRAJECTORY = 24; // last 20 minutes at 50s windows
 
 export async function POST(req: Request) {
+  const reqStart = Date.now();
   // The classifier runs on Pro (most expensive model) + writes Firestore/RTDB
   // per call — cap it so a stuck/looping client can't burn the budget.
   const limited = await enforceRateLimit(req, RATE_LIMITS.engagementClassify);
@@ -128,10 +130,12 @@ export async function POST(req: Request) {
   // promote them manually.
   let sequenceLength = 1;
   let hasExtension = false;
+  let teacherId: string | undefined;
   try {
     const cls = await store.getClass(pupil.classId);
     sequenceLength = cls?.lessonPlan?.sequence?.length ?? 1;
     hasExtension = !!cls?.lessonPlan?.extension;
+    teacherId = cls?.teacherId;
     // Self-heal the RTDB live-mirror owner stamp so the hardened
     // database rules can scope pupil reads to the owning teacher. Older
     // classes created before meta existed get it on their first
@@ -257,6 +261,22 @@ export async function POST(req: Request) {
       reviewed: false,
     });
   }
+
+  // Structured, PII-free signal line: who/where (ids), what state, how the
+  // classifier behaved. No names, no message content (the formatter would
+  // drop them anyway).
+  logInfo({
+    event: "engagement_classified",
+    route: "engagement/run",
+    classId: pupil.classId,
+    pupilUid: uid,
+    teacherUid: teacherId,
+    state: result.state,
+    tier: result.tier ?? "pro",
+    fallback: result.fallbackUsed ?? false,
+    severity: result.safeguarding.severity,
+    durationMs: Date.now() - reqStart,
+  });
 
   return NextResponse.json({
     state: result.state,

@@ -4,6 +4,7 @@ import { callLLM, dedupeCitations, type LLMMessage } from "@/lib/ai/llm";
 import { buildTutorSystemPrompt, SCAFFOLD_SYSTEM } from "@/lib/ai/prompts";
 import { mentionsUnsupportedVisual } from "@/lib/ai/output-guards";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { withRequestLog } from "@/lib/log";
 import type { ActivityType, ScaffoldAction, TutorMode } from "@/types";
 
 // POST /api/chat — tutor chat path.
@@ -52,7 +53,12 @@ type Body = {
   system?: string;
 };
 
-export async function POST(req: Request) {
+export function POST(req: Request) {
+  // One structured request line (route/method/status/durationMs, no PII).
+  return withRequestLog("chat", req, () => handleChat(req));
+}
+
+async function handleChat(req: Request) {
   const limited = await enforceRateLimit(req, RATE_LIMITS.chat);
   if (limited) return limited;
 
