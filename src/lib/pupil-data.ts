@@ -99,6 +99,104 @@ export async function gatherPupilData(
   return out;
 }
 
+// Brief item N — gather a whole class's analytic events for the anonymised
+// research export. Read-only. Returns the raw (still-identified) rows; the
+// pure `buildResearchExport` pseudonymises + escapes them. Caller MUST have
+// verified the teacher owns the class.
+export interface ClassResearchData {
+  participants: Array<{ uid: string; challengeLevel?: string; sessionsObserved?: number }>;
+  engagement: Array<{ uid: string; timestamp: number; state: string; confidence: number; tier?: string; fallback?: boolean }>;
+  reason: Array<{ uid: string; timestamp: number; promptType: string; confidence: number; branch: string }>;
+  scaffolding: Array<{ uid: string; timestamp: number; action: string }>;
+  interventions: Array<{ uid?: string | null; timestamp: number; type: string }>;
+}
+
+export async function gatherClassResearchData(
+  db: Firestore,
+  classId: string
+): Promise<ClassResearchData> {
+  const pupilsSnap = await db.collection("pupils").where("classId", "==", classId).get();
+  const pupilIds = pupilsSnap.docs.map((d) => d.id);
+
+  const profiles = await Promise.all(
+    pupilIds.map((id) => db.collection("learnerProfiles").doc(id).get())
+  );
+  const profileById = new Map(
+    profiles.map((p) => [p.id, p.exists ? (p.data() as Record<string, unknown>) : null])
+  );
+
+  const participants = pupilsSnap.docs.map((d) => {
+    const prof = profileById.get(d.id);
+    return {
+      uid: d.id,
+      challengeLevel: prof?.challengeLevel as string | undefined,
+      sessionsObserved: prof?.sessionsObserved as number | undefined,
+    };
+  });
+
+  const [engSnap, reaSnap, intSnap] = await Promise.all([
+    db.collection("engagementSnapshots").where("sessionId", "==", classId).get(),
+    db.collection("reasonEvents").where("classId", "==", classId).get(),
+    db.collection("interventions").where("classId", "==", classId).get(),
+  ]);
+
+  const engagement = engSnap.docs.map((d) => {
+    const x = d.data() as Record<string, unknown>;
+    return {
+      uid: x.pupilId as string,
+      timestamp: x.timestamp as number,
+      state: x.state as string,
+      confidence: x.confidence as number,
+      tier: x.classifierTier as string | undefined,
+      fallback: x.classifierFallback as boolean | undefined,
+    };
+  });
+
+  const reason = reaSnap.docs.map((d) => {
+    const x = d.data() as Record<string, unknown>;
+    return {
+      uid: x.pupilId as string,
+      timestamp: x.timestamp as number,
+      promptType: x.promptType as string,
+      confidence: x.confidence as number,
+      branch: x.branch as string,
+    };
+  });
+
+  const interventions = intSnap.docs.map((d) => {
+    const x = d.data() as Record<string, unknown>;
+    return {
+      uid: (x.pupilId as string | null) ?? null,
+      timestamp: x.timestamp as number,
+      type: x.type as string,
+    };
+  });
+
+  // Scaffold presses live in the conversation transcript as message metadata
+  // (meta.scaffoldAction); read each participant's transcript and extract them.
+  const scaffolding: ClassResearchData["scaffolding"] = [];
+  await Promise.all(
+    pupilIds.map(async (uid) => {
+      const msgs = await db
+        .collection("conversations")
+        .doc(`${classId}_${uid}`)
+        .collection("messages")
+        .get()
+        .catch(() => null);
+      if (!msgs) return;
+      for (const m of msgs.docs) {
+        const x = m.data() as Record<string, unknown>;
+        const action = (x.meta as Record<string, unknown> | undefined)?.scaffoldAction as
+          | string
+          | undefined;
+        if (action) scaffolding.push({ uid, timestamp: x.timestamp as number, action });
+      }
+    })
+  );
+
+  return { participants, engagement, reason, scaffolding, interventions };
+}
+
 /**
  * GDPR Art. 17 — erase everything held about one pupil. Destructive.
  * Caller MUST have already verified authorisation (teacher owns the

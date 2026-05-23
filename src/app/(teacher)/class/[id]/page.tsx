@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Copy, Check, BookOpen, ChevronDown, ChevronRight, Pause, Play, Flag, StopCircle, MonitorPlay, Link2 } from "lucide-react";
+import { ArrowLeft, Copy, Check, BookOpen, ChevronDown, ChevronRight, Pause, Play, Flag, StopCircle, MonitorPlay, Link2, Download } from "lucide-react";
 import { TopBar } from "@/components/shared/TopBar";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
@@ -49,6 +49,34 @@ export default function ClassDetailPage() {
   // confirms its actions, so the class-level controls shouldn't fire silently.
   const [ctrlConfirm, setCtrlConfirm] = useState<string | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [researchBusy, setResearchBusy] = useState(false);
+
+  // Anonymised research export (brief item N) — pseudonymised, CSV-injection
+  // -safe ZIP of the class's analytic events. Teacher-scoped server-side.
+  async function downloadResearchExport(classId: string) {
+    setResearchBusy(true);
+    try {
+      const token = await getCleanIdToken();
+      const r = await fetch(`/api/classes/${classId}/research-export`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!r.ok) throw new Error(String(r.status));
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "research-export.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError("Couldn't prepare the research export. Try again.");
+    } finally {
+      setResearchBusy(false);
+    }
+  }
 
   // Auth guard
   useEffect(() => {
@@ -283,6 +311,15 @@ export default function ClassDetailPage() {
                   title="Open the whiteboard / projector view in a new window"
                 >
                   <MonitorPlay size={12} /> Whiteboard
+                </button>
+                <button
+                  onClick={() => downloadResearchExport(klass.id)}
+                  disabled={researchBusy}
+                  className="bw-btn-secondary"
+                  style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
+                  title="Download an anonymised (P001…) research export of this class — engagement, Reason, scaffolding and intervention events as CSVs"
+                >
+                  <Download size={12} /> {researchBusy ? "Preparing…" : "Research export"}
                 </button>
                 <button
                   onClick={async () => {
