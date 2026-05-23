@@ -1,0 +1,39 @@
+name: Adversarial eval (nightly)
+
+# The adversarial safety eval makes REAL Gemini calls (visual-promise baits +
+# jailbreak/authority/injection prompts) and asserts a 100% hold. It needs a
+# GEMINI_API_KEY secret, so it runs nightly rather than on every push, and
+# no-ops cleanly if the secret isn't configured (so forks don't fail).
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # 03:00 UTC nightly
+  workflow_dispatch: {}
+
+jobs:
+  adversarial:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+
+      - name: Check for Gemini key
+        id: key
+        run: |
+          if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::GEMINI_API_KEY secret not set — skipping the live adversarial eval."
+          fi
+
+      - name: Run adversarial eval (25 visual + 25 jailbreak/authority/injection)
+        if: steps.key.outputs.present == 'true'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          RUN_LIVE_EVAL: "1"
+        run: npx vitest run src/lib/ai/adversarial-eval.live.test.ts
