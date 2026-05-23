@@ -127,16 +127,39 @@ table + caveats in `docs/cross-subject-evidence.md` — the headline caveat is
 unchanged: a **ceiling on clean archetypal windows**, not a research claim;
 all confidence still fell in [0.8–1.0) (no mid-band).
 
-**Multi-rater bootstrap (built, credential-blocked).** The agreement maths is
-now implemented and unit-tested in `scripts/reason-eval-metrics.mjs` —
-Cohen κ (incl. linear/quadratic weighted κ), Fleiss κ (≥3 raters), and
-Krippendorff α (nominal). The labeller `scripts/bootstrap-rater-labels.mjs`
-runs three rater rubrics (strict / permissive / mid-band) via **Anthropic
-Claude — a different model family from the Gemini system under test** (using
-Gemini to rate Gemini would be circular), and emits
-`{"bootstrap":true,"researchValid":false}`. It is **blocked only on
-`ANTHROPIC_API_KEY`** (+ expanding the window set to ≥120); see
-`reports/blocked.md`.
+**Multi-rater bootstrap (RUN — via Claude agents, not the Gemini classifier).**
+The window set was expanded to **N=124** (incl. 30 deliberately ambiguous
+borderline windows to populate the mid-confidence band), then labelled by
+**three independent Claude AGENT raters** with distinct rubrics
+(strict / permissive / mid-band). Agents are a **non-Gemini model family**, so
+this is not circular with the Gemini classifier under test (and it sidesteps
+needing an `ANTHROPIC_API_KEY`). The agreement maths
+(`scripts/reason-eval-metrics.mjs`, unit-tested) is applied by
+`scripts/compute-rater-metrics.mjs` over the three label files.
+
+Results (`reports/bootstrap-rater-*.json`, `"bootstrap":true,"researchValid":false`):
+
+| Metric | Value |
+|--------|-------|
+| Fleiss κ (3 raters) | **0.95** |
+| Krippendorff α (nominal) | **0.95** |
+| Cohen κ (pairwise) | 0.94–0.97 (linear-weighted 0.97–0.98) |
+| Rater majority-vote vs authored gold | 97.6% acc, macro-F1 98.1% |
+| Per-state F1 (majority vs gold) | flowing 0.95 · productive_struggle 0.96 · wheel_spinning 1.00 · disengaged 1.00 · off_task 1.00 — **all ≥ 0.75** |
+| productive_struggle vs wheel_spinning | F1 0.96 / 1.00 |
+| Mid-band rater ECE | 17.0% — **mid band now populated**: [0.4–0.6) n=13, acc 84.6% @ meanConf 53.6% |
+
+Interpretation: three independent raters agree near-perfectly (κ/α ≈ 0.95) on
+this set, and recover the authored intent at all-states-F1 ≥ 0.75. The mid-band
+rater's mid-confidence calls (the formerly-empty [0.4–0.6) band) land ~85%
+correct — slightly under-confident there, which is the honest, non-degenerate
+calibration signal the earlier 34-window PoC couldn't show.
+
+**Hard caveat (unchanged): agents are NOT human teachers.** This is a bootstrap
+signal that the rubric is consistently applicable and the states are
+separable; it is not the research-grade claim. The Anthropic-API path
+(`scripts/bootstrap-rater-labels.mjs`) and the human-labelled, teacher-rated
+pass both remain available / required; the research claim stays **🔒**.
 
 **Standing caveat (unchanged):** LLM raters — Anthropic or otherwise — are
 **not a substitute for human teacher labels.** The research-grade claim
