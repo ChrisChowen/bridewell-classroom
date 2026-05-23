@@ -5,6 +5,11 @@
 // emulators:exec` sets — no real credential, no real-pupil data.
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getDatabase } from "firebase-admin/database";
+
+const DATABASE_URL =
+  process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ??
+  "https://bridewell-classroom-default-rtdb.europe-west1.firebasedatabase.app";
 
 export const E2E = {
   classId: "e2e-class-1",
@@ -18,7 +23,9 @@ export const E2E = {
 };
 
 export default async function globalSetup() {
-  const app = getApps()[0] ?? initializeApp({ projectId: "bridewell-classroom" });
+  const app =
+    getApps()[0] ??
+    initializeApp({ projectId: "bridewell-classroom", databaseURL: DATABASE_URL });
   const db = getFirestore(app);
 
   const lessonPlan = {
@@ -66,4 +73,11 @@ export default async function globalSetup() {
     teacherId: E2E.teacherId,
     createdAt: Date.now(),
   });
+
+  // Seed the live session as "active" so a joined pupil's chat is unlocked
+  // (no separate teacher "start" step needed for the e2e), plus the owner
+  // stamp the RTDB rules expect.
+  const rtdb = getDatabase(app);
+  await rtdb.ref(`liveSessions/${E2E.classId}/status`).set({ value: "active", ts: Date.now() });
+  await rtdb.ref(`liveSessions/${E2E.classId}/meta/teacherId`).set(E2E.teacherId);
 }

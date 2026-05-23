@@ -26,7 +26,10 @@ export default defineConfig({
     // reaches the Next dev server (env-object propagation proved flaky). The
     // admin host vars (FIRESTORE_/AUTH_/DATABASE_EMULATOR_HOST) come from the
     // surrounding `firebase emulators:exec` and are inherited by this shell.
-    command: "NEXT_PUBLIC_FIREBASE_EMULATOR=1 npm run dev",
+    // GEMINI_API_KEY="" forces the deterministic rule-based fallback for all
+    // LLM calls, so the flow specs (Reason fire/evaluate, tutor turns) are
+    // fast + deterministic and assert behaviour, not model content.
+    command: "GEMINI_API_KEY= NEXT_PUBLIC_FIREBASE_EMULATOR=1 npm run dev",
     url: "http://localhost:3000",
     // Never reuse an existing server — a stale live-mode dev server would
     // make the app talk to the live project instead of the emulator.

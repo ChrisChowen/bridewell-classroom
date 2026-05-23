@@ -55,8 +55,8 @@ jobs:
 
   # Accessibility gate — axe-core over the auth-free public pages (landing /
   # login / join) in light + dark. Separate job so the Playwright browser +
-  # build don't slow the unit gate. The full demo-flow e2e specs need the
-  # emulator seeded (reports/blocked.md) and are not wired here yet.
+  # build don't slow the unit gate. The emulator-backed demo-flow specs run
+  # in the `e2e` job below.
   a11y:
     runs-on: ubuntu-latest
     env:
@@ -86,3 +86,35 @@ jobs:
             sleep 1
           done
           BASE_URL=http://localhost:3000 npm run test:a11y
+
+  # Emulator-backed demo-flow e2e — pupil-join + B1 Reason-resumption
+  # (productive-struggle). Runs the app in emulator mode (no live backend,
+  # LLM in deterministic fallback) under the Firebase emulator suite.
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_FIREBASE_API_KEY: "ci-placeholder"
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "bridewell-classroom.firebaseapp.com"
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "bridewell-classroom"
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "bridewell-classroom.appspot.com"
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:ciplaceholder"
+      NEXT_PUBLIC_FIREBASE_DATABASE_URL: "https://bridewell-classroom-default-rtdb.europe-west1.firebasedatabase.app"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      # The Firestore + Database emulators are Java; pin a JDK.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+      - run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Install Firebase CLI (for the emulator suite)
+        run: npm install -g firebase-tools
+      - name: Emulator-backed e2e (pupil-join + B1 resume)
+        run: npm run test:e2e
