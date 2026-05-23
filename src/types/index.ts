@@ -24,6 +24,9 @@ export interface Message {
     reasonPromptType?: ReasonPromptType;
     reasonConfidence?: number; // 0..1
     reasonBranch?: string;
+    // The tutor's fresh coach turn taken right after a Reason exchange
+    // resolves (B1 resumption) — distinguishes it from an ordinary turn.
+    reasonResume?: boolean;
     fallback?: boolean;
     teacherHint?: boolean;
   };

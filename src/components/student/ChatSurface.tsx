@@ -683,6 +683,61 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
     }
   }
 
+  // B1 — Reason resumption. After the pupil answers a Reason prompt and the
+  // responder acknowledges, the lesson must not stall: the tutor takes a
+  // fresh coach turn so the conversation resumes (brief/03 §4 "the
+  // conversation resumes"). Called with the running history (built
+  // explicitly in the Reason onSubmit so it isn't a stale setState read).
+  async function resumeWithCoachTurn(history: UIMessage[]) {
+    if (!klass) return;
+    setPending(true);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: await chatHeaders(),
+        body: JSON.stringify({
+          messages: toApiMessages(history),
+          // Resume always in the lesson's base register (coach), never
+          // carrying a teacher one-turn Expert override into the resume.
+          mode: baseMode,
+          lesson: lessonForApi,
+          step: stepForApi,
+          extension: extensionForApi,
+          pupilProfile,
+        }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const data = (await res.json()) as { text: string; fallbackUsed: boolean };
+      const tutorText = data.text;
+      if (tutorText) {
+        setMessages((m) => [
+          ...m,
+          {
+            id: nextId(),
+            role: "tutor",
+            content: tutorText,
+            timestamp: Date.now(),
+            meta: { fallback: data.fallbackUsed, reasonResume: true },
+          },
+        ]);
+        void appendTurn("tutor", tutorText, { fallback: data.fallbackUsed, reasonResume: true });
+      }
+    } catch {
+      // Never leave the pupil staring at a closed Reason card with no next
+      // move — a calm generative line keeps the lesson alive even if the
+      // tutor call fails.
+      const soft = "Let's pick up where we were — what's the next thing you want to work out?";
+      setMessages((m) => [
+        ...m,
+        { id: nextId(), role: "tutor", content: soft, timestamp: Date.now() },
+      ]);
+      void appendTurn("tutor", soft);
+    } finally {
+      setPending(false);
+      if (!inputDisabled) inputRef.current?.focus();
+    }
+  }
+
   async function scaffold(kind: "hint" | "rephrase" | "simplify") {
     if (pending) return;
     signalsRef.current.scaffoldUseCount += 1;
@@ -862,16 +917,23 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
                 setReasonCard(null);
                 return;
               }
-              // Render the pupil's response inline as a normal message.
-              setMessages((m) => [
-                ...m,
-                { id: nextId(), role: "pupil", content: text, timestamp: Date.now() },
-              ]);
+              // Build the running history explicitly so the B1 resume coach
+              // turn sees the full Reason exchange (pupil answer + responder
+              // acknowledgement) rather than a stale setState snapshot.
+              const priorTutor = [...messages].reverse().find((m) => m.role === "tutor")?.content;
+              const pupilMsg: UIMessage = {
+                id: nextId(),
+                role: "pupil",
+                content: text,
+                timestamp: Date.now(),
+              };
+              let convo: UIMessage[] = [...messages, pupilMsg];
+              setMessages(convo);
               void appendTurn("pupil", text, { reasonResponse: true });
 
-              // Send to the evaluator. Persist the resulting follow-up
-              // tutor turn into the chat.
-              let acknowledged = false;
+              // Send to the evaluator; capture the branch + responder line.
+              let branch: string | undefined;
+              let responderTurn: string | undefined;
               try {
                 const token = await fb.auth.currentUser.getIdToken();
                 const res = await fetch("/api/reason/evaluate", {
@@ -885,41 +947,34 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
                     promptType: reasonCard.promptType,
                     promptText: reasonCard.promptText,
                     pupilResponse: text,
-                    priorTutorTurn: [...messages].reverse().find((m) => m.role === "tutor")?.content,
+                    priorTutorTurn: priorTutor,
                   }),
                 });
                 const data = await res.json();
                 if (res.ok && data.response?.tutorTurn) {
-                  acknowledged = true;
-                  setMessages((m) => [
-                    ...m,
-                    {
-                      id: nextId(),
-                      role: "tutor",
-                      content: data.response.tutorTurn,
-                      timestamp: Date.now(),
-                      meta: { reasonBranch: data.response.branch },
-                    },
-                  ]);
-                  void appendTurn("tutor", data.response.tutorTurn, {
-                    reasonBranch: data.response.branch,
-                  });
+                  branch = data.response.branch;
+                  responderTurn = data.response.tutorTurn;
                 }
               } catch {
-                /* non-fatal — handled by the acknowledgement below */
+                /* non-fatal — fallback below keeps the conversation alive */
               }
-              // The pupil just submitted a thoughtful response. If the
-              // evaluator failed (network / error / no follow-up), never
-              // meet that effort with silence — append one calm, generative
-              // line so the conversation always continues.
-              if (!acknowledged) {
-                const soft = "Thanks — that's a good effort. Let's keep going.";
-                setMessages((m) => [
-                  ...m,
-                  { id: nextId(), role: "tutor", content: soft, timestamp: Date.now() },
-                ]);
-                void appendTurn("tutor", soft);
-              }
+
+              // Append the responder acknowledgement (or, if the evaluator
+              // failed, a calm generative line — never meet pupil effort
+              // with silence).
+              const ackText =
+                responderTurn ?? "Thanks — that's a good effort. Let's keep going.";
+              const ackMsg: UIMessage = {
+                id: nextId(),
+                role: "tutor",
+                content: ackText,
+                timestamp: Date.now(),
+                meta: branch ? { reasonBranch: branch } : undefined,
+              };
+              convo = [...convo, ackMsg];
+              setMessages(convo);
+              void appendTurn("tutor", ackText, branch ? { reasonBranch: branch } : undefined);
+
               setReasonCard(null);
               if (typeof window !== "undefined") {
                 window.sessionStorage.removeItem("bw-reason-card");
@@ -929,6 +984,17 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
               // they get a fresh allowance for the next step.
               signalsRef.current.scaffoldUseCount = 0;
               setScaffoldUsed(0);
+
+              // ── B1: Reason resumption ──────────────────────────────────
+              // soft_challenge already ends in a targeted follow-up
+              // *question*, so the pupil has a clear next move. accept,
+              // pattern_flag, and the evaluator-failure fallback all end in a
+              // closing acknowledgement with NO question — which left the
+              // lesson stalled. Take a fresh coach turn so the tutor
+              // re-engages and the conversation resumes.
+              if (branch !== "soft_challenge") {
+                await resumeWithCoachTurn(convo);
+              }
             }}
           />
         )}
