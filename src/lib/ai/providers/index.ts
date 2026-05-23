@@ -9,6 +9,7 @@
 
 import type { LLMProvider } from "./types";
 import { GeminiProvider } from "./gemini";
+import { OpenAIProvider } from "./openai";
 
 type ProviderFactory = () => LLMProvider;
 
@@ -41,6 +42,9 @@ export function resolveProvider(): LLMProvider {
   return instance;
 }
 
-// Built-in provider. Adding more here (or via registerProvider from app
+// Built-in providers. Adding more here (or via registerProvider from app
 // bootstrap) is how Unified extends the backend set.
 registerProvider("gemini", () => new GeminiProvider());
+// OpenAI / GPT-5.2 — the model Unified Projects run for the schools. Select
+// with LLM_PROVIDER=openai + OPENAI_API_KEY (model ids in models.ts).
+registerProvider("openai", () => new OpenAIProvider());

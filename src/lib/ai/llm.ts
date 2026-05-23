@@ -19,7 +19,7 @@
 // per CLAUDE.md §O).
 
 import "server-only";
-import { MODELS, type ModelKey } from "./models";
+import { modelFor, type ModelKey } from "./models";
 import { resolveProvider } from "./providers";
 import type { LLMMessage, LLMCitation } from "./providers/types";
 
@@ -82,7 +82,7 @@ export function setUsageRecorder(fn: ((u: LLMUsageRecord) => void) | null): void
 }
 
 export async function callLLM(opts: LLMCallOptions): Promise<LLMCallResult> {
-  const model = MODELS[opts.use];
+  const model = modelFor(opts.use);
 
   let provider;
   try {
@@ -155,7 +155,7 @@ export async function callLLM(opts: LLMCallOptions): Promise<LLMCallResult> {
 export async function* callLLMStream(
   opts: Omit<LLMCallOptions, "responseSchema" | "grounding">,
 ): AsyncGenerator<string> {
-  const model = MODELS[opts.use];
+  const model = modelFor(opts.use);
   let provider;
   try {
     provider = resolveProvider();

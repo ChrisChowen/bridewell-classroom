@@ -39,3 +39,39 @@ export const MODELS = {
 } as const;
 
 export type ModelKey = keyof typeof MODELS;
+
+// ── Provider-specific model ids ──────────────────────────────────────────
+// The job→model map is per-provider: a backend swap changes the concrete ids
+// AND (via the adapter) the API shape. `MODELS` above is the Gemini default;
+// the maps below let `LLM_PROVIDER` repoint every job to that backend's ids.
+//
+// OpenAI / GPT-5.2 — what Unified Projects run for the schools. GPT-5.2 is a
+// reasoning model, so fast-vs-deep tiering comes from reasoning.effort (mapped
+// from each call's thinkingBudget in the adapter) rather than a separate model
+// id; all jobs use `gpt-5.2`. If Unified have a smaller/faster variant (e.g. a
+// `gpt-5.2-mini`) they can drop it into the fast-tier keys (tutor / scaffold /
+// classifierFlash) here — no other change needed.
+const OPENAI_MODELS: Record<ModelKey, string> = {
+  tutor: "gpt-5.2",
+  scaffold: "gpt-5.2",
+  classifierFlash: "gpt-5.2",
+  classifier: "gpt-5.2",
+  reasonEvaluator: "gpt-5.2",
+  profileUpdater: "gpt-5.2",
+  lessonPlanner: "gpt-5.2",
+  appraiser: "gpt-5.2",
+  sessionClose: "gpt-5.2",
+};
+
+const MODELS_BY_PROVIDER: Record<string, Record<ModelKey, string>> = {
+  gemini: MODELS,
+  openai: OPENAI_MODELS,
+};
+
+// Resolve a job key to a concrete model id for the active provider. Defaults
+// to the Gemini map; an unknown provider also falls back to Gemini ids (the
+// adapter for that provider would have thrown earlier if truly misconfigured).
+export function modelFor(use: ModelKey, provider = process.env.LLM_PROVIDER): string {
+  const p = (provider || "gemini").toLowerCase();
+  return (MODELS_BY_PROVIDER[p] ?? MODELS)[use];
+}

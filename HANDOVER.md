@@ -47,6 +47,36 @@ these; leave the rest.
   (`ProviderGenerateRequest.grounding` / `.responseSchema`). If your backend
   lacks web-search grounding, return no citations — Expert mode degrades to a
   plain answer.
+- **Streaming** is the optional `generateStream(req)` on the provider (yields
+  text deltas; used for the live coach turn). Adapters that don't implement it
+  are simply never streamed — `callLLMStream` falls back to one full chunk.
+
+#### GPT-5.2 / OpenAI — your backend, already wired
+
+The OpenAI adapter is built and ready (`src/lib/ai/providers/openai.ts`),
+since GPT-5.2 is what you run for the schools. **The whole swap is:**
+
+```
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-…
+```
+
+- It targets the **Responses API** (`POST /v1/responses`) — `instructions`
+  (system), `input` (messages), `reasoning.effort` (mapped from each job's
+  `thinkingBudget`: fast tutor turns → `none`, analysis jobs → `medium`/`high`),
+  `text.format` `json_schema` (structured outputs), and the `web_search` tool
+  (Expert-mode grounding → `url_citation` annotations). Streaming via SSE.
+- **Model ids** live in `models.ts` (`OPENAI_MODELS`) — all jobs map to
+  `gpt-5.2`; the fast-vs-deep split is via reasoning effort. If you have a
+  smaller variant (e.g. `gpt-5.2-mini`), drop it into the fast-tier keys.
+- **Verified by `providers/openai.test.ts`** (request shape, structured-output
+  + web-search mapping, effort tiers, citation + SSE-stream parsing) — but
+  **not yet run against a live key** in this repo. Two conservative defaults to
+  confirm/tune on your side: `temperature` is omitted (GPT-5.2 reasoning models
+  reject a custom temperature), and `json_schema` is sent `strict:false` (our
+  schemas weren't authored to OpenAI strict rules; every caller JSON-parses +
+  validates with a fallback regardless). Flip to `strict:true` once the
+  schemas are made strict-compliant.
 
 ### 2b. Auth seam — `src/lib/auth/` (server) + `src/lib/firebase/` (client)
 - **Server identity is now behind one interface.** `src/lib/auth/` defines
@@ -88,8 +118,9 @@ these; leave the rest.
 ## 3. Environment / configuration
 
 Server-side (never client-exposed):
-- `GEMINI_API_KEY` — only used by the Gemini provider; unused if you swap.
-- `LLM_PROVIDER` — selects the backend (default `gemini`).
+- `LLM_PROVIDER` — selects the backend (`gemini` default, `openai` for GPT-5.2).
+- `GEMINI_API_KEY` — used by the Gemini provider; unused if you swap to OpenAI.
+- `OPENAI_API_KEY` — used by the OpenAI/GPT-5.2 provider (`LLM_PROVIDER=openai`).
 - Firebase Admin credential: in production use **Application Default
   Credentials** (the Cloud Run service account); locally a gitignored
   `secrets/firebase-admin.json` via `FIREBASE_SERVICE_ACCOUNT_PATH`. See
