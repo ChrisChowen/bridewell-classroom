@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import type { Route } from "next";
 import { Settings, Check, ArrowLeftRight, ChevronDown } from "lucide-react";
@@ -188,12 +189,18 @@ export function AccessibilityMenu({
         </button>
       )}
 
+      <AnimatePresence>
       {open && (
-        <div
+        <motion.div
           role="dialog"
           aria-label="Settings"
           className="bw-card"
+          initial={{ opacity: 0, y: -6, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -6, scale: 0.97 }}
+          transition={{ duration: 0.16, ease: [0, 0, 0.2, 1] }}
           style={{
+            transformOrigin: "top right",
             position: "absolute",
             top: "calc(100% + 8px)",
             right: 0,
@@ -202,7 +209,7 @@ export function AccessibilityMenu({
             zIndex: 50,
             display: "grid",
             gap: 14,
-            boxShadow: "0 8px 28px rgba(15,26,46,0.18)",
+            boxShadow: "var(--shadow-lg)",
           }}
         >
           <div>
@@ -279,8 +286,9 @@ export function AccessibilityMenu({
               <ArrowLeftRight size={13} /> Switch class
             </Link>
           )}
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { motion } from "motion/react";
 import { ChevronRight, AlertTriangle, MessageSquare, CloudOff, Zap } from "lucide-react";
 import { StatePill } from "@/components/shared/StatePill";
 import { statePill, type EngagementState } from "@/lib/brand";
@@ -49,17 +50,27 @@ export function PupilCard({
   const sparkline = useMemo(() => buildSparklinePath(pupil.trajectory ?? []), [pupil.trajectory]);
 
   return (
-    <button
+    <motion.button
       onClick={() => onSelect(pupil.pupilId)}
       aria-pressed={selected}
       className="bw-card"
+      // layout="position" animates the card sliding to its new slot when the
+      // grid re-sorts (attention/recent/A–Z) without distorting its contents;
+      // the enter fade+scale brings new pupils in as they join rather than
+      // popping. Background/border still transition via CSS so motion only
+      // owns transform+opacity (no double-animation of the same property).
+      layout="position"
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
       style={{
         padding: 14,
         textAlign: "left",
         background: selected ? "rgba(181,138,60,0.08)" : "var(--surface-elev)",
         border: `1px solid ${selected ? "var(--color-gold-500)" : "var(--line)"}`,
         cursor: "pointer",
-        transition: "all 120ms ease",
+        transition:
+          "background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard)",
         display: "grid",
         gridTemplateRows: "auto 1fr auto",
         gap: 10,
@@ -162,22 +173,30 @@ export function PupilCard({
           <rect x="0" y="34" width="200" height="14" fill="rgba(216,154,47,0.05)" />
           {sparkline ? (
             <>
-              <path d={sparkline.area} fill={statePill[pupil.state].colour} opacity="0.18" />
-              <path
-                d={sparkline.line}
-                stroke={statePill[pupil.state].colour}
+              {/* Morph the trajectory rather than repaint it: when the line
+                  re-fits (a new classification lands) motion interpolates the
+                  path `d` and the state colour glides instead of snapping.
+                  Point counts that change frame-to-frame fall back to a cut
+                  for that one frame, which is imperceptible at this scale. */}
+              <motion.path
+                animate={{ d: sparkline.area, fill: statePill[pupil.state].colour }}
+                opacity="0.18"
+                transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+              />
+              <motion.path
+                animate={{ d: sparkline.line, stroke: statePill[pupil.state].colour }}
                 strokeWidth="1.5"
                 fill="none"
                 strokeLinejoin="round"
                 strokeLinecap="round"
+                transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
               />
               {sparkline.points.map((p, i) => (
-                <circle
+                <motion.circle
                   key={i}
-                  cx={p.x}
-                  cy={p.y}
+                  animate={{ cx: p.x, cy: p.y, fill: statePill[p.state].colour }}
                   r="1.6"
-                  fill={statePill[p.state].colour}
+                  transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
                 />
               ))}
             </>
@@ -291,7 +310,7 @@ export function PupilCard({
           </div>
         )}
       </div>
-    </button>
+    </motion.button>
   );
 }
 

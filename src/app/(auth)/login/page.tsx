@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { sendPasswordResetEmail } from "firebase/auth";
@@ -32,7 +33,17 @@ export default function LoginPage() {
           <TabBtn active={tab === "signin"} onClick={() => setTab("signin")}>Sign in</TabBtn>
           <TabBtn active={tab === "register"} onClick={() => setTab("register")}>Register</TabBtn>
         </div>
-        {tab === "signin" ? <SignInForm /> : <RegisterForm />}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, x: tab === "signin" ? -8 : 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: tab === "signin" ? 8 : -8 }}
+            transition={{ duration: 0.18, ease: [0, 0, 0.2, 1] }}
+          >
+            {tab === "signin" ? <SignInForm /> : <RegisterForm />}
+          </motion.div>
+        </AnimatePresence>
         <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 18, textAlign: "center" }}>
           A pupil joining a lesson?{" "}
           <Link href="/join" style={{ color: "var(--color-navy-700)", textDecoration: "underline" }}>
@@ -226,6 +237,11 @@ function Field({
   type?: string;
   placeholder?: string;
 }) {
+  // Light inline validation for email: a gentle hint fades in only after the
+  // field is touched (blurred) and the value looks wrong — never nags mid-type.
+  const [touched, setTouched] = useState(false);
+  const invalidEmail =
+    type === "email" && touched && value.trim().length > 0 && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.trim());
   return (
     <label style={{ display: "grid", gap: 4 }}>
       <span className="bw-section-label">{label}</span>
@@ -233,18 +249,40 @@ function Field({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={() => setTouched(true)}
         placeholder={placeholder}
         required
-        style={inputStyle}
+        aria-invalid={invalidEmail || undefined}
+        style={{
+          ...inputStyle,
+          borderColor: invalidEmail ? "var(--color-crimson)" : "var(--line)",
+          transition: "border-color var(--dur-fast) var(--ease-standard)",
+        }}
       />
+      <AnimatePresence>
+        {invalidEmail && (
+          <motion.span
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.16, ease: [0, 0, 0.2, 1] }}
+            style={{ fontSize: 11, color: "var(--color-crimson)", overflow: "hidden" }}
+          >
+            That doesn&apos;t look like an email address.
+          </motion.span>
+        )}
+      </AnimatePresence>
     </label>
   );
 }
 
 function ErrorLine({ text }: { text: string }) {
   return (
-    <div
+    <motion.div
       role="alert"
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.18, ease: [0, 0, 0.2, 1] }}
       style={{
         background: "rgba(142,42,42,0.08)",
         color: "var(--color-crimson)",
@@ -254,7 +292,7 @@ function ErrorLine({ text }: { text: string }) {
       }}
     >
       {text}
-    </div>
+    </motion.div>
   );
 }
 

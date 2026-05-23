@@ -57,8 +57,52 @@
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Spacing radii */
+  /* Radii — mirrors radius{} in tokens.ts. cardRadius kept as the
+     canonical name; the rest replace hardcoded 4/6/12px across components. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
   --radius-card: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  /* Elevation — mirrors shadow{} in tokens.ts. Consistent light direction
+     + ink-blue tint; dark-mode deepens these below. */
+  --shadow-sm: 0 1px 2px rgba(15, 26, 46, 0.06), 0 1px 3px rgba(15, 26, 46, 0.08);
+  --shadow-md: 0 2px 6px rgba(15, 26, 46, 0.08), 0 4px 14px rgba(15, 26, 46, 0.10);
+  --shadow-lg: 0 6px 16px rgba(15, 26, 46, 0.12), 0 8px 28px rgba(15, 26, 46, 0.14);
+  --shadow-xl: 0 12px 32px rgba(15, 26, 46, 0.16), 0 16px 48px rgba(15, 26, 46, 0.18);
+}
+
+/* Motion tokens — mirrors motion{} in tokens.ts. Durations + named easings
+   consumed by CSS transitions/animations AND passed to the motion library.
+   Kept out of @theme (these aren't Tailwind colour/spacing utilities) but
+   live on :root so every rule and inline style can read them. */
+:root {
+  --dur-instant: 80ms;
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --dur-slower: 600ms;
+  --dur-ambient: 800ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-emphasis: cubic-bezier(0.2, 0.9, 0.2, 1);
+
+  /* Type weights / tracking / line-heights — mirrors fontWeight, letterSpacing
+     and lineHeight in tokens.ts. Replaces values hardcoded across components. */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --tracking-tight: -0.005em;
+  --tracking-label: 0.12em;
+  --tracking-label-wide: 0.18em;
+  --tracking-caps: 0.24em;
+  --leading-tight: 1.25;
+  --leading-body: 1.5;
+  --leading-tutor: 1.55;
+  --leading-reading: 1.75;
 }
 
 :root {
@@ -103,6 +147,13 @@
   --color-gold-tint-3: rgba(181, 138, 60, 0.28);
   --color-crimson-tint-1: rgba(142, 42, 42, 0.18);
   --color-crimson-tint-2: rgba(142, 42, 42, 0.26);
+
+  /* Shadows deepen on the navy surface so elevated cards/menus still read
+     against the dark backdrop (the ink-blue light-mode shadows vanish). */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.30), 0 1px 3px rgba(0, 0, 0, 0.36);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.36), 0 4px 16px rgba(0, 0, 0, 0.40);
+  --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.42), 0 8px 32px rgba(0, 0, 0, 0.48);
+  --shadow-xl: 0 12px 36px rgba(0, 0, 0, 0.50), 0 18px 56px rgba(0, 0, 0, 0.56);
 }
 
 html, body {
@@ -127,7 +178,7 @@ html[data-font-scale="xlarge"] { zoom: 1.25; }
 html[data-reading="friendly"] body {
   letter-spacing: 0.03em;
   word-spacing: 0.09em;
-  line-height: 1.75;
+  line-height: var(--leading-reading);
   font-family: "Atkinson Hyperlegible", "Inter", system-ui, sans-serif;
 }
 
@@ -153,24 +204,24 @@ html[data-reduce-motion="on"] *::after {
 .bw-section-label {
   font-family: var(--font-sans);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-label);
   color: var(--text-muted);
 }
 
 /* Display serif headings */
 .bw-display {
   font-family: var(--font-serif);
-  font-weight: 600;
-  letter-spacing: -0.005em;
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
 }
 
 /* AI tutor message text — restrained serif, distinct from chrome */
 .bw-tutor {
   font-family: var(--font-serif);
   font-size: 17px;
-  line-height: 1.55;
+  line-height: var(--leading-tutor);
 }
 
 /* Reason interaction surface — gold accent + left-bordered card + tint.
@@ -186,8 +237,8 @@ html[data-reduce-motion="on"] *::after {
   border-left: 4px solid var(--color-gold-500);
   border-radius: var(--radius-card);
   padding: 18px 20px 18px 22px;
-  animation: bw-reason-enter 220ms ease-out;
-  box-shadow: 0 1px 0 rgba(15, 26, 46, 0.02), 0 0 0 1px rgba(181, 138, 60, 0.06);
+  animation: bw-reason-enter var(--dur-base) var(--ease-entrance);
+  box-shadow: var(--shadow-sm), 0 0 0 1px rgba(181, 138, 60, 0.06);
 }
 
 .bw-reason-label {
@@ -196,9 +247,9 @@ html[data-reduce-motion="on"] *::after {
   gap: 8px;
   font-family: var(--font-sans);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   text-transform: uppercase;
-  letter-spacing: 0.18em;
+  letter-spacing: var(--tracking-label-wide);
   color: var(--color-gold-500);
   margin-bottom: 10px;
 }
@@ -225,9 +276,38 @@ html[data-reduce-motion="on"] *::after {
   40% { opacity: 1; transform: scale(1); }
 }
 
+/* Streaming caret — a calm blinking bar trailing a coach turn while it
+   streams in, so the pupil sees the tutor is actively "writing". */
+@keyframes bw-caret-blink {
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0; }
+}
+.bw-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--color-gold-500);
+  border-radius: 1px;
+  animation: bw-caret-blink 1s steps(1, end) infinite;
+}
+
 @keyframes bw-fade-in {
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Exit mirrors — for CSS-only fade-outs (the motion library handles the
+   richer enter/exit cases via AnimatePresence). */
+@keyframes bw-fade-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(2px); }
+}
+
+@keyframes bw-reason-exit {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(4px); }
 }
 
 @keyframes bw-pulse-glow {
@@ -268,14 +348,6 @@ html[data-reduce-motion="on"] *::after {
   50% { opacity: 1; transform: scale(1.08); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 1ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 1ms !important;
-  }
-}
-
 /* Card surfaces */
 .bw-card {
   background: var(--surface-elev);
@@ -293,7 +365,7 @@ html[data-reduce-motion="on"] *::after {
   font-size: 14px;
   border: none;
   cursor: pointer;
-  transition: background 120ms ease;
+  transition: background var(--dur-fast) var(--ease-standard);
 }
 .bw-btn-primary:hover { background: var(--color-navy-700); }
 
@@ -306,7 +378,7 @@ html[data-reduce-motion="on"] *::after {
   font-size: 14px;
   border: 1px solid var(--line);
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition: background var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
 }
 .bw-btn-secondary:hover { border-color: var(--color-ink-500); }
 
@@ -319,7 +391,7 @@ html[data-reduce-motion="on"] *::after {
   font-size: 14px;
   border: none;
   cursor: pointer;
-  transition: background 120ms ease;
+  transition: background var(--dur-fast) var(--ease-standard);
 }
 .bw-btn-emphasis:hover { background: var(--color-gold-300); }
 

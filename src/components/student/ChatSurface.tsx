@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { Lightbulb, RefreshCw, Type as TypeIcon, Send, ExternalLink, Sparkles, Users, Pause as PauseIcon, Mic, Square } from "lucide-react";
 import { speak, startBritishDictation, speechInputAvailable, type Dictation } from "@/lib/voice";
 import { VOICE_OUTPUT_KEY } from "@/components/student/AccessibilityMenu";
@@ -105,6 +106,10 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
     }
   }
   const [pending, setPending] = useState(false);
+  // The id of the tutor message currently streaming in, so its bubble can
+  // show a live caret while tokens arrive (otherwise text just accretes with
+  // no signal that the tutor is "writing").
+  const [streamingId, setStreamingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reasonCard, setReasonCard] = useState<{
     eventId: string;
@@ -174,6 +179,16 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
     klass != null && (!sessionStatus || sessionStatus.value === "not_started");
   const inputDisabled =
     pending || pausedByTeacher || sessionEnded || sessionPaused || sessionNotStarted;
+  // Whether any teacher-driven banner is currently showing — drives the
+  // banner bar's enter/exit so it slides in/out rather than popping (and
+  // never renders as an empty bordered strip when the class is merely active).
+  const anyBanner =
+    sessionWrapUp ||
+    sessionEnded ||
+    sessionPaused ||
+    (pausedByTeacher && !sessionPaused) ||
+    !!pairWith ||
+    !!expertNextTurn;
 
   // Reset the opening turn when the lesson plan changes (joining a
   // different class).
@@ -588,6 +603,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
         // Stream the reply into a single tutor bubble, appending deltas as
         // they arrive so the words appear progressively.
         const streamId = nextId();
+        setStreamingId(streamId);
         setMessages((m) => [
           ...m,
           { id: streamId, role: "tutor", content: "", timestamp: Date.now(), meta: {} },
@@ -604,6 +620,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
         acc += decoder.decode();
         tutorText = acc || "I can't reply just now — give it a moment and try again.";
         setMessages((m) => m.map((msg) => (msg.id === streamId ? { ...msg, content: tutorText } : msg)));
+        setStreamingId(null);
       } else {
         const data = (await res.json()) as {
           text: string;
@@ -703,6 +720,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
       setError(e instanceof Error ? `Couldn't send — ${e.message}. Try again.` : "Couldn't send. Try again.");
     } finally {
       setPending(false);
+      setStreamingId(null);
       // Return focus to the composer so the pupil can keep typing without
       // re-tapping the field every turn (real friction on a shared iPad).
       if (!inputDisabled) inputRef.current?.focus();
@@ -856,10 +874,19 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
         />
       )}
 
-      {/* Live banners — teacher actions visible to the pupil */}
-      {(sessionStatus || pairWith || expertNextTurn || pausedByTeacher) && (
-        <div
+      {/* Live banners — teacher actions visible to the pupil. The bar
+          slides in/out as a whole (exit plays via AnimatePresence) instead
+          of popping. */}
+      <AnimatePresence initial={false}>
+        {anyBanner && (
+        <motion.div
+          key="banner-bar"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
           style={{
+            overflow: "hidden",
             padding: "8px 24px",
             borderBottom: "1px solid var(--line)",
             background: "var(--surface-elev)",
@@ -898,8 +925,9 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
               {expertNextTurn} The next tutor reply will be more direct than usual.
             </Banner>
           )}
-        </div>
-      )}
+        </motion.div>
+        )}
+      </AnimatePresence>
 
       <div
         ref={scrollRef}
@@ -928,13 +956,15 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
         }}
       >
         {messages.map((m) => (
-          <Bubble key={m.id} message={m} />
+          <Bubble key={m.id} message={m} streaming={m.id === streamingId} />
         ))}
 
-        {pending && <TypingIndicator />}
+        {pending && !streamingId && <TypingIndicator />}
 
+        <AnimatePresence>
         {reasonCard && (
           <ReasonInline
+            key={reasonCard.eventId}
             promptType={reasonCard.promptType}
             promptText={reasonCard.promptText}
             onClose={() => {
@@ -1030,6 +1060,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
             }}
           />
         )}
+        </AnimatePresence>
       </div>
 
       {error && (
@@ -1084,8 +1115,15 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
                   onClick={() => scaffold("simplify")}
                   disabled={pending || remaining === 0}
                 />
-                <span
+                <motion.span
+                  // One-shot scale pulse the moment the ceiling is hit, so the
+                  // pupil notices the scaffolds locking rather than just seeing
+                  // greyed buttons. Keyed off remaining === 0.
+                  animate={remaining === 0 ? { scale: [1, 1.18, 1] } : { scale: 1 }}
+                  transition={{ duration: 0.4, ease: [0.2, 0.9, 0.2, 1] }}
                   style={{
+                    display: "inline-block",
+                    transformOrigin: "left center",
                     fontSize: 11,
                     color: remaining === 0 ? "var(--color-gold-500)" : "var(--text-muted)",
                     fontWeight: remaining === 0 ? 600 : 400,
@@ -1094,7 +1132,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
                   title="Scaffold ceiling per concept — when you run out, the tutor will pause to check what you have understood so far."
                 >
                   {remaining} of {ceiling} left
-                </span>
+                </motion.span>
                 <div style={{ flex: 1 }} />
               </>
             );
@@ -1134,6 +1172,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
               fontSize: 15,
               fontFamily: "var(--font-sans)",
               opacity: inputDisabled ? 0.6 : 1,
+              transition: "opacity var(--dur-fast) var(--ease-standard)",
             }}
           />
           {micAvailable && (
@@ -1150,6 +1189,11 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
                 padding: 10,
                 color: dictating ? "var(--color-crimson)" : undefined,
                 borderColor: dictating ? "var(--color-crimson)" : undefined,
+                transition:
+                  "color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard)",
+                // While recording, a gentle crimson ring breathes so it's
+                // unmistakably "live" (currentColor is crimson here).
+                animation: dictating ? "bw-pulse-glow 1.4s ease-in-out infinite" : undefined,
               }}
             >
               {dictating ? <Square size={14} /> : <Mic size={14} />}
@@ -1226,6 +1270,7 @@ function ScaffoldButton({
         fontSize: 13,
         padding: "7px 12px",
         opacity: disabled ? 0.5 : 1,
+        transition: "opacity var(--dur-fast) var(--ease-standard)",
       }}
     >
       {icon}
@@ -1234,12 +1279,22 @@ function ScaffoldButton({
   );
 }
 
-function Bubble({ message }: { message: UIMessage }) {
+// Each turn fades+rises in on mount. Keyed by message id in the map, so only
+// newly appended turns animate — turns already on screen keep their identity
+// and don't replay. A streaming coach turn mounts empty (animating in) and
+// then fills, showing a live caret until the stream completes.
+const bubbleEnter = {
+  initial: { opacity: 0, y: 6 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.22, ease: [0, 0, 0.2, 1] as [number, number, number, number] },
+};
+
+function Bubble({ message, streaming }: { message: UIMessage; streaming?: boolean }) {
   if (message.role === "tutor") {
     // Teacher hint — visually distinct from the AI tutor.
     if (message.meta?.teacherHint) {
       return (
-        <div style={{ maxWidth: 660 }}>
+        <motion.div style={{ maxWidth: 660 }} {...bubbleEnter}>
           <span className="bw-section-label" style={{ display: "block", marginBottom: 6, color: "var(--color-gold-text)" }}>
             From your teacher
           </span>
@@ -1257,11 +1312,11 @@ function Bubble({ message }: { message: UIMessage }) {
           >
             {message.content}
           </div>
-        </div>
+        </motion.div>
       );
     }
     return (
-      <div style={{ maxWidth: 660 }}>
+      <motion.div style={{ maxWidth: 660 }} {...bubbleEnter}>
         <span className="bw-section-label" style={{ display: "block", marginBottom: 6 }}>
           Tutor
           {message.meta?.scaffoldAction && ` · ${message.meta.scaffoldAction}`}
@@ -1270,16 +1325,17 @@ function Bubble({ message }: { message: UIMessage }) {
         </span>
         <p className="bw-tutor" style={{ margin: 0, whiteSpace: "pre-wrap" }}>
           {message.content}
+          {streaming && <span className="bw-caret" aria-hidden />}
         </p>
         {message.citations && message.citations.length > 0 && (
           <Citations citations={message.citations} queries={message.searchQueries} />
         )}
-      </div>
+      </motion.div>
     );
   }
   if (message.role === "pupil") {
     return (
-      <div style={{ alignSelf: "flex-end", maxWidth: 520 }}>
+      <motion.div style={{ alignSelf: "flex-end", maxWidth: 520 }} {...bubbleEnter}>
         <div
           style={{
             background: "var(--color-navy-900)",
@@ -1293,7 +1349,7 @@ function Bubble({ message }: { message: UIMessage }) {
         >
           {message.content}
         </div>
-      </div>
+      </motion.div>
     );
   }
   return null;
@@ -1395,7 +1451,17 @@ function ReasonInline({
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   return (
-    <div className="bw-reason-surface" style={{ maxWidth: 660 }}>
+    // motion owns enter+exit here (AnimatePresence in the parent plays the
+    // exit on submit/skip); `animation: none` suppresses the CSS
+    // bw-reason-enter on .bw-reason-surface so the two don't double up.
+    <motion.div
+      className="bw-reason-surface"
+      style={{ maxWidth: 660, animation: "none" }}
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 4 }}
+      transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
+    >
       <div className="bw-reason-label">Reason · {REASON_TYPE_LABEL[promptType]}</div>
       <p className="bw-tutor" style={{ margin: 0, marginBottom: 12, fontSize: 16 }}>
         {promptText}
@@ -1440,7 +1506,7 @@ function ReasonInline({
           {busy ? "Sending…" : "Submit"}
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -1519,7 +1585,7 @@ function StepProgress({
             height: "100%",
             background:
               "linear-gradient(90deg, var(--color-gold-500) 0%, var(--color-gold-300, var(--color-gold-500)) 100%)",
-            transition: "width 1400ms cubic-bezier(0.2, 0.9, 0.2, 1)",
+            transition: "width 1400ms var(--ease-emphasis)",
             borderRadius: 999,
           }}
         />

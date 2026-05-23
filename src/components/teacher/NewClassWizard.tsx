@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Sparkles, Check, X, AlertTriangle, RotateCcw, Library, Pencil, Search } from "lucide-react";
@@ -223,8 +224,11 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div
+    <motion.div
       className="bw-modal-shell"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.18, ease: [0, 0, 0.2, 1] }}
       style={{
         position: "fixed",
         inset: 0,
@@ -236,18 +240,24 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
       }}
       onClick={onClose}
     >
-      <div
+      <motion.div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label="Create a new class"
         className="bw-card bw-modal-frame"
+        // Opacity-only entrance: a scale/transform here would create a
+        // containing block and break the sticky search bar inside PickStep.
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.24, ease: [0, 0, 0.2, 1] }}
         style={{
           width: "100%",
           maxWidth: 760,
           maxHeight: "90vh",
           padding: 0,
           background: "var(--surface-elev)",
+          boxShadow: "var(--shadow-xl)",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
@@ -257,6 +267,14 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
         <Header step={step} onClose={onClose} />
 
         <div style={{ overflowY: "auto", padding: 22 }}>
+          <AnimatePresence mode="wait">
+          <motion.div
+            key={step}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: [0, 0, 0.2, 1] }}
+          >
           {step === "pick" && (
             <PickStep
               syllabus={syllabus}
@@ -321,15 +339,26 @@ export function NewClassWizard({ onClose }: { onClose: () => void }) {
               }}
             />
           )}
+          </motion.div>
+          </AnimatePresence>
 
-          {error && (
-            <div role="alert" style={errBox}>
-              <AlertTriangle size={14} /> {error}
-            </div>
-          )}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                role="alert"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18, ease: [0, 0, 0.2, 1] }}
+                style={errBox}
+              >
+                <AlertTriangle size={14} /> {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -1871,9 +1900,23 @@ function ShareJoinLink({ joinCode }: { joinCode: string }) {
           }
         }}
         className="bw-btn-secondary"
-        style={{ fontSize: 12 }}
+        style={{
+          fontSize: 12,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          color: copied ? "var(--color-gold-text)" : undefined,
+          borderColor: copied ? "var(--color-gold-500)" : undefined,
+          transition: "color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard)",
+        }}
       >
-        {copied ? "Copied" : "Copy link"}
+        {copied ? (
+          <>
+            <Check size={12} color="var(--color-gold-500)" /> Copied
+          </>
+        ) : (
+          "Copy link"
+        )}
       </button>
     </div>
   );

@@ -8,6 +8,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { LayoutDashboard, LogOut, Sun, Moon, ShieldCheck } from "lucide-react";
 import { UserChip } from "./UserChip";
@@ -123,10 +124,16 @@ export function UserMenu({
         <UserChip name={name} school={school} role={role} />
       </button>
 
+      <AnimatePresence>
       {open && (
-        <div
+        <motion.div
           role="menu"
+          initial={{ opacity: 0, y: -6, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -6, scale: 0.97 }}
+          transition={{ duration: 0.16, ease: [0, 0, 0.2, 1] }}
           style={{
+            transformOrigin: "top right",
             position: "absolute",
             top: "calc(100% + 8px)",
             right: 0,
@@ -134,7 +141,7 @@ export function UserMenu({
             background: "var(--surface)",
             border: "1px solid var(--line)",
             borderRadius: 10,
-            boxShadow: "0 8px 32px rgba(15, 26, 46, 0.16)",
+            boxShadow: "var(--shadow-lg)",
             padding: 6,
             zIndex: 50,
             display: "grid",
@@ -160,8 +167,9 @@ export function UserMenu({
             onClick={handleSignOut}
             danger
           />
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }

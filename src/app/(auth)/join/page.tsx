@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Wordmark } from "@/components/shared/Wordmark";
@@ -186,8 +187,15 @@ function JoinInner() {
           <Wordmark />
         </div>
 
+        <AnimatePresence mode="wait" initial={false}>
         {step === "form" ? (
-          <>
+          <motion.div
+            key="form"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.18, ease: [0, 0, 0.2, 1] }}
+          >
             <h1 className="bw-display" style={{ fontSize: 22, marginBottom: 6 }}>
               {currentClass ? "Switch lesson" : "Join your lesson"}
             </h1>
@@ -272,11 +280,20 @@ function JoinInner() {
                   style={inputStyle}
                 />
               </label>
-              {err && (
-                <div role="alert" style={errBox}>
-                  {err}
-                </div>
-              )}
+              <AnimatePresence>
+                {err && (
+                  <motion.div
+                    role="alert"
+                    initial={{ opacity: 0, y: -4, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.18, ease: [0, 0, 0.2, 1] }}
+                    style={errBox}
+                  >
+                    {err}
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <button type="submit" className="bw-btn-primary" disabled={busy} style={{ marginTop: 4 }}>
                 {busy ? "Joining…" : "Join lesson"}
               </button>
@@ -287,9 +304,15 @@ function JoinInner() {
                 Sign in here
               </Link>
             </p>
-          </>
+          </motion.div>
         ) : (
-          <div style={{ textAlign: "center", padding: "12px 0 4px" }}>
+          <motion.div
+            key="joined"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.24, ease: [0, 0, 0.2, 1] }}
+            style={{ textAlign: "center", padding: "12px 0 4px" }}
+          >
             <div className="bw-display" style={{ fontSize: 22, marginBottom: 8 }}>
               You are in.
             </div>
@@ -297,8 +320,9 @@ function JoinInner() {
               {joinedClass?.name} · {joinedClass?.subject}
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 14 }}>Opening the session…</p>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
     </main>
   );

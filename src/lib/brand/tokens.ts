@@ -89,6 +89,32 @@ export const typeScale = {
   bodyLeading: 1.5,
 } as const;
 
+// Type weights, tracking and line-heights — these were hardcoded inline
+// across components (600 on labels, 0.12em/0.18em/0.24em tracking on
+// small-caps, 1.75 line-height for the dyslexia-friendly reading mode).
+// Named here so the type system is a single source of truth alongside the
+// scale above. Exposed as --weight-*/--tracking-*/--leading-* in globals.css.
+export const fontWeight = {
+  regular: 400,
+  medium: 500,
+  semibold: 600,
+  bold: 700,
+} as const;
+
+export const letterSpacing = {
+  tight: "-0.005em", // display headings
+  label: "0.12em", // small-caps section labels
+  labelWide: "0.18em", // Reason / progress eyebrow labels
+  caps: "0.24em", // widest tracked eyebrows
+} as const;
+
+export const lineHeight = {
+  tight: 1.25,
+  body: 1.5,
+  tutor: 1.55,
+  reading: 1.75, // dyslexia-friendly reading mode
+} as const;
+
 // Spacing scale — multiples of 4 with a couple of named values for surfaces
 // that the brand brief calls for explicitly.
 export const space = {
@@ -110,6 +136,50 @@ export const space = {
   rowPaddingY: "14px", // 12–16px per BRAND.md
 } as const;
 
+// Border radii — only cardRadius existed before; 4/6/12px were hardcoded
+// across components. Named here so every surface reads from one scale.
+export const radius = {
+  sm: "4px", // focus-ring rounding, small chips
+  md: "6px", // buttons, inputs, menu items
+  card: "8px", // cards, panels (== space.cardRadius)
+  lg: "12px", // modals, overlays, large cards
+  pill: "999px", // toggles, dots, fully-round
+} as const;
+
+// Elevation — consistent drop shadows replacing the ~4 one-off inline
+// values (UserMenu 0 8px 32px, AccessibilityMenu 0 8px 28px, SessionOverlay
+// 0 14px 40px, syllabus-card hover). Same light direction + ink-blue tint.
+// Dark-mode variants deepen on black (see globals.css [data-theme="dark"]).
+export const shadow = {
+  sm: "0 1px 2px rgba(15, 26, 46, 0.06), 0 1px 3px rgba(15, 26, 46, 0.08)",
+  md: "0 2px 6px rgba(15, 26, 46, 0.08), 0 4px 14px rgba(15, 26, 46, 0.10)",
+  lg: "0 6px 16px rgba(15, 26, 46, 0.12), 0 8px 28px rgba(15, 26, 46, 0.14)",
+  xl: "0 12px 32px rgba(15, 26, 46, 0.16), 0 16px 48px rgba(15, 26, 46, 0.18)",
+} as const;
+
+// Motion — the system was "has motion" not "has motion design": durations
+// and easings were hardcoded ad-hoc everywhere (120/140/200/220/300/600/
+// 800/1400ms). One duration scale + one named easing set, consumed by both
+// CSS (via the --dur-*/--ease-* vars in globals.css) and the motion library.
+// Restraint per BRAND.md: ≤320ms for interaction; longer only for ambient
+// or live-data glides.
+export const motion = {
+  duration: {
+    instant: 80, // press feedback
+    fast: 120, // hover, disabled-state fades, micro-feedback
+    base: 200, // standard enter/exit (Reason card, menus, banners)
+    slow: 320, // overlays, larger surfaces
+    slower: 600, // live-data glides (ribbon widths, moments ticker)
+    ambient: 800, // class-line slide, slow positional migration
+  },
+  easing: {
+    standard: "cubic-bezier(0.4, 0, 0.2, 1)", // general transitions
+    entrance: "cubic-bezier(0, 0, 0.2, 1)", // ease-out — things arriving
+    exit: "cubic-bezier(0.4, 0, 1, 1)", // ease-in — things leaving
+    emphasis: "cubic-bezier(0.2, 0.9, 0.2, 1)", // springy — progress bar
+  },
+} as const;
+
 // Reason interaction surface treatment (BRAND.md §Reason interaction surface).
 // Gold accent + left-bordered card + soft gold tint background + "Reason"
 // label in gold at the top. Slides in with 200ms ease-out. Not a button —
@@ -118,8 +188,11 @@ export const reasonSurface = {
   background: colour.reasonTint,
   borderLeft: `3px solid ${colour.gold500}`,
   labelColour: colour.gold500,
-  enterMs: 200,
-  ease: "ease-out",
+  // Matches motion.duration.base / motion.easing.entrance (the CSS
+  // .bw-reason-surface rule and this token now agree — they disagreed
+  // before, 200 here vs 220ms in CSS).
+  enterMs: motion.duration.base,
+  ease: motion.easing.entrance,
 } as const;
 
 // State pill variants — colour + icon name + label, ready for the StatePill

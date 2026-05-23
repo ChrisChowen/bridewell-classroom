@@ -196,6 +196,13 @@ export default function ClassDetailPage() {
     return <PageSkeleton cards={3} maxWidth={1400} />;
   }
 
+  // Initial data load — the class + roster fetch hasn't resolved yet. Keep
+  // the same branded skeleton rather than flashing an empty header + bare
+  // "No pupils joined" grid before the real data lands.
+  if (!klass && !error) {
+    return <PageSkeleton cards={3} maxWidth={1400} />;
+  }
+
   const teacherName = displayName ?? email ?? "Teacher";
   const selected = selectedId ? live[selectedId] : null;
 
@@ -633,7 +640,17 @@ export default function ClassDetailPage() {
                 const n = stateCounts[s] ?? 0;
                 if (n === 0) return null;
                 const pct = (n / Object.keys(live).length) * 100;
-                return <div key={s} title={`${statePill[s].label} · ${n}`} style={{ width: `${pct}%`, background: statePill[s].colour }} />;
+                return (
+                  <div
+                    key={s}
+                    title={`${statePill[s].label} · ${n}`}
+                    style={{
+                      width: `${pct}%`,
+                      background: statePill[s].colour,
+                      transition: "width var(--dur-slower) var(--ease-standard)",
+                    }}
+                  />
+                );
               })}
             </div>
           </section>

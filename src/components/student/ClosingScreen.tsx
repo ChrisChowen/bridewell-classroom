@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { Sparkles, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { getFirebase } from "@/lib/firebase/client";
 
@@ -67,8 +68,11 @@ export function ClosingScreen() {
         minHeight: "100%",
       }}
     >
-      <div
+      <motion.div
         className="bw-card"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.32, ease: [0, 0, 0.2, 1] }}
         style={{
           width: "100%",
           maxWidth: 560,
@@ -94,19 +98,34 @@ export function ClosingScreen() {
           <Sparkles size={20} />
         </div>
 
+        <AnimatePresence mode="wait">
         {loading && (
-          <div>
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
             <div className="bw-display" style={{ fontSize: 22, marginBottom: 6 }}>
               Wrapping up your lesson…
             </div>
             <p style={{ fontSize: 13, color: "var(--text-muted)" }}>
               Your tutor is gathering what you covered today.
             </p>
-          </div>
+            <div style={{ display: "grid", placeItems: "center", marginTop: 16 }}>
+              <Loader2 size={20} className="bw-spin" color="var(--color-gold-text)" aria-hidden />
+            </div>
+          </motion.div>
         )}
 
         {error && !loading && (
-          <div>
+          <motion.div
+            key="error"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.24, ease: [0, 0, 0.2, 1] }}
+          >
             <div className="bw-display" style={{ fontSize: 22, marginBottom: 8 }}>
               Well done today.
             </div>
@@ -119,11 +138,17 @@ export function ClosingScreen() {
             <p style={{ fontSize: 11, color: "var(--text-muted)", opacity: 0.6, marginBottom: 16 }}>
               {error}
             </p>
-          </div>
+          </motion.div>
         )}
 
         {close && !loading && (
-          <div style={{ textAlign: "left" }}>
+          <motion.div
+            key="close"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.32, ease: [0, 0, 0.2, 1] }}
+            style={{ textAlign: "left" }}
+          >
             <h1
               className="bw-display"
               style={{
@@ -151,15 +176,16 @@ export function ClosingScreen() {
             <Section title="One thing for next time">
               <p style={{ fontSize: 14, lineHeight: 1.5, margin: 0 }}>{close.nextTime}</p>
             </Section>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
         <div style={{ marginTop: 26, display: "flex", justifyContent: "center", gap: 10 }}>
           <Link href="/join" className="bw-btn-primary" style={{ fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>
             Join your next lesson <ArrowRight size={13} />
           </Link>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

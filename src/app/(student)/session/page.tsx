@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Crest } from "@/components/shared/Crest";
@@ -275,13 +276,32 @@ export default function SessionPage() {
           height: "100%",
         }}
       >
+        {/* Crossfade the coarse load views (loading → content / error) so
+            the lesson doesn't snap into place. Keyed by `view` (not the raw
+            loadState) so ChatSurface stays mounted across session-status
+            changes and never resets the conversation. */}
+        <AnimatePresence mode="wait">
         {loadState === "loading" && (
-          <div style={{ display: "grid", placeItems: "center", color: "var(--text-muted)", fontSize: 13 }}>
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ display: "grid", placeItems: "center", color: "var(--text-muted)", fontSize: 13 }}
+          >
             Loading your lesson…
-          </div>
+          </motion.div>
         )}
         {loadState === "error" && (
-          <div style={{ display: "grid", placeItems: "center", padding: 24 }}>
+          <motion.div
+            key="error"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
+            style={{ display: "grid", placeItems: "center", padding: 24 }}
+          >
             <div className="bw-card" style={{ padding: 20, maxWidth: 420 }}>
               <div className="bw-section-label" style={{ color: "var(--color-crimson)", marginBottom: 8 }}>
                 Could not load your lesson
@@ -291,10 +311,17 @@ export default function SessionPage() {
                 Re-join with a class code
               </Link>
             </div>
-          </div>
+          </motion.div>
         )}
         {(loadState === "ready" || loadState === "preview") && (
-          sessionStatus?.value === "ended" ? (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.24, ease: [0, 0, 0.2, 1] }}
+            style={{ height: "100%", minHeight: 0 }}
+          >
+          {sessionStatus?.value === "ended" ? (
             <ClosingScreen />
           ) : (
             <div style={{ position: "relative", display: "grid", gridTemplateRows: "1fr", height: "100%" }}>
@@ -307,18 +334,26 @@ export default function SessionPage() {
                   is treated as "not_started" — the teacher hasn't hit
                   Start class yet, so the chat stays locked. Only in a REAL
                   session (loadState "ready"); the unauthenticated design
-                  preview has no status doc and must stay exercisable. */}
-              {loadState === "ready" && (
-                <SessionOverlay
-                  status={sessionStatus?.value ?? "not_started"}
-                  teacherName={klass?.teacherName}
-                  lessonTitle={lessonTitle}
-                  wrapUpNote={sessionStatus?.wrapUpNote ?? undefined}
-                />
-              )}
+                  preview has no status doc and must stay exercisable.
+                  AnimatePresence (keyed by status) fades the overlay in/out
+                  and crossfades between lobby/paused/wrap-up. */}
+              <AnimatePresence>
+                {loadState === "ready" &&
+                  sessionStatus?.value !== "active" && (
+                    <SessionOverlay
+                      key={sessionStatus?.value ?? "not_started"}
+                      status={sessionStatus?.value ?? "not_started"}
+                      teacherName={klass?.teacherName}
+                      lessonTitle={lessonTitle}
+                      wrapUpNote={sessionStatus?.wrapUpNote ?? undefined}
+                    />
+                  )}
+              </AnimatePresence>
             </div>
-          )
+          )}
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
     </main>
   );

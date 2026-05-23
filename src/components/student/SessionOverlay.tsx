@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { motion } from "motion/react";
 import { Pause, Sparkles, Hourglass } from "lucide-react";
 import type { SessionStatusValue } from "@/lib/firebase/live";
 
@@ -65,8 +66,15 @@ export function SessionOverlay({ status, teacherName, lessonTitle, wrapUpNote }:
   const lock = status !== "wrap_up";
 
   return (
-    <div
+    <motion.div
       aria-live="polite"
+      // Presence is controlled by the parent's AnimatePresence (keyed by
+      // status), so this fades+blurs in on entry and out on exit instead of
+      // snapping when the teacher starts/pauses/resumes the class.
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.32, ease: [0, 0, 0.2, 1] }}
       style={{
         position: "absolute",
         inset: 0,
@@ -81,10 +89,13 @@ export function SessionOverlay({ status, teacherName, lessonTitle, wrapUpNote }:
         backdropFilter: status === "wrap_up" ? "blur(0px)" : "blur(3px)",
         WebkitBackdropFilter: status === "wrap_up" ? "blur(0px)" : "blur(3px)",
         pointerEvents: lock ? "auto" : "none",
-        animation: "bw-fade-in 320ms ease",
       }}
     >
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: 8, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 8, scale: 0.98 }}
+        transition={{ duration: 0.32, ease: [0, 0, 0.2, 1] }}
         style={{
           maxWidth: 560,
           width: "100%",
@@ -93,7 +104,7 @@ export function SessionOverlay({ status, teacherName, lessonTitle, wrapUpNote }:
           borderRadius: 12,
           padding: "30px 32px 28px",
           textAlign: "center",
-          boxShadow: "0 14px 40px rgba(15,26,46,0.20)",
+          boxShadow: "var(--shadow-xl)",
           pointerEvents: "auto",
         }}
       >
@@ -144,7 +155,7 @@ export function SessionOverlay({ status, teacherName, lessonTitle, wrapUpNote }:
         <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.5, maxWidth: 420, margin: "0 auto" }}>
           {content.body}
         </p>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

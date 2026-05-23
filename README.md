@@ -516,7 +516,12 @@ Open it from the class detail header — *Whiteboard*:
   for Expert mode). Heraldic brand artwork is generated through the same
   abstraction
 - **Lucide** icons · **next/font** for Source Serif 4 + Inter + JetBrains Mono ·
-  brand tokens in `src/lib/brand/`
+  brand tokens in `src/lib/brand/` (colour, type, spacing, plus motion, elevation,
+  and radius scales mirrored as CSS variables in `globals.css`)
+- **motion** (formerly framer-motion) for purposeful interaction and live-data
+  animation — message/Reason enter-exit, dashboard sparkline + state transitions,
+  the projector field — gated by a reduced-motion bridge (`<MotionConfig>` honours
+  both the OS preference and the pupil accessibility toggle)
 - **Playwright** for the screenshot capture pipeline · **sharp** for image
   post-processing
 

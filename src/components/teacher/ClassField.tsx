@@ -1,8 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
+import { motion } from "motion/react";
 import { statePill, type EngagementState } from "@/lib/brand";
 import type { LivePupil } from "@/lib/firebase/live";
+
+// Shared glide for positional/colour changes on the field — slow enough to
+// read as "the class is moving" from across the room, not a snap.
+const FIELD_GLIDE = { duration: 0.8, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] };
 
 // The whiteboard / projector centrepiece — "The Field".
 //
@@ -183,24 +188,37 @@ export function ClassField({ pupils, stepCount }: Props) {
             );
           })}
 
-          {/* The collective "class is here" line — the one shared signal. */}
+          {/* The collective "class is here" line — the one shared signal.
+              Glides to the new average via animated SVG attributes (the old
+              `transition: transform` was a no-op — the line moves by its y
+              attributes, not a transform). */}
           {pupils.length > 0 && (
-            <g style={{ transition: "transform 800ms ease" }}>
-              <line
+            <g>
+              <motion.line
                 x1={PAD_L}
                 x2={VB_W - PAD_R + 40}
-                y1={avgY}
-                y2={avgY}
                 stroke="var(--color-gold-500)"
                 strokeWidth={2}
                 opacity={0.85}
+                initial={false}
+                animate={{ y1: avgY, y2: avgY }}
+                transition={FIELD_GLIDE}
               />
-              <circle cx={PAD_L} cy={avgY} r={4} fill="var(--color-gold-500)" />
-              <text
+              <motion.circle
+                cx={PAD_L}
+                r={4}
+                fill="var(--color-gold-500)"
+                initial={false}
+                animate={{ cy: avgY }}
+                transition={FIELD_GLIDE}
+              />
+              <motion.text
                 x={VB_W - PAD_R + 50}
-                y={avgY - 8}
                 fontSize={13}
                 fill="var(--color-gold-500)"
+                initial={false}
+                animate={{ y: avgY - 8 }}
+                transition={FIELD_GLIDE}
                 style={{
                   fontFamily: "var(--font-sans)",
                   letterSpacing: "0.16em",
@@ -209,20 +227,25 @@ export function ClassField({ pupils, stepCount }: Props) {
                 }}
               >
                 The class
-              </text>
-              <text
+              </motion.text>
+              <motion.text
                 x={VB_W - PAD_R + 50}
-                y={avgY + 12}
                 fontSize={12}
                 fill="rgba(255,255,255,0.55)"
+                initial={false}
+                animate={{ y: avgY + 12 }}
+                transition={FIELD_GLIDE}
                 style={{ fontFamily: "var(--font-sans)" }}
               >
                 is here
-              </text>
+              </motion.text>
             </g>
           )}
 
-          {/* Stars — one per pupil, no names. */}
+          {/* Stars — one per pupil, no names. The star glides up the chart
+              when its step advances and cross-fades colour when its state
+              changes (both via animated cy/fill); the ambient breathe stays
+              on the group transform. */}
           {stars.map((s, i) => {
             const cx = xFor(s.sx);
             const cy = stepToY(s.step) + s.wobble;
@@ -238,12 +261,12 @@ export function ClassField({ pupils, stepCount }: Props) {
                 }}
               >
                 {/* soft glow */}
-                <circle cx={cx} cy={cy} r={r * 2.6} fill={colour} opacity={0.14} />
-                <circle cx={cx} cy={cy} r={r * 1.5} fill={colour} opacity={0.22} />
+                <motion.circle cx={cx} r={r * 2.6} opacity={0.14} initial={false} animate={{ cy, fill: colour }} transition={FIELD_GLIDE} />
+                <motion.circle cx={cx} r={r * 1.5} opacity={0.22} initial={false} animate={{ cy, fill: colour }} transition={FIELD_GLIDE} />
                 {/* core */}
-                <circle cx={cx} cy={cy} r={r} fill={colour} />
+                <motion.circle cx={cx} r={r} initial={false} animate={{ cy, fill: colour }} transition={FIELD_GLIDE} />
                 {/* highlight */}
-                <circle cx={cx - r * 0.3} cy={cy - r * 0.3} r={r * 0.34} fill="rgba(255,255,255,0.7)" />
+                <motion.circle r={r * 0.34} fill="rgba(255,255,255,0.7)" initial={false} animate={{ cx: cx - r * 0.3, cy: cy - r * 0.3 }} transition={FIELD_GLIDE} />
               </g>
             );
           })}

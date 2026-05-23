@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "motion/react";
 import { X, MessageSquare, Send, RefreshCcw, Users, Pause, Check, AlertTriangle, Sparkles, Download } from "lucide-react";
 import { StatePill } from "@/components/shared/StatePill";
+import { SkeletonLine } from "@/components/shared/Skeleton";
 import { statePill, type EngagementState } from "@/lib/brand";
 import type { LivePupil } from "@/lib/firebase/live";
 import { getRecentConversation, type ConversationTurn } from "@/lib/firebase/conversation";
@@ -183,9 +185,16 @@ export function LivePupilPanel({
                 No conversation captured yet.
               </div>
             ) : (
+              // New turns fade+rise in as the 5s poll picks them up; turns
+              // already on screen keep their identity via key={t.id} so they
+              // don't re-animate. (Previously the list snapped on every poll.)
               turns.map((t) => (
-                <div
+                <motion.div
                   key={t.id}
+                  layout="position"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
                   style={{
                     alignSelf: t.role === "pupil" ? "flex-end" : "flex-start",
                     maxWidth: "85%",
@@ -223,7 +232,7 @@ export function LivePupilPanel({
                     </div>
                   )}
                   {t.content}
-                </div>
+                </motion.div>
               ))
             )}
           </div>
@@ -306,7 +315,10 @@ export function AdaptivePitch({ pupilId, pupilName }: { pupilId: string; pupilNa
     return (
       <div>
         <div className="bw-section-label" style={{ marginBottom: 6 }}>Pitch · across sessions</div>
-        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading…</div>
+        <div style={{ display: "grid", gap: 6 }}>
+          <SkeletonLine width="48%" height={20} />
+          <SkeletonLine width="70%" height={10} />
+        </div>
       </div>
     );
   }
@@ -488,7 +500,7 @@ export function SendEditor({ pupilId, pupilName }: { pupilId: string; pupilName:
       </div>
 
       {send === undefined ? (
-        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading…</div>
+        <SkeletonLine width="60%" height={14} />
       ) : !open ? (
         <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.45 }}>
           {summary ?? `No adaptation set. The tutor coaches ${pupilName.split(" ")[0]} with the default register.`}
