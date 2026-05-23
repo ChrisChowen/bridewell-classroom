@@ -55,3 +55,17 @@ export function pairwise(
 ): PrfResult & { confusion: ConfusionResult };
 export function calibration(preds: Pred[], bucketEdges?: number[]): CalibrationResult;
 export function round(v: number | null, dp?: number): number | null;
+
+export function cohenKappa(
+  pairs: Array<{ a: string; b: string }>,
+  labels?: string[],
+  weights?: "none" | "linear" | "quadratic",
+): number | null;
+export function fleissKappa(
+  items: Array<Record<string, number>>,
+  labels?: string[],
+): number | null;
+export function krippendorffAlpha(
+  data: Array<Array<string | null>>,
+  labels?: string[],
+): number | null;

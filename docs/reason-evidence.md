@@ -118,4 +118,29 @@ report. Calibration: single bucket [0.8–1.0), n=34, acc=100%, meanConf=91.8%.
   windows must be in the labelled set before claiming subject-generality
   (tracked as "cross-subject robustness" in `PILOT_READINESS.md`).
 
+## Update — cross-subject + multi-rater machinery (this run)
+
+**Cross-subject (done).** The real classifier was graded per subject through a
+dev-only `/api/engagement/classify` seam: Biology / English / History / Maths
+all 100% accuracy on the labelled windows (n = 34 total), all ≥ 0.85. Full
+table + caveats in `docs/cross-subject-evidence.md` — the headline caveat is
+unchanged: a **ceiling on clean archetypal windows**, not a research claim;
+all confidence still fell in [0.8–1.0) (no mid-band).
+
+**Multi-rater bootstrap (built, credential-blocked).** The agreement maths is
+now implemented and unit-tested in `scripts/reason-eval-metrics.mjs` —
+Cohen κ (incl. linear/quadratic weighted κ), Fleiss κ (≥3 raters), and
+Krippendorff α (nominal). The labeller `scripts/bootstrap-rater-labels.mjs`
+runs three rater rubrics (strict / permissive / mid-band) via **Anthropic
+Claude — a different model family from the Gemini system under test** (using
+Gemini to rate Gemini would be circular), and emits
+`{"bootstrap":true,"researchValid":false}`. It is **blocked only on
+`ANTHROPIC_API_KEY`** (+ expanding the window set to ≥120); see
+`reports/blocked.md`.
+
+**Standing caveat (unchanged):** LLM raters — Anthropic or otherwise — are
+**not a substitute for human teacher labels.** The research-grade claim
+requires real pilot transcripts labelled by ≥2 teachers with κ/α reported.
+That pass remains **🔒 (human sign-off)**.
+
 _Status tracked in `PILOT_READINESS.md`. Goal: `docs/NORTH_STAR.md`._

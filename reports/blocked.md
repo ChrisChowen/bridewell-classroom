@@ -25,20 +25,28 @@ Gemini (the system under test) would be circular; inventing them would be a
 fabricated research claim. Either violates the guardrails.
 
 **Path forward (1 human step, then ~automated):**
-1. Add `ANTHROPIC_API_KEY` to `.env.local`.
-2. Run the bootstrap script (to be authored against the Anthropic SDK, three
-   temperature/rubric variants for strict/permissive/mid-band).
-3. Feed labels into the existing metrics module (`scripts/reason-eval-metrics.mjs`,
-   already unit-tested) — it already computes per-state P/R/F1 + confusion;
-   extend with κ / weighted-κ / Krippendorff-α / ECE.
-4. Header the output `{"bootstrap":true,"researchValid":false}` and update
-   `docs/reason-evidence.md` (LLM raters ≠ teachers; the human-labelled pass
-   stays 🔒).
+**NOW BUILT — blocked only on the credential (+ window authoring):**
+1. `scripts/bootstrap-rater-labels.mjs` is **written** — three rater rubrics
+   (strict / permissive / mid-band) against the Anthropic Messages API,
+   majority vote, emits `{"bootstrap":true,"researchValid":false}`. Checks for
+   `ANTHROPIC_API_KEY` and exits cleanly with a BLOCKED message when absent
+   (verified).
+2. The agreement maths is **implemented + unit-tested** in
+   `scripts/reason-eval-metrics.mjs`: Cohen κ (incl. linear/quadratic
+   **weighted κ**), **Fleiss κ** (≥3 raters), **Krippendorff α** (nominal,
+   missing-data tolerant) — plus the existing per-state P/R/F1 + confusion +
+   ECE. 9 new unit tests (Cohen κ=0.4 textbook case; Fleiss/α boundaries).
+3. **Remaining human steps:** add `ANTHROPIC_API_KEY`; expand
+   `docs/reason-eval/transcripts.jsonl` from 34 → ≥120 windows; run the script;
+   fold κ/α/ECE/F1 into `docs/reason-evidence.md`.
 
 **Current state of C (Reason validation):** the ground-truth harness
-(`scripts/reason-eval.mjs`) + metrics module exist and are unit-tested; a
-34-window single-rater PoC is documented in `docs/reason-evidence.md` with
-honest caveats. The multi-rater κ/α extension is the blocked piece.
+(`scripts/reason-eval.mjs`, now with a per-subject breakdown + a dev-only
+`/api/engagement/classify` seam) + metrics module (incl. κ/α) exist and are
+unit-tested. A 34-window single-rater PoC is documented in
+`docs/reason-evidence.md`; cross-subject results in `docs/cross-subject-evidence.md`.
+The only blocked piece is the credentialed Anthropic multi-rater run (LLM
+raters ≠ teachers; the human-labelled pass stays 🔒).
 
 ---
 

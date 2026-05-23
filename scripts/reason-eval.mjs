@@ -96,7 +96,7 @@ for (const row of labelled) {
       errors += 1;
       continue;
     }
-    pairs.push({ gold: row.goldState, predicted: data.state });
+    pairs.push({ gold: row.goldState, predicted: data.state, subject: row.lessonSubject });
     preds.push({ gold: row.goldState, predicted: data.state, confidence: data.confidence ?? 0 });
     const mark = data.state === row.goldState ? "✓" : "✗";
     console.log(`  ${mark} ${row.id}: gold=${row.goldState} pred=${data.state} (${Math.round((data.confidence ?? 0) * 100)}%)`);
@@ -116,6 +116,21 @@ const overall = prf(pairs);
 const pw = pairwise(pairs);
 const cal = calibration(preds);
 
+// Cross-subject breakdown — per-subject accuracy + macro-F1 (the goal's
+// cross-subject-robustness claim: ≥0.85 accuracy per subject).
+const subjects = [...new Set(pairs.map((p) => p.subject).filter(Boolean))].sort();
+const bySubject = {};
+for (const subj of subjects) {
+  const sp = pairs.filter((p) => p.subject === subj);
+  const correct = sp.filter((p) => p.gold === p.predicted).length;
+  const m = prf(sp);
+  bySubject[subj] = {
+    n: sp.length,
+    accuracy: round(correct / sp.length),
+    macroF1: round(m.macro.f1),
+  };
+}
+
 const fmt = (v) => (v == null ? "—" : `${(v * 100).toFixed(1)}%`);
 
 console.log("\n══ Overall ══");
@@ -134,6 +149,13 @@ for (const s of ["productive_struggle", "wheel_spinning"]) {
   const c = pw.perClass[s];
   if (!c) continue;
   console.log(`  ${s.padEnd(20)} P=${fmt(c.precision)}  R=${fmt(c.recall)}  F1=${fmt(c.f1)}  (n=${c.support})`);
+}
+
+console.log("\n══ Cross-subject (accuracy / macro-F1 / n) ══");
+for (const subj of subjects) {
+  const b = bySubject[subj];
+  const flag = b.accuracy >= 0.85 ? "✓" : "✗";
+  console.log(`  ${flag} ${subj.padEnd(12)} acc=${fmt(b.accuracy)}  macroF1=${fmt(b.macroF1)}  (n=${b.n})`);
 }
 
 console.log("\n══ Confidence calibration (ECE = " + fmt(cal.ece) + ") ══");
@@ -156,6 +178,7 @@ const out = {
   },
   perState: overall.perClass,
   productiveStruggleVsWheelSpinning: pw.perClass,
+  bySubject,
   calibration: cal,
   confusion: cm.matrix,
 };

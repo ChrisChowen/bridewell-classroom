@@ -1,7 +1,15 @@
 import { describe, it, expect } from "vitest";
 // Import the runner's own metric module so the documented numbers are
 // produced by the exact code under test.
-import { confusionMatrix, prf, pairwise, calibration } from "./reason-eval-metrics.mjs";
+import {
+  confusionMatrix,
+  prf,
+  pairwise,
+  calibration,
+  cohenKappa,
+  fleissKappa,
+  krippendorffAlpha,
+} from "./reason-eval-metrics.mjs";
 
 describe("confusionMatrix", () => {
   it("counts correct vs incorrect and computes accuracy", () => {
@@ -73,5 +81,95 @@ describe("calibration", () => {
     expect(high.accuracy).toBeCloseTo(0.5, 5);
     expect(ece).toBeGreaterThan(0);
     expect(ece).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("cohenKappa (2 raters)", () => {
+  it("returns 1 for perfect agreement", () => {
+    const pairs = [
+      { a: "flowing", b: "flowing" },
+      { a: "off_task", b: "off_task" },
+    ];
+    expect(cohenKappa(pairs)).toBeCloseTo(1, 5);
+  });
+
+  it("matches the textbook 2x2 case (κ=0.4)", () => {
+    // 50 items: 20 yes/yes, 5 yes/no, 10 no/yes, 15 no/no.
+    // po=0.7, pe=0.5 → κ=0.4. Use two of our labels as the binary.
+    const pairs: Array<{ a: string; b: string }> = [];
+    const push = (a: string, b: string, n: number) => { for (let i = 0; i < n; i++) pairs.push({ a, b }); };
+    push("flowing", "flowing", 20);
+    push("flowing", "off_task", 5);
+    push("off_task", "flowing", 10);
+    push("off_task", "off_task", 15);
+    expect(cohenKappa(pairs, ["flowing", "off_task"])).toBeCloseTo(0.4, 5);
+  });
+
+  it("linear-weighted κ exceeds unweighted when disagreements are near-misses", () => {
+    // Raters never agree exactly but are always one step apart on the
+    // STATES gradient — weighting should credit the near-misses.
+    const pairs = [
+      { a: "flowing", b: "productive_struggle" },
+      { a: "productive_struggle", b: "wheel_spinning" },
+      { a: "wheel_spinning", b: "disengaged" },
+    ];
+    const none = cohenKappa(pairs, undefined, "none");
+    const lin = cohenKappa(pairs, undefined, "linear");
+    expect(none).not.toBeNull();
+    expect(lin).not.toBeNull();
+    expect(lin as number).toBeGreaterThan(none as number);
+  });
+
+  it("returns null for an empty set", () => {
+    expect(cohenKappa([])).toBeNull();
+  });
+});
+
+describe("fleissKappa (≥3 raters)", () => {
+  it("returns 1 for unanimous agreement", () => {
+    const items: Record<string, number>[] = [
+      { flowing: 3 },
+      { off_task: 3 },
+    ];
+    expect(fleissKappa(items)).toBeCloseTo(1, 5);
+  });
+
+  it("is near 0 (or negative) for maximally split ratings", () => {
+    // Each item split evenly across categories → no agreement beyond chance.
+    const items: Record<string, number>[] = [
+      { flowing: 1, productive_struggle: 1, wheel_spinning: 1 },
+      { disengaged: 1, off_task: 1, flowing: 1 },
+    ];
+    const k = fleissKappa(items);
+    expect(k).toBeLessThanOrEqual(0.1);
+  });
+});
+
+describe("krippendorffAlpha (nominal)", () => {
+  it("returns 1 for perfect agreement", () => {
+    const data = [
+      ["flowing", "off_task", "wheel_spinning"],
+      ["flowing", "off_task", "wheel_spinning"],
+    ];
+    expect(krippendorffAlpha(data)).toBeCloseTo(1, 5);
+  });
+
+  it("tolerates missing ratings (null) and still scores agreement", () => {
+    const data = [
+      ["flowing", "off_task", null],
+      ["flowing", null, "wheel_spinning"],
+      [null, "off_task", "wheel_spinning"],
+    ];
+    // Every co-rated unit agrees → α = 1.
+    expect(krippendorffAlpha(data)).toBeCloseTo(1, 5);
+  });
+
+  it("drops below 1 when raters disagree", () => {
+    const data = [
+      ["flowing", "off_task"],
+      ["off_task", "off_task"],
+    ];
+    const a = krippendorffAlpha(data);
+    expect(a).toBeLessThan(1);
   });
 });

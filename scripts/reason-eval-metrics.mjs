@@ -110,3 +110,119 @@ export function round(v, dp = 3) {
   const f = 10 ** dp;
   return Math.round(v * f) / f;
 }
+
+// ── Inter-rater agreement ────────────────────────────────────────────────
+// For the Reason multi-rater bootstrap: quantify how much independent raters
+// agree, beyond chance. Pure math, unit-tested, so the κ/α numbers in
+// docs/reason-evidence.md are reproducible. (Raters here are LLMs of a
+// different family from the system-under-test — see the evidence note;
+// LLM raters are NOT a substitute for the human-labelled pass, which is 🔒.)
+
+// Cohen's κ — two raters, nominal categories.
+// pairs: Array<{ a: string, b: string }>. weights: "none" (default),
+// "linear", or "quadratic" — weighted κ treats the STATES list as ordinal
+// (flowing→off_task is roughly the engagement gradient) and partially credits
+// near-misses. Returns null for an empty set.
+export function cohenKappa(pairs, labels = STATES, weights = "none") {
+  const n = pairs.length;
+  if (!n) return null;
+  const idx = Object.fromEntries(labels.map((l, i) => [l, i]));
+  const k = labels.length;
+  const w = (i, j) => {
+    if (weights === "none") return i === j ? 1 : 0;
+    const d = Math.abs(i - j) / (k - 1);
+    return weights === "quadratic" ? 1 - d * d : 1 - d;
+  };
+  // Observed + expected agreement over the weight matrix.
+  const rowMarg = new Array(k).fill(0);
+  const colMarg = new Array(k).fill(0);
+  let po = 0;
+  for (const { a, b } of pairs) {
+    const ia = idx[a];
+    const ib = idx[b];
+    if (ia == null || ib == null) continue;
+    rowMarg[ia] += 1;
+    colMarg[ib] += 1;
+    po += w(ia, ib);
+  }
+  po /= n;
+  let pe = 0;
+  for (let i = 0; i < k; i++) {
+    for (let j = 0; j < k; j++) {
+      pe += (rowMarg[i] / n) * (colMarg[j] / n) * w(i, j);
+    }
+  }
+  if (pe === 1) return 1; // perfect expected agreement → κ undefined; treat as 1
+  return (po - pe) / (1 - pe);
+}
+
+// Fleiss' κ — ≥3 raters, fixed number of raters per item, nominal.
+// items: Array<{ [category]: count }>, counts summing to the rater count.
+export function fleissKappa(items, labels = STATES) {
+  const N = items.length;
+  if (!N) return null;
+  const counts = items.map((it) => labels.map((l) => it[l] ?? 0));
+  const nRaters = counts[0].reduce((a, b) => a + b, 0);
+  if (!nRaters || nRaters < 2) return null;
+  // P_i: agreement for item i.
+  const Pi = counts.map(
+    (row) => (row.reduce((a, c) => a + c * c, 0) - nRaters) / (nRaters * (nRaters - 1)),
+  );
+  const Pbar = Pi.reduce((a, b) => a + b, 0) / N;
+  // p_j: proportion of all assignments to category j.
+  const totalAssign = N * nRaters;
+  const pj = labels.map((_, j) => counts.reduce((a, row) => a + row[j], 0) / totalAssign);
+  const Pe = pj.reduce((a, p) => a + p * p, 0);
+  if (Pe === 1) return 1;
+  return (Pbar - Pe) / (1 - Pe);
+}
+
+// Krippendorff's α (nominal) — any number of raters, tolerates missing data.
+// data: Array<Array<string|null>> indexed [rater][item]; null = no rating.
+export function krippendorffAlpha(data, labels = STATES) {
+  const nRaters = data.length;
+  if (!nRaters) return null;
+  const nItems = data[0].length;
+  // Build per-item value lists (units with ≥2 ratings contribute).
+  const units = [];
+  for (let u = 0; u < nItems; u++) {
+    const vals = [];
+    for (let r = 0; r < nRaters; r++) {
+      const v = data[r][u];
+      if (v != null) vals.push(v);
+    }
+    if (vals.length >= 2) units.push(vals);
+  }
+  if (!units.length) return null;
+  // Observed disagreement Do (nominal metric: 0 if equal, 1 if different).
+  let Do = 0;
+  let totalPairsWeight = 0;
+  for (const vals of units) {
+    const m = vals.length;
+    const pairW = 1 / (m - 1);
+    for (let i = 0; i < m; i++) {
+      for (let j = 0; j < m; j++) {
+        if (i === j) continue;
+        Do += pairW * (vals[i] === vals[j] ? 0 : 1);
+      }
+    }
+    totalPairsWeight += m; // total number of ratings across coincidence units
+  }
+  // Expected disagreement De from the overall value distribution.
+  const valueCounts = {};
+  let nTotal = 0;
+  for (const vals of units) {
+    for (const v of vals) {
+      valueCounts[v] = (valueCounts[v] ?? 0) + 1;
+      nTotal += 1;
+    }
+  }
+  let sameValuePairs = 0;
+  for (const c of Object.values(valueCounts)) sameValuePairs += c * (c - 1);
+  const totalPairs = nTotal * (nTotal - 1);
+  const De = totalPairs ? 1 - sameValuePairs / totalPairs : 0;
+  // α = 1 − Do/De, with Do and De normalised by the same totals.
+  const DoNorm = Do / totalPairsWeight;
+  if (De === 0) return DoNorm === 0 ? 1 : null;
+  return 1 - DoNorm / De;
+}
