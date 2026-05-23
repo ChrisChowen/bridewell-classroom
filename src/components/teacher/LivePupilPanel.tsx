@@ -22,11 +22,17 @@ export function LivePupilPanel({
   pupil,
   classId,
   onClose,
+  variant = "side",
 }: {
   pupil: LivePupil;
   classId: string;
   onClose: () => void;
+  // "side" = the sticky desktop column; "sheet" = inside the mobile bottom
+  // sheet (the sheet owns positioning/scroll, so we drop sticky + the card
+  // chrome and make the header sticky within the sheet instead).
+  variant?: "side" | "sheet";
 }) {
+  const isSheet = variant === "sheet";
   const [turns, setTurns] = useState<ConversationTurn[]>([]);
   const [loadingTurns, setLoadingTurns] = useState(false);
 
@@ -52,13 +58,14 @@ export function LivePupilPanel({
 
   return (
     <aside
-      className="bw-card"
+      className={isSheet ? undefined : "bw-card"}
       style={{
-        position: "sticky",
-        top: 24,
+        position: isSheet ? "static" : "sticky",
+        top: isSheet ? undefined : 24,
         padding: 0,
         overflow: "hidden",
-        animation: "bw-fade-in 180ms ease-out",
+        background: isSheet ? "transparent" : undefined,
+        animation: isSheet ? undefined : "bw-fade-in 180ms ease-out",
       }}
       aria-label={`${pupil.displayName} detail panel`}
     >
@@ -69,6 +76,12 @@ export function LivePupilPanel({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          // In the sheet, keep the name + close button pinned while the body
+          // scrolls underneath.
+          position: isSheet ? "sticky" : undefined,
+          top: isSheet ? 0 : undefined,
+          background: isSheet ? "var(--surface-elev)" : undefined,
+          zIndex: isSheet ? 2 : undefined,
         }}
       >
         <div className="flex items-center gap-3">

@@ -17,6 +17,7 @@ import { PupilCard } from "@/components/teacher/PupilCard";
 import { PageSkeleton } from "@/components/shared/Skeleton";
 import { LivePupilPanel } from "@/components/teacher/LivePupilPanel";
 import { AppraisalPanel } from "@/components/teacher/AppraisalPanel";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { ACTIVITIES } from "@/lib/ai/activities";
 import { statePill } from "@/lib/brand";
 import type { ClassRecord, PupilRecord, School } from "@/types";
@@ -56,6 +57,12 @@ export default function ClassDetailPage() {
   // Post-lesson appraisal is collapsed by default — a quiet affordance, not the
   // giant panel that used to dominate the top of the ended-lesson view.
   const [appraisalOpen, setAppraisalOpen] = useState(false);
+  // Below 880px the two-column layout can't hold, so the drill panel becomes a
+  // bottom sheet instead of stacking off-screen below the grid.
+  const isMobile = useIsMobile();
+  // On mobile we split the roster into "needs a look" (always shown) and a
+  // collapsible "working well" group so a teacher isn't scrolling 30 cards.
+  const [workingOpen, setWorkingOpen] = useState(false);
 
   // Anonymised research export (brief item N) — pseudonymised, CSV-injection
   // -safe ZIP of the class's analytic events. Teacher-scoped server-side.
@@ -195,6 +202,26 @@ export default function ClassDetailPage() {
     () => Object.values(live).filter((p) => p.safeguarding).length,
     [live]
   );
+  // Mobile triage split (computed from the already attention-sorted list).
+  // A pupil "needs a look" if they're live and not in a working state, or have
+  // a safeguarding flag; everyone else (working live + not-yet-active) sits in
+  // the collapsible group.
+  const needLookList = useMemo(
+    () =>
+      sorted.filter(
+        (p) =>
+          p.isLive &&
+          (p.live.state === "wheel_spinning" ||
+            p.live.state === "off_task" ||
+            p.live.state === "disengaged" ||
+            !!p.live.safeguarding)
+      ),
+    [sorted]
+  );
+  const workingList = useMemo(
+    () => sorted.filter((p) => !needLookList.includes(p)),
+    [sorted, needLookList]
+  );
   const liveActive = useMemo(() => Object.values(live), [live]);
   // Pupils whose pattern could use a teacher's eye — anything that isn't one of
   // the two working states (drives the calm attention strip, not an alert).
@@ -230,7 +257,7 @@ export default function ClassDetailPage() {
         role="Teacher"
       />
 
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 28px 56px" }}>
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px clamp(14px, 4vw, 28px) 56px" }}>
         {/* Slim command bar — back link on the left; status, the single
             state-appropriate primary action, the join code, and everything
             else folded into a quiet overflow on the right. */}
@@ -647,13 +674,14 @@ export default function ClassDetailPage() {
           </div>
         )}
 
-        {/* Pupil grid + drill panel. On tablet/mobile the drill panel
-            stacks below the grid via bw-stack-md. */}
+        {/* Pupil grid + drill panel. Desktop (>880): two columns with a sticky
+            side panel. Mobile (≤880): full-width grid split into a triage
+            group + a collapsible "working well" group; the drill opens as a
+            bottom sheet (rendered below, outside this grid). */}
         <div
-          className={selected ? "bw-stack-md" : undefined}
           style={{
             display: "grid",
-            gridTemplateColumns: selected ? "minmax(0, 1fr) 380px" : "minmax(0, 1fr)",
+            gridTemplateColumns: selected && !isMobile ? "minmax(0, 1fr) 380px" : "minmax(0, 1fr)",
             gap: 18,
             alignItems: "start",
           }}
@@ -663,27 +691,78 @@ export default function ClassDetailPage() {
               <div className="bw-card" style={{ padding: 28, textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>
                 No pupils have joined yet. Share the join code above.
               </div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
-                {sorted.map((p) =>
-                  p.isLive ? (
-                    <PupilCard
-                      key={p.id}
-                      pupil={p.live}
-                      selected={selectedId === p.id}
+            ) : isMobile ? (
+              <div style={{ display: "grid", gap: 16 }}>
+                {needLookList.length > 0 && (
+                  <div>
+                    <div className="bw-section-label" style={{ marginBottom: 8 }}>
+                      Could use a look · {needLookList.length}
+                    </div>
+                    <PupilGrid
+                      items={needLookList}
+                      selectedId={selectedId}
                       stepCount={klass?.lessonPlan?.sequence?.length}
                       onSelect={(id) => setSelectedId(selectedId === id ? null : id)}
                     />
-                  ) : (
-                    <DormantPupilCard key={p.id} name={p.name} />
-                  )
+                  </div>
+                )}
+                {workingList.length > 0 && (
+                  <div>
+                    <button
+                      onClick={() => setWorkingOpen((o) => !o)}
+                      aria-expanded={workingOpen}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 8,
+                        padding: "8px 0",
+                        background: "transparent",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--text)",
+                        textAlign: "left",
+                      }}
+                    >
+                      <span className="bw-section-label">Working well · {workingList.length}</span>
+                      {workingOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {workingOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
+                          style={{ overflow: "hidden" }}
+                        >
+                          <div style={{ paddingTop: 8 }}>
+                            <PupilGrid
+                              items={workingList}
+                              selectedId={selectedId}
+                              stepCount={klass?.lessonPlan?.sequence?.length}
+                              onSelect={(id) => setSelectedId(selectedId === id ? null : id)}
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 )}
               </div>
+            ) : (
+              <PupilGrid
+                items={sorted}
+                selectedId={selectedId}
+                stepCount={klass?.lessonPlan?.sequence?.length}
+                onSelect={(id) => setSelectedId(selectedId === id ? null : id)}
+              />
             )}
           </div>
 
-          {selected && (
-            <LivePupilPanel pupil={selected} classId={classId} onClose={() => setSelectedId(null)} />
+          {selected && !isMobile && (
+            <LivePupilPanel pupil={selected} classId={classId} onClose={() => setSelectedId(null)} variant="side" />
           )}
         </div>
 
@@ -732,6 +811,73 @@ export default function ClassDetailPage() {
           </section>
         )}
       </div>
+
+      {/* Mobile drill — a slide-up bottom sheet so tapping a pupil shows their
+          detail immediately, instead of stacking off-screen below the grid. */}
+      <AnimatePresence>
+        {selected && isMobile && (
+          <>
+            <motion.div
+              key="sheet-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setSelectedId(null)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 70,
+                background: "rgba(15,26,46,0.45)",
+                backdropFilter: "blur(2px)",
+                WebkitBackdropFilter: "blur(2px)",
+              }}
+            />
+            <motion.div
+              key="sheet"
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${selected.displayName} detail`}
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ duration: 0.32, ease: [0, 0, 0.2, 1] }}
+              style={{
+                position: "fixed",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 71,
+                maxHeight: "88vh",
+                overflowY: "auto",
+                background: "var(--surface-elev)",
+                borderTopLeftRadius: "var(--radius-lg)",
+                borderTopRightRadius: "var(--radius-lg)",
+                boxShadow: "var(--shadow-xl)",
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
+              {/* grab handle */}
+              <div
+                aria-hidden
+                style={{
+                  width: 36,
+                  height: 4,
+                  borderRadius: "var(--radius-pill)",
+                  background: "var(--line)",
+                  margin: "10px auto 2px",
+                }}
+              />
+              <LivePupilPanel
+                pupil={selected}
+                classId={classId}
+                onClose={() => setSelectedId(null)}
+                variant="sheet"
+              />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {confirmEnd && (
         <EndClassModal
@@ -792,6 +938,36 @@ function EndClassModal({ onCancel, onConfirm }: { onCancel: () => void; onConfir
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PupilGrid({
+  items,
+  selectedId,
+  stepCount,
+  onSelect,
+}: {
+  items: MergedPupil[];
+  selectedId: string | null;
+  stepCount?: number;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
+      {items.map((p) =>
+        p.isLive ? (
+          <PupilCard
+            key={p.id}
+            pupil={p.live}
+            selected={selectedId === p.id}
+            stepCount={stepCount}
+            onSelect={onSelect}
+          />
+        ) : (
+          <DormantPupilCard key={p.id} name={p.name} />
+        )
+      )}
     </div>
   );
 }

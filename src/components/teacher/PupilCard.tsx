@@ -34,7 +34,7 @@ export function PupilCard({
     <motion.button
       onClick={() => onSelect(pupil.pupilId)}
       aria-pressed={selected}
-      className="bw-card"
+      className="bw-card bw-pupil-card"
       layout="position"
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}

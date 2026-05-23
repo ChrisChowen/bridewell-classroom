@@ -531,6 +531,17 @@ select:focus-visible {
   }
 }
 
+/* Compact pupil cards on phones — the card sets its resting padding/min-height
+   inline, so we override here (inline styles outrank ordinary class rules) to
+   recover vertical space and fit more pupils per screen. */
+@media (max-width: 640px) {
+  .bw-pupil-card {
+    min-height: 0 !important;
+    padding: 13px !important;
+    gap: 10px !important;
+  }
+}
+
 /* Account-menu items: subtle hover to indicate clickability. */
 .bw-menu-item:hover {
   background: rgba(181, 138, 60, 0.10);
