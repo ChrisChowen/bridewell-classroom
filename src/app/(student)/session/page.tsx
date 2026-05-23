@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Crest } from "@/components/shared/Crest";
-import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { ConnectionPill } from "@/components/shared/ConnectionPill";
 import { ChatSurface } from "@/components/student/ChatSurface";
 import { ClosingScreen } from "@/components/student/ClosingScreen";
@@ -259,29 +258,10 @@ export default function SessionPage() {
 
         <div className="flex items-center justify-end gap-2">
           <ConnectionPill />
-          <AccessibilityMenu />
-          <span className="bw-hide-sm"><ThemeToggle /></span>
-          <Link
-            href="/join"
-            className="bw-btn-secondary bw-hide-sm"
-            style={{ fontSize: 11 }}
-          >
-            Switch class
-          </Link>
-          <span
-            className="bw-card"
-            style={{
-              padding: "6px 12px",
-              fontSize: 12,
-              color: "var(--text-muted)",
-              maxWidth: "40vw",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <strong style={{ color: "var(--text)" }}>{pupilName}</strong>
-          </span>
+          {/* The pupil's name chip IS the settings menu — accessibility, dark
+              mode and switch-class all live behind it, so the header is just
+              the status pill + one chip (was a cluttered row of buttons). */}
+          <AccessibilityMenu userLabel={pupilName} switchClassHref="/join" />
         </div>
       </header>
 

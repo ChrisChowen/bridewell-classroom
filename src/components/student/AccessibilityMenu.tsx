@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Accessibility, Check } from "lucide-react";
+import Link from "next/link";
+import type { Route } from "next";
+import { Settings, Check, ArrowLeftRight, ChevronDown } from "lucide-react";
 import { speechOutputAvailable } from "@/lib/voice";
 
 // localStorage key for the "read answers aloud" preference. Read by
@@ -45,13 +47,29 @@ export function useApplyAccessibilityPrefs() {
   }, []);
 }
 
-export function AccessibilityMenu() {
+// The pupil settings menu. Folds the previously-separate topbar controls —
+// accessibility (text size / dyslexia / motion / read-aloud), appearance
+// (dark mode), and class switching — into one calm dropdown so the session
+// header isn't cluttered. `switchClassHref` adds the "Switch class" item only
+// where a class context exists (omit it in the design preview).
+//
+// `userLabel` merges the menu with the pupil's name chip: instead of a
+// separate gear icon AND a name chip, the chip itself is the trigger (name +
+// caret), matching the account-chip-as-menu pattern. Without it, a plain gear.
+export function AccessibilityMenu({
+  switchClassHref,
+  userLabel,
+}: {
+  switchClassHref?: string;
+  userLabel?: string;
+} = {}) {
   const [open, setOpen] = useState(false);
   const [fontScale, setFontScale] = useState<FontScale>("normal");
   const [reading, setReading] = useState<Reading>("default");
   const [reduceMotion, setReduceMotion] = useState(false);
   const [voiceOut, setVoiceOut] = useState(false);
   const [voiceAvailable, setVoiceAvailable] = useState(false);
+  const [dark, setDark] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useApplyAccessibilityPrefs();
@@ -63,11 +81,26 @@ export function AccessibilityMenu() {
     setReduceMotion(localStorage.getItem(KEYS.motion) === "on");
     setVoiceOut(localStorage.getItem(VOICE_OUTPUT_KEY) === "on");
     setVoiceAvailable(speechOutputAvailable());
+    setDark(localStorage.getItem("bw-theme") === "dark");
   }, []);
 
   function toggleVoiceOut(v: boolean) {
     setVoiceOut(v);
     localStorage.setItem(VOICE_OUTPUT_KEY, v ? "on" : "off");
+  }
+
+  // Dark mode — same persistence as the standalone ThemeToggle (bw-theme +
+  // data-theme on <html>), so it stays in sync wherever both appear.
+  function toggleDark(v: boolean) {
+    setDark(v);
+    const el = document.documentElement;
+    if (v) {
+      el.setAttribute("data-theme", "dark");
+      localStorage.setItem("bw-theme", "dark");
+    } else {
+      el.removeAttribute("data-theme");
+      localStorage.setItem("bw-theme", "light");
+    }
   }
 
   // Close on outside click / Escape.
@@ -102,21 +135,63 @@ export function AccessibilityMenu() {
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="bw-btn-secondary"
-        aria-label="Accessibility options"
-        aria-expanded={open}
-        title="Accessibility"
-        style={{ padding: 7 }}
-      >
-        <Accessibility size={14} />
-      </button>
+      {userLabel ? (
+        // The name chip IS the menu trigger (account-chip-as-menu).
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="bw-card"
+          aria-label="Settings"
+          aria-expanded={open}
+          title="Settings"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "6px 10px 6px 12px",
+            fontSize: 12,
+            color: "var(--text-muted)",
+            cursor: "pointer",
+            maxWidth: "44vw",
+          }}
+        >
+          <strong
+            style={{
+              color: "var(--text)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {userLabel}
+          </strong>
+          <ChevronDown
+            size={13}
+            aria-hidden
+            style={{
+              flexShrink: 0,
+              color: "var(--text-muted)",
+              transform: open ? "rotate(180deg)" : "none",
+              transition: "transform 140ms ease",
+            }}
+          />
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="bw-btn-secondary"
+          aria-label="Settings"
+          aria-expanded={open}
+          title="Settings"
+          style={{ padding: 7 }}
+        >
+          <Settings size={14} />
+        </button>
+      )}
 
       {open && (
         <div
           role="dialog"
-          aria-label="Accessibility options"
+          aria-label="Settings"
           className="bw-card"
           style={{
             position: "absolute",
@@ -174,9 +249,36 @@ export function AccessibilityMenu() {
             />
           )}
 
+          <Toggle
+            label="Dark mode"
+            hint="Easier in a dim room"
+            on={dark}
+            onChange={toggleDark}
+          />
+
           <p style={{ fontSize: 10, color: "var(--text-muted)", lineHeight: 1.4, margin: 0 }}>
             These settings change only how the page looks for you. They&apos;re saved on this device.
           </p>
+
+          {switchClassHref && (
+            <Link
+              href={switchClassHref as Route}
+              className="bw-btn-secondary"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                fontSize: 12,
+                borderTop: "1px solid var(--line)",
+                paddingTop: 10,
+                marginTop: 2,
+                width: "100%",
+              }}
+            >
+              <ArrowLeftRight size={13} /> Switch class
+            </Link>
+          )}
         </div>
       )}
     </div>
