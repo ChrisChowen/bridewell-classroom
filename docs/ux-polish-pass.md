@@ -67,6 +67,35 @@ Hid the decorative "Classroom" sub-label and the "Switch class" link via
 `bw-hide-sm` (≤640px) — verified the topbar declutters at mobile and the items
 reappear at desktop (978px), no overflow either way.
 
+### Full surface walkthrough (preview + emulator, this pass)
+
+Walked every key surface — public, pupil, AND authed teacher (the last two
+via a signed-in emulator session + Playwright capture) — and judged each
+against the "first-class vs prototype" bar. **All six read first-class:**
+
+- **Landing** (`/`): crest + wordmark, fleur label, peeking-scholar motif,
+  book-serif headline, two equal CTAs, restrained navy/cream/gold. First-class.
+- **Login / Join** (`/login`, `/join`): centred card, gold tab underline /
+  serif heading, labelled fields, monospace code field, clear secondary links.
+  First-class.
+- **Pupil session** (`/session`): branded topbar, serif tutor turns, the three
+  scaffold buttons + "N of N left", calm composer with mic + Send. First-class.
+- **Teacher dashboard** (`/dashboard`): serif "Good morning" greeting, class
+  card with join code + "Plan ready" pill, and a genuinely **functional empty
+  state** ("Waiting for pupils to join", not fake-seeded — matches Chris's
+  memory note). First-class.
+- **Live class view** (`/class/[id]`): the bespoke **Class Stream** — per-pupil
+  cards with engagement-state pill + trajectory sparkline + last message +
+  a calm **SAFEGUARDING · MEDIUM** chip, the horizon ribbon, attention-sort,
+  and the control row (pause/wrap-up/end/whiteboard/research-export/join-code).
+  Directly answers the load-bearing demo question; first-class.
+
+Concrete improvements landed this pass: gold-tint token discipline, 3 WCAG-AA
+contrast fixes (axe-gated in CI), the accessible `--color-gold-text`, and the
+mobile topbar declutter. With those, **no single change would obviously move
+the first-class-vs-prototype judgement on the reachable surfaces.** The
+remaining items below are refinements, not corrections.
+
 ## Remaining (prioritised for a focused, live-verified pass)
 
 These need a running app + visual judgement and `@axe-core/playwright` on the
