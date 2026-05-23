@@ -6,6 +6,7 @@
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getDatabase } from "firebase-admin/database";
+import { getAuth } from "firebase-admin/auth";
 
 const DATABASE_URL =
   process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ??
@@ -20,6 +21,9 @@ export const E2E = {
   className: "E2E Biology",
   subject: "Biology",
   teacherId: "e2e-teacher",
+  teacherEmail: "teacher@e2e.test",
+  teacherPassword: "e2e-password-123",
+  teacherName: "E2E Teacher",
 };
 
 export default async function globalSetup() {
@@ -72,6 +76,24 @@ export default async function globalSetup() {
     classId: E2E.classId,
     teacherId: E2E.teacherId,
     createdAt: Date.now(),
+  });
+
+  // Seed a teacher account in the Auth emulator (with the role claim the auth
+  // seam checks) + a teachers/{uid} profile doc, so the teacher-flow spec can
+  // sign in and see this class (its teacherId is E2E.teacherId).
+  const auth = getAuth(app);
+  await auth
+    .createUser({
+      uid: E2E.teacherId,
+      email: E2E.teacherEmail,
+      password: E2E.teacherPassword,
+      displayName: E2E.teacherName,
+    })
+    .catch(() => {}); // idempotent across reruns
+  await auth.setCustomUserClaims(E2E.teacherId, { role: "teacher" });
+  await db.collection("teachers").doc(E2E.teacherId).set({
+    displayName: E2E.teacherName,
+    email: E2E.teacherEmail,
   });
 
   // Seed the live session as "active" so a joined pupil's chat is unlocked
