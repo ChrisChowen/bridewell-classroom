@@ -1102,9 +1102,7 @@ function DescribeStep({
       </div>
       {generating && (
         <div style={{ marginTop: 4 }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10 }}>
-            The lesson planner is thinking through pacing, critical concepts and likely misconceptions — about fifteen seconds.
-          </div>
+          <GenerationProgress />
           {/* Skeleton of the plan sections about to appear, so the ~15s wait
               (the live demo's riskiest dead air) feels alive rather than frozen.
               Reuses the same bw-shimmer treatment as the suggestions step. */}
@@ -1137,6 +1135,66 @@ function DescribeStep({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Progress feedback during the ~15s lesson-plan generation, so the teacher
+// sees it working rather than a frozen button. The elapsed counter is real;
+// the bar is an honest estimate (it eases toward ~92% over the expected
+// duration and then crawls — it never reaches 100%, because the real
+// completion is the review step replacing this whole block). The stage labels
+// reflect what the planner genuinely produces (objectives → sequence →
+// misconceptions → tutor guidance).
+function GenerationProgress() {
+  const STAGES = [
+    "Reading the syllabus and your brief…",
+    "Drafting the lesson sequence…",
+    "Anticipating likely misconceptions…",
+    "Writing the tutor's guidance…",
+    "Finalising the plan…",
+  ];
+  const EXPECTED_MS = 15000;
+  const [start] = useState(() => Date.now());
+  const [elapsedMs, setElapsedMs] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setElapsedMs(Date.now() - start), 200);
+    return () => clearInterval(id);
+  }, [start]);
+
+  const pct =
+    elapsedMs <= EXPECTED_MS
+      ? Math.min(92, 4 + (elapsedMs / EXPECTED_MS) * 88)
+      : Math.min(97, 92 + (elapsedMs - EXPECTED_MS) / 4000);
+  const stage = STAGES[Math.min(STAGES.length - 1, Math.floor(elapsedMs / 3000))];
+
+  return (
+    <div style={{ marginBottom: 12 }} role="status" aria-live="polite">
+      <div className="flex items-center justify-between" style={{ marginBottom: 6, gap: 12 }}>
+        <span style={{ fontSize: 12, color: "var(--text)" }}>{stage}</span>
+        <span style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+          {Math.floor(elapsedMs / 1000)}s
+        </span>
+      </div>
+      <div
+        aria-hidden
+        style={{ height: 4, borderRadius: 999, background: "var(--line)", overflow: "hidden" }}
+      >
+        <div
+          style={{
+            width: `${pct}%`,
+            height: "100%",
+            background:
+              "linear-gradient(90deg, var(--color-gold-500) 0%, var(--color-gold-300, var(--color-gold-500)) 100%)",
+            borderRadius: 999,
+            transition: "width 300ms ease",
+          }}
+        />
+      </div>
+      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
+        Drafting your plan — usually about fifteen seconds. Every field is editable before
+        anything reaches a pupil.
+      </div>
     </div>
   );
 }
