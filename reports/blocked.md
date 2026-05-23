@@ -50,7 +50,21 @@ raters ≠ teachers; the human-labelled pass stays 🔒).
 
 ---
 
-## Playwright e2e — HARNESS LANDED; one positive-flow assertion pending (3-strike halt)
+## Playwright e2e — ✅ RESOLVED (emulator e2e gating CI; pupil-join + B1 green)
+
+**UPDATE — unblocked.** The "3-strike halt" below was lifted by an *observable*
+standalone diagnostic (ran the dev server in emulator mode with readable stdout
++ a direct curl): the root cause was a **seed bug, not infra** — the seed used
+the undashed code `ABCDEF` as the `joinCodes` doc id, but `normaliseJoinCode`
+canonicalises to the dashed `ABC-DEF` (`XXX-XXX`). The emulator wiring was
+correct all along. Seeding the dashed form fixed it. **Now: 3 specs pass in CI**
+(pupil-join valid + unknown-code rejected, and **B1 productive-struggle** —
+scaffold ceiling → Reason → fresh coach turn). A CI `e2e` job (Java 21 +
+firebase-tools + `webframeworks` experiment + Playwright) gates every push. The
+remaining 3 scenarios (wheel-spinning/safeguarding/teacher-flow) build on this
+proven harness. _Historical detail of the halt retained below._
+
+### (historical) HARNESS LANDED; one positive-flow assertion pending (3-strike halt)
 
 **Built this run:** a real emulator-backed e2e harness — `@playwright/test`,
 `playwright.emulator.config.ts`, `e2e/global-setup.ts` (seeds a class +
