@@ -53,8 +53,10 @@ brief/
 context/
 KICKOFF.md
 
-# Local agent simulation artefacts and screenshot capture intermediates
-reports/
+# Local agent simulation artefacts (bulky JSON run dumps stay local); the
+# curated markdown deliverables under reports/ (audit closure, follow-ups,
+# blocked log, goal-run reports) ARE tracked.
+reports/*.json
 *.log
 .claude/
 
