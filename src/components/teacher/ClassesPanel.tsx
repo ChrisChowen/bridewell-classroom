@@ -97,7 +97,7 @@ export function ClassesPanel() {
                       title={c.lessonPlan.title}
                       style={{
                         fontSize: 10,
-                        color: "var(--color-gold-500)",
+                        color: "var(--color-gold-text)",
                         background: "var(--color-gold-tint-2)",
                         padding: "2px 8px",
                         borderRadius: 999,

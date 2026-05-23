@@ -76,7 +76,7 @@ export function AppraisalPanel({ classId }: { classId: string }) {
       >
         <div className="flex items-center justify-between gap-12">
           <div>
-            <div className="bw-section-label" style={{ color: "var(--color-gold-500)" }}>
+            <div className="bw-section-label" style={{ color: "var(--color-gold-text)" }}>
               After the lesson
             </div>
             <h3 className="bw-display" style={{ fontSize: 17, marginTop: 4 }}>
@@ -134,7 +134,7 @@ export function AppraisalPanel({ classId }: { classId: string }) {
     >
       <div className="flex items-center justify-between" style={{ marginBottom: 12, gap: 12 }}>
         <div className="flex items-center gap-3">
-          <span className="bw-section-label" style={{ color: "var(--color-gold-500)" }}>
+          <span className="bw-section-label" style={{ color: "var(--color-gold-text)" }}>
             AI appraisal of this plan
           </span>
           <Rating rating={appraisal.rating} />
@@ -145,7 +145,7 @@ export function AppraisalPanel({ classId }: { classId: string }) {
             {saving ? "Saving…" : "Save to library"}
           </button>
         ) : (
-          <span style={{ fontSize: 12, color: "var(--color-gold-500)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <span style={{ fontSize: 12, color: "var(--color-gold-text)", display: "inline-flex", alignItems: "center", gap: 4 }}>
             <Check size={12} /> Saved to library
           </span>
         )}
@@ -176,7 +176,7 @@ export function AppraisalPanel({ classId }: { classId: string }) {
 
 function Rating({ rating }: { rating: number }) {
   return (
-    <span style={{ fontSize: 13, fontFamily: "var(--font-mono)", color: "var(--color-gold-500)" }} title={`${rating} of 5`}>
+    <span style={{ fontSize: 13, fontFamily: "var(--font-mono)", color: "var(--color-gold-text)" }} title={`${rating} of 5`}>
       {"★".repeat(rating)}
       <span style={{ color: "var(--text-muted)" }}>{"★".repeat(5 - rating)}</span>
     </span>

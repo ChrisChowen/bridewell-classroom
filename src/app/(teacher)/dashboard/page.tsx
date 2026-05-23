@@ -150,7 +150,7 @@ function FirstStepsCard() {
       }}
     >
       <div style={{ padding: 24 }}>
-        <span className="bw-section-label" style={{ color: "var(--color-gold-500)" }}>
+        <span className="bw-section-label" style={{ color: "var(--color-gold-text)" }}>
           Welcome
         </span>
         <h2 className="bw-display" style={{ fontSize: 20, margin: "8px 0 6px" }}>

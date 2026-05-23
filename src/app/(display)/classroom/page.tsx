@@ -324,7 +324,7 @@ function JoinPanel({
           fontSize: "clamp(40px, 4.4vw, 56px)",
           fontWeight: 700,
           letterSpacing: "0.14em",
-          color: "var(--color-gold-500)",
+          color: "var(--color-gold-text)",
           lineHeight: 1,
           textShadow: "0 0 28px rgba(216,154,47,0.28)",
         }}

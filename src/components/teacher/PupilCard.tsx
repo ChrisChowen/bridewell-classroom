@@ -246,7 +246,7 @@ export function PupilCard({
                 title="The classifier was unavailable for the most recent snapshot — this state is not reliable."
                 style={{
                   marginLeft: 6,
-                  color: "var(--color-gold-500)",
+                  color: "var(--color-gold-text)",
                   display: "inline-flex",
                   alignItems: "center",
                 }}

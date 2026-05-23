@@ -68,6 +68,12 @@
   --surface-strong: var(--color-navy-900);
   --text: var(--color-ink-900);
   --text-muted: var(--color-ink-500);
+  /* Accessible gold for small TEXT. The brand gold (#b58a3c) is only
+     2.9:1 on cream — fine as a fill/border/icon accent, but it fails WCAG
+     AA for small text. This deeper gold clears 4.5:1 on cream, white, AND
+     the soft gold-tint surfaces (e.g. Reason cards / preview bubbles);
+     the brand mark/fills keep using --color-gold-500. */
+  --color-gold-text: #7d5f24;
   --line: var(--color-line-light);
 }
 
@@ -83,6 +89,9 @@
   --text: var(--color-cream-50);
   --text-muted: #a8b1c4;
   --line: var(--color-line-dark);
+  /* On navy, the lighter gold-300 reads as gold AND clears AA for small
+     text (the brand gold-500 is only ~4.5:1 — too marginal). */
+  --color-gold-text: var(--color-gold-300);
 
   /* Dark mode needs more luminous gold tints to remain readable
      against the navy surface — bump opacity per the UI-polish audit

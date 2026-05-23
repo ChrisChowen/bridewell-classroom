@@ -281,7 +281,7 @@ export default function ClassDetailPage() {
                     role="status"
                     style={{
                       fontSize: 12,
-                      color: "var(--color-gold-500)",
+                      color: "var(--color-gold-text)",
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 4,
@@ -481,7 +481,7 @@ export default function ClassDetailPage() {
                           padding: "3px 8px",
                           borderRadius: 999,
                           background: "var(--color-gold-tint-2)",
-                          color: "var(--color-gold-500)",
+                          color: "var(--color-gold-text)",
                         }}
                       >
                         {c}
@@ -510,7 +510,7 @@ export default function ClassDetailPage() {
                               {i + 1}.
                             </span>
                             <span style={{ fontSize: 13, fontWeight: 600 }}>{s.title}</span>
-                            <span style={{ fontSize: 10, color: "var(--color-gold-500)", background: "rgba(181,138,60,0.08)", borderRadius: 999, padding: "2px 8px" }}>
+                            <span style={{ fontSize: 10, color: "var(--color-gold-text)", background: "rgba(181,138,60,0.08)", borderRadius: 999, padding: "2px 8px" }}>
                               {ACTIVITIES[s.activityType]?.label ?? s.activityType}
                             </span>
                           </div>
@@ -526,7 +526,7 @@ export default function ClassDetailPage() {
                               style={{ flexShrink: 0 }}
                               aria-label={`${onStep.length} pupil${onStep.length === 1 ? "" : "s"} on this step`}
                             >
-                              <span style={{ fontSize: 11, color: "var(--color-gold-500)", fontWeight: 600, marginRight: 4 }}>
+                              <span style={{ fontSize: 11, color: "var(--color-gold-text)", fontWeight: 600, marginRight: 4 }}>
                                 {onStep.length}
                               </span>
                               {onStep.slice(0, 10).map((p) => (
@@ -575,17 +575,17 @@ export default function ClassDetailPage() {
                     >
                       <div className="flex items-center justify-between" style={{ gap: 8 }}>
                         <div className="flex items-center gap-2" style={{ flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-gold-500)", fontWeight: 700 }}>
+                          <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--color-gold-text)", fontWeight: 700 }}>
                             EXT.
                           </span>
                           <span style={{ fontSize: 13, fontWeight: 600 }}>{klass.lessonPlan.extension.title}</span>
-                          <span style={{ fontSize: 10, color: "var(--color-gold-500)", background: "var(--color-gold-tint-2)", borderRadius: 999, padding: "2px 8px" }}>
+                          <span style={{ fontSize: 10, color: "var(--color-gold-text)", background: "var(--color-gold-tint-2)", borderRadius: 999, padding: "2px 8px" }}>
                             above syllabus
                           </span>
                         </div>
                         {inExt.length > 0 && (
                           <div className="flex items-center gap-1" style={{ flexShrink: 0 }}>
-                            <span style={{ fontSize: 11, color: "var(--color-gold-500)", fontWeight: 600, marginRight: 4 }}>
+                            <span style={{ fontSize: 11, color: "var(--color-gold-text)", fontWeight: 600, marginRight: 4 }}>
                               {inExt.length}
                             </span>
                             {inExt.slice(0, 10).map((p) => (

@@ -1207,7 +1207,7 @@ function Bubble({ message }: { message: UIMessage }) {
     if (message.meta?.teacherHint) {
       return (
         <div style={{ maxWidth: 660 }}>
-          <span className="bw-section-label" style={{ display: "block", marginBottom: 6, color: "var(--color-gold-500)" }}>
+          <span className="bw-section-label" style={{ display: "block", marginBottom: 6, color: "var(--color-gold-text)" }}>
             From your teacher
           </span>
           <div
@@ -1280,7 +1280,7 @@ function Citations({ citations, queries }: { citations: Citation[]; queries?: st
         <Sparkles size={11} color="var(--color-gold-500)" />
         <span
           style={{
-            color: "var(--color-gold-500)",
+            color: "var(--color-gold-text)",
             fontWeight: 600,
             letterSpacing: "0.08em",
             textTransform: "uppercase",

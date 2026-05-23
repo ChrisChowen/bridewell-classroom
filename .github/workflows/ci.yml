@@ -52,3 +52,37 @@ jobs:
           NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:ciplaceholder"
           NEXT_PUBLIC_FIREBASE_DATABASE_URL: "https://bridewell-classroom-default-rtdb.europe-west1.firebasedatabase.app"
         run: npm run build
+
+  # Accessibility gate — axe-core over the auth-free public pages (landing /
+  # login / join) in light + dark. Separate job so the Playwright browser +
+  # build don't slow the unit gate. The full demo-flow e2e specs need the
+  # emulator seeded (reports/blocked.md) and are not wired here yet.
+  a11y:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_FIREBASE_API_KEY: "ci-placeholder"
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "bridewell-classroom.firebaseapp.com"
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "bridewell-classroom"
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: "bridewell-classroom.appspot.com"
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "000000000000"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:000000000000:web:ciplaceholder"
+      NEXT_PUBLIC_FIREBASE_DATABASE_URL: "https://bridewell-classroom-default-rtdb.europe-west1.firebasedatabase.app"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Start server + run axe a11y sweep
+        run: |
+          npm run start &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:3000 >/dev/null && break
+            sleep 1
+          done
+          BASE_URL=http://localhost:3000 npm run test:a11y

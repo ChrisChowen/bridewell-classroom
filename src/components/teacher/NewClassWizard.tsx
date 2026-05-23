@@ -556,7 +556,7 @@ function PickStep({ syllabus, onPick }: { syllabus: SyllabusEntry | null; onPick
                   gap: 4,
                   background: "none",
                   border: "none",
-                  color: "var(--color-gold-500)",
+                  color: "var(--color-gold-text)",
                   fontSize: 12,
                   padding: 0,
                   cursor: "pointer",
@@ -673,7 +673,7 @@ function SyllabusCardGrid({
                     fontSize: 10,
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
-                    color: "var(--color-gold-500)",
+                    color: "var(--color-gold-text)",
                     fontWeight: 700,
                   }}
                 >
@@ -923,7 +923,7 @@ function DescribeStep({
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{e.plan.title}</div>
                   <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
-                    <span style={{ color: "var(--color-gold-500)", fontFamily: "var(--font-mono)" }}>
+                    <span style={{ color: "var(--color-gold-text)", fontFamily: "var(--font-mono)" }}>
                       {"★".repeat(e.appraisal.rating)}
                       <span style={{ color: "var(--text-muted)" }}>{"★".repeat(5 - e.appraisal.rating)}</span>
                     </span>
@@ -986,7 +986,7 @@ function DescribeStep({
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
                 fontWeight: 700,
-                color: "var(--color-gold-500)",
+                color: "var(--color-gold-text)",
               }}
             >
               <Sparkles size={11} />
@@ -1393,7 +1393,7 @@ function ReviewStep({
 
       {plan.notesForTeacher && plan.notesForTeacher.length > 0 && (
         <div className="bw-card" style={{ padding: 12, background: "rgba(181,138,60,0.08)", borderLeft: "3px solid var(--color-gold-500)" }}>
-          <div className="bw-section-label" style={{ marginBottom: 6, color: "var(--color-gold-500)" }}>
+          <div className="bw-section-label" style={{ marginBottom: 6, color: "var(--color-gold-text)" }}>
             Open questions the AI flagged
           </div>
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
@@ -1563,7 +1563,7 @@ function ActivityBadge({
       onChange={(e) => onChange(e.target.value as ActivityType)}
       style={{
         background: "var(--color-gold-tint-2)",
-        color: "var(--color-gold-500)",
+        color: "var(--color-gold-text)",
         border: "1px solid rgba(181,138,60,0.35)",
         borderRadius: 999,
         padding: "3px 8px",

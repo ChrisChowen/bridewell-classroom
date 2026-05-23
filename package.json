@@ -15,7 +15,8 @@
     "test:rules": "firebase emulators:exec --only firestore,auth --project bridewell-classroom \"node scripts/test-rules.mjs\"",
     "test:rtdb": "firebase emulators:exec --only database,auth --project bridewell-classroom \"node scripts/test-rtdb-rules.mjs\"",
     "test:emulator": "firebase emulators:exec --only firestore,database --project bridewell-classroom \"vitest run -c vitest.emulator.config.ts\"",
-    "eval:adversarial": "export $(grep -E '^GEMINI_API_KEY=' .env.local | xargs) && RUN_LIVE_EVAL=1 vitest run src/lib/ai/adversarial-eval.live.test.ts"
+    "eval:adversarial": "export $(grep -E '^GEMINI_API_KEY=' .env.local | xargs) && RUN_LIVE_EVAL=1 vitest run src/lib/ai/adversarial-eval.live.test.ts",
+    "test:a11y": "playwright test"
   },
   "dependencies": {
     "@google/genai": "^2.5.0",
@@ -27,6 +28,8 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",

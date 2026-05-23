@@ -67,3 +67,7 @@ reports/*.json
 # Useful locally for picking a style; not part of the shipping artefact.
 public/img/explore/
 
+
+# Playwright e2e artifacts
+test-results/
+playwright-report/

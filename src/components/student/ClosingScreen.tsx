@@ -87,7 +87,7 @@ export function ClosingScreen() {
             height: 44,
             borderRadius: 999,
             background: "rgba(181,138,60,0.12)",
-            color: "var(--color-gold-500)",
+            color: "var(--color-gold-text)",
             margin: "0 auto 14px",
           }}
         >
@@ -172,7 +172,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
           fontSize: 10,
           textTransform: "uppercase",
           letterSpacing: "0.12em",
-          color: "var(--color-gold-500)",
+          color: "var(--color-gold-text)",
           fontWeight: 600,
           marginBottom: 6,
         }}

@@ -445,7 +445,7 @@ export default function AdminPage() {
                       <span style={mutedCell}>{t.school || "—"}</span>
                       <span style={{ fontSize: 12 }}>
                         {t.isAdmin ? (
-                          <span className="flex items-center" style={{ gap: 4, color: "var(--color-gold-500)" }}>
+                          <span className="flex items-center" style={{ gap: 4, color: "var(--color-gold-text)" }}>
                             <ShieldCheck size={12} /> admin
                           </span>
                         ) : (

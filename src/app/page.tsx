@@ -222,7 +222,7 @@ function PupilPreviewCard() {
     >
       <header className="flex items-center justify-between">
         <span className="flex items-center gap-2">
-          <span className="bw-section-label" style={{ color: "var(--color-gold-500)" }}>
+          <span className="bw-section-label" style={{ color: "var(--color-gold-text)" }}>
             What pupils see
           </span>
           <ExampleTag />
@@ -292,7 +292,7 @@ function TeacherPreviewCard() {
     >
       <header className="flex items-center justify-between">
         <span className="flex items-center gap-2">
-          <span className="bw-section-label" style={{ color: "var(--color-gold-500)" }}>
+          <span className="bw-section-label" style={{ color: "var(--color-gold-text)" }}>
             What teachers see
           </span>
           <ExampleTag />
@@ -346,7 +346,7 @@ function PreviewBubble({ role, text }: { role: "tutor" | "pupil"; text: string }
           display: "block",
           marginBottom: 4,
           fontSize: 9,
-          color: isTutor ? "var(--text-muted)" : "var(--color-gold-500)",
+          color: isTutor ? "var(--text-muted)" : "var(--color-gold-text)",
         }}
       >
         {isTutor ? "Tutor" : "You"}
@@ -582,7 +582,7 @@ function Audiences() {
               gap: 12,
             }}
           >
-            <span className="bw-section-label" style={{ color: "var(--color-gold-500)" }}>
+            <span className="bw-section-label" style={{ color: "var(--color-gold-text)" }}>
               {c.audience}
             </span>
             <h3 className="bw-display" style={{ fontSize: 20, lineHeight: 1.25, margin: 0 }}>
@@ -663,7 +663,8 @@ function SiteFooter() {
           paddingTop: 10,
           borderTop: "1px dashed var(--line)",
           fontSize: 11,
-          opacity: 0.75,
+          // No opacity here — it composited the muted text below WCAG AA on
+          // the navy band. The on-navy token already reads as secondary.
           letterSpacing: "0.01em",
         }}
       >

@@ -139,7 +139,7 @@ export function LivePupilPanel({
           </div>
           {pupil.rationale && (
             <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8, lineHeight: 1.4 }}>
-              <Sparkles size={10} style={{ marginRight: 4, verticalAlign: "middle", color: "var(--color-gold-500)" }} />
+              <Sparkles size={10} style={{ marginRight: 4, verticalAlign: "middle", color: "var(--color-gold-text)" }} />
               {pupil.rationale}
             </p>
           )}
@@ -554,7 +554,7 @@ export function SendEditor({ pupilId, pupilName }: { pupilId: string; pupilName:
         </div>
       )}
       {saved && (
-        <div style={{ fontSize: 11, color: "var(--color-gold-500)", marginTop: 6, display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <div style={{ fontSize: 11, color: "var(--color-gold-text)", marginTop: 6, display: "inline-flex", alignItems: "center", gap: 4 }}>
           <Check size={11} /> Saved
         </div>
       )}
@@ -634,7 +634,7 @@ function GdprExport({ pupilId, pupilName }: { pupilId: string; pupilName: string
       />
       <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 6, lineHeight: 1.4 }}>
         Subject-access (Art. 15) for {pupilName.split(" ")[0]} — everything held about them,
-        for a data-subject request. {msg && <strong style={{ color: "var(--color-gold-500)" }}>{msg}</strong>}
+        for a data-subject request. {msg && <strong style={{ color: "var(--color-gold-text)" }}>{msg}</strong>}
       </p>
     </div>
   );
@@ -766,7 +766,7 @@ function InterventionActions({
         />
       </div>
       {confirmation && (
-        <div style={{ fontSize: 11, color: "var(--color-gold-500)", marginTop: 8, display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <div style={{ fontSize: 11, color: "var(--color-gold-text)", marginTop: 8, display: "inline-flex", alignItems: "center", gap: 4 }}>
           <Check size={11} /> {confirmation}
         </div>
       )}
