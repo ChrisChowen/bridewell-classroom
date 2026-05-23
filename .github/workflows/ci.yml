@@ -106,11 +106,12 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-      # The Firestore + Database emulators are Java; pin a JDK.
+      # The Firestore + Database emulators are Java; firebase-tools requires
+      # JDK 21+.
       - uses: actions/setup-java@v4
         with:
           distribution: "temurin"
-          java-version: "17"
+          java-version: "21"
       - run: npm ci
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
