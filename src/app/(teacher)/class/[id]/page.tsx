@@ -12,6 +12,7 @@ import { useModalDialog } from "@/lib/useModalDialog";
 import { ConnectionPill } from "@/components/shared/ConnectionPill";
 import { subscribeToLiveClass, subscribeToSessionStatus, type LivePupil, type SessionStatus } from "@/lib/firebase/live";
 import { PupilCard } from "@/components/teacher/PupilCard";
+import { PageSkeleton } from "@/components/shared/Skeleton";
 import { LivePupilPanel } from "@/components/teacher/LivePupilPanel";
 import { AppraisalPanel } from "@/components/teacher/AppraisalPanel";
 import { ACTIVITIES } from "@/lib/ai/activities";
@@ -192,11 +193,7 @@ export default function ClassDetailPage() {
   );
 
   if (status === "loading" || status === "out" || status === "pupil") {
-    return (
-      <main style={{ minHeight: "100dvh", display: "grid", placeItems: "center" }}>
-        <div style={{ color: "var(--text-muted)", fontSize: 13 }}>Loading…</div>
-      </main>
-    );
+    return <PageSkeleton cards={3} maxWidth={1400} />;
   }
 
   const teacherName = displayName ?? email ?? "Teacher";

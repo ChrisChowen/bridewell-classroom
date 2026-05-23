@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { TopBar } from "@/components/shared/TopBar";
 import { Fleur } from "@/components/shared/Fleur";
 import { ClassesPanel } from "@/components/teacher/ClassesPanel";
+import { PageSkeleton } from "@/components/shared/Skeleton";
 import { useAuth } from "@/lib/firebase/auth-context";
 import { subscribeToMyClasses } from "@/lib/firebase/classes";
 import type { ClassRecord, School } from "@/types";
@@ -35,11 +36,9 @@ export default function DashboardPage() {
   }, [user]);
 
   if (status === "loading" || status === "out" || status === "pupil") {
-    return (
-      <main style={{ minHeight: "100dvh", display: "grid", placeItems: "center" }}>
-        <div style={{ color: "var(--text-muted)", fontSize: 13 }}>Loading…</div>
-      </main>
-    );
+    // Same skeleton as the route-level loading.tsx, so resolving auth doesn't
+    // flash a bare "Loading…" between the skeleton and the dashboard.
+    return <PageSkeleton cards={2} maxWidth={1200} />;
   }
 
   const teacherName = displayName ?? email ?? "Teacher";
