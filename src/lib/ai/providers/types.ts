@@ -56,4 +56,9 @@ export interface LLMProvider {
   available(): boolean;
   // Perform one generation. May throw; callLLM catches and falls back.
   generate(req: ProviderGenerateRequest): Promise<ProviderGenerateResult>;
+  // OPTIONAL: stream a generation as text deltas (for the live tutor turn).
+  // Adapters that don't implement it simply aren't streamed — callLLMStream
+  // falls back to a single full-text chunk via generate(). Only ever used for
+  // plain text (never with grounding or responseSchema).
+  generateStream?(req: ProviderGenerateRequest): AsyncIterable<string>;
 }

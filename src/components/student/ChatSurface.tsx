@@ -552,6 +552,9 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
     }
 
     try {
+      // Coach turns stream (the reply appears as it's typed); Expert turns
+      // stay on the JSON path so their grounding citations come through whole.
+      const wantStream = mode === "coach";
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: await chatHeaders(),
@@ -562,6 +565,7 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
           step: stepForApi,
           extension: extensionForApi,
           pupilProfile,
+          stream: wantStream,
         }),
       });
       if (!res.ok) {
@@ -575,30 +579,59 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
             : errBody.error ?? errBody.message ?? `The tutor is unavailable right now (${res.status}).`,
         );
       }
-      const data = (await res.json()) as {
-        text: string;
-        fallbackUsed: boolean;
-        citations?: Citation[];
-        searchQueries?: string[];
-      };
-      const tutorText = data.text || "I can't reply just now — give it a moment and try again.";
-      // Only surface citations when this turn was in Expert mode (or a
-      // one-shot expert override fired by the teacher). Coach mode is
-      // meant to be question-only; stray "Verified · N sources" chips
-      // under a coach turn read as confusing for a Y8.
-      const turnInExpertMode = mode === "expert" || usedExpertOverride;
-      setMessages((m) => [
-        ...m,
-        {
-          id: nextId(),
-          role: "tutor",
-          content: tutorText,
-          timestamp: Date.now(),
-          citations: turnInExpertMode ? data.citations : undefined,
-          searchQueries: turnInExpertMode ? data.searchQueries : undefined,
-          meta: { fallback: data.fallbackUsed },
-        },
-      ]);
+
+      let tutorText: string;
+      let tutorFallback = false;
+      let tutorCitationCount: number | undefined;
+
+      if (wantStream && res.body) {
+        // Stream the reply into a single tutor bubble, appending deltas as
+        // they arrive so the words appear progressively.
+        const streamId = nextId();
+        setMessages((m) => [
+          ...m,
+          { id: streamId, role: "tutor", content: "", timestamp: Date.now(), meta: {} },
+        ]);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let acc = "";
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          acc += decoder.decode(value, { stream: true });
+          setMessages((m) => m.map((msg) => (msg.id === streamId ? { ...msg, content: acc } : msg)));
+        }
+        acc += decoder.decode();
+        tutorText = acc || "I can't reply just now — give it a moment and try again.";
+        setMessages((m) => m.map((msg) => (msg.id === streamId ? { ...msg, content: tutorText } : msg)));
+      } else {
+        const data = (await res.json()) as {
+          text: string;
+          fallbackUsed: boolean;
+          citations?: Citation[];
+          searchQueries?: string[];
+        };
+        tutorText = data.text || "I can't reply just now — give it a moment and try again.";
+        tutorFallback = data.fallbackUsed;
+        tutorCitationCount = data.citations?.length;
+        // Only surface citations when this turn was in Expert mode (or a
+        // one-shot expert override fired by the teacher). Coach mode is
+        // meant to be question-only; stray "Verified · N sources" chips
+        // under a coach turn read as confusing for a Y8.
+        const turnInExpertMode = mode === "expert" || usedExpertOverride;
+        setMessages((m) => [
+          ...m,
+          {
+            id: nextId(),
+            role: "tutor",
+            content: tutorText,
+            timestamp: Date.now(),
+            citations: turnInExpertMode ? data.citations : undefined,
+            searchQueries: turnInExpertMode ? data.searchQueries : undefined,
+            meta: { fallback: data.fallbackUsed },
+          },
+        ]);
+      }
       // Read the tutor's reply aloud (British voice) when the pupil has
       // opted in via the accessibility menu. Best-effort, never blocks.
       if (typeof window !== "undefined" && localStorage.getItem(VOICE_OUTPUT_KEY) === "on") {
@@ -658,8 +691,8 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
       }
 
       void appendTurn("tutor", tutorText, {
-        fallback: data.fallbackUsed,
-        citationCount: data.citations?.length,
+        fallback: tutorFallback,
+        citationCount: tutorCitationCount,
       });
     } catch (e) {
       // Roll back the optimistic pupil message — otherwise it sits in

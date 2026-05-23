@@ -99,4 +99,33 @@ export class GeminiProvider implements LLMProvider {
       },
     };
   }
+
+  // Stream a plain-text generation as deltas. Used for the live tutor turn
+  // (coach mode) so the reply appears as it's produced. No grounding / no
+  // responseSchema here — those need the whole response (citations / valid
+  // JSON), so callLLMStream never routes them through streaming.
+  async *generateStream(req: ProviderGenerateRequest): AsyncIterable<string> {
+    const c = this.getClient();
+    const contents = req.messages.map((m) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+    const config: Record<string, unknown> = {
+      systemInstruction: req.system,
+      maxOutputTokens: req.maxOutputTokens,
+      temperature: req.temperature,
+    };
+    if (req.thinkingBudget !== undefined) {
+      config.thinkingConfig = { thinkingBudget: req.thinkingBudget };
+    }
+    const stream = await c.models.generateContentStream({
+      model: req.model,
+      contents,
+      config,
+    });
+    for await (const chunk of stream) {
+      const t = chunk.text;
+      if (t) yield t;
+    }
+  }
 }

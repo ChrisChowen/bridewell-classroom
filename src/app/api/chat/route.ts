@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import "@/lib/cost/recorder"; // registers the best-effort LLM usage recorder (nodejs side-effect)
-import { callLLM, dedupeCitations, type LLMMessage } from "@/lib/ai/llm";
+import { callLLM, callLLMStream, dedupeCitations, type LLMMessage } from "@/lib/ai/llm";
 import { buildTutorSystemPrompt, SCAFFOLD_SYSTEM } from "@/lib/ai/prompts";
 import { mentionsUnsupportedVisual } from "@/lib/ai/output-guards";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
@@ -28,6 +28,9 @@ type Body = {
   messages: LLMMessage[];
   mode?: TutorMode;
   scaffold?: ScaffoldAction;
+  // When true (and a plain coach turn), stream the reply as text deltas
+  // instead of returning JSON — so the tutor's words appear as they're typed.
+  stream?: boolean;
   lesson?: {
     title?: string;
     subject?: string;
@@ -129,6 +132,47 @@ async function handleChat(req: Request) {
       extensionBrief: body.extension?.brief,
       extensionStretchHint: body.extension?.stretchHint,
     });
+
+  // Streaming coach turn — return the reply as text deltas so it appears as
+  // it's produced. Only for plain coach mode (Expert needs grounding +
+  // citations, which require the whole response, so it stays on the JSON path).
+  if (body.stream && mode === "coach") {
+    const encoder = new TextEncoder();
+    const rs = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        let full = "";
+        try {
+          for await (const delta of callLLMStream({
+            use: "tutor",
+            system,
+            messages: body.messages,
+            maxOutputTokens: 200,
+            temperature: 0.55,
+            thinkingBudget: 0,
+          })) {
+            full += delta;
+            controller.enqueue(encoder.encode(delta));
+          }
+        } catch {
+          if (!full) controller.enqueue(encoder.encode("I can't reply just now — give it a moment and try again."));
+        }
+        // Same defence-in-depth guard as the JSON path, on the full text
+        // (server-side log only — no PII, never shown to the pupil).
+        if (mentionsUnsupportedVisual(full)) {
+          console.warn("tutor output guard: streamed coach reply promised an unsupported visual");
+        }
+        controller.close();
+      },
+    });
+    return new Response(rs, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store",
+        // Disable proxy buffering so deltas reach the client immediately.
+        "X-Accel-Buffering": "no",
+      },
+    });
+  }
 
   const result = await callLLM({
     use: "tutor",

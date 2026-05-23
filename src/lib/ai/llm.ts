@@ -145,6 +145,59 @@ export async function callLLM(opts: LLMCallOptions): Promise<LLMCallResult> {
   }
 }
 
+// Streaming entry point — yields text deltas for the live tutor turn.
+// Plain text only (no responseSchema / no grounding). If the provider can't
+// stream (or is unavailable / errors), this degrades to a single full-text
+// chunk via callLLM, so callers get the same text either way. Per-call cost
+// recording is intentionally skipped on the streamed path: it's the cheap
+// fast-tier coach turn, and the expensive Pro calls (classifier / evaluator /
+// planner / appraiser) stay non-streamed and fully tracked.
+export async function* callLLMStream(
+  opts: Omit<LLMCallOptions, "responseSchema" | "grounding">,
+): AsyncGenerator<string> {
+  const model = MODELS[opts.use];
+  let provider;
+  try {
+    provider = resolveProvider();
+  } catch {
+    yield fallback(opts as LLMCallOptions, model, "provider misconfigured").text;
+    return;
+  }
+  if (!provider.available() || typeof provider.generateStream !== "function") {
+    // No streaming available — emit the whole reply as one chunk.
+    const r = await callLLM(opts as LLMCallOptions);
+    yield r.text;
+    return;
+  }
+  try {
+    const it = provider.generateStream({
+      model,
+      system: opts.system,
+      messages: opts.messages,
+      maxOutputTokens: opts.maxOutputTokens ?? 1024,
+      temperature: opts.temperature ?? 0.6,
+      thinkingBudget: opts.thinkingBudget,
+      grounding: false,
+    });
+    let any = false;
+    for await (const delta of it) {
+      if (delta) {
+        any = true;
+        yield delta;
+      }
+    }
+    // If the stream produced nothing (rare), fall back to a non-streamed call.
+    if (!any) {
+      const r = await callLLM(opts as LLMCallOptions);
+      yield r.text;
+    }
+  } catch {
+    // Mid-stream or setup error → one-shot fallback so the turn still completes.
+    const r = await callLLM(opts as LLMCallOptions);
+    yield r.text;
+  }
+}
+
 function fallback(opts: LLMCallOptions, model: string, reason: string): LLMCallResult {
   // Calm, non-technical line — this string can surface directly in the pupil
   // chat (graceful degradation, CLAUDE.md §O). NEVER leak the model id, the
