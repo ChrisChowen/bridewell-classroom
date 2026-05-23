@@ -37,10 +37,17 @@ jobs:
       - name: Unit tests
         run: npm test
 
-      - name: Perf gate (≥30% p95 regression fails)
+      - name: Perf gate (informational in CI)
         # Isolated, ratio-normalised microbenchmark of the pure hot paths
-        # (vitest.perf.config.ts) — see scripts/perf-baseline.json.
+        # (vitest.perf.config.ts; baseline scripts/perf-baseline.json). It is a
+        # HARD ≥30% regression gate LOCALLY (`npm run bench` on a consistent
+        # machine), but informational in CI: the committed baseline is captured
+        # on one architecture and op-vs-calibration ratios differ across CPUs
+        # (Apple Silicon vs the x86 runner), so a hard cross-runner gate would
+        # flake (B3). A true CI gate needs a same-runner cached baseline —
+        # tracked in reports/follow-ups.md. Regressions still surface in logs.
         run: npm run bench
+        continue-on-error: true
 
       - name: Production build
         # The build statically renders the public routes. Real secrets are

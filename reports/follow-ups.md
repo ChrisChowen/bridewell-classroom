@@ -51,3 +51,14 @@ _Last updated: B2 closure pass (see reports/goal-run-*.md)._
 All ten are *feature opportunities*, not defects — out of scope for B2.
 Several are already built (safeguarding badge, step progress, transcript
 export, admin allowlist UI). The rest are demo-enhancement ideas.
+
+## Perf gate — hard CI gate needs same-runner baseline (deferred)
+
+The perf benchmark (`scripts/benchmark.mjs` / `src/lib/perf.bench.test.ts`,
+baseline `scripts/perf-baseline.json`) is a **hard ≥30% regression gate locally**
+but **informational in CI** (`continue-on-error`). The committed baseline is
+captured on one architecture; op-vs-calibration time ratios differ across CPUs
+(Apple Silicon vs the x86 GitHub runner), so a hard cross-runner gate flakes
+(would violate B3). To make it a hard CI gate: capture/cache the baseline on the
+CI runner itself (e.g. write it on `main` pushes into the Actions cache, compare
+PRs against the cached same-runner baseline), then drop `continue-on-error`.
