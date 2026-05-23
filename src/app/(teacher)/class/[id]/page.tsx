@@ -480,7 +480,7 @@ export default function ClassDetailPage() {
                           fontSize: 11,
                           padding: "3px 8px",
                           borderRadius: 999,
-                          background: "rgba(181,138,60,0.10)",
+                          background: "var(--color-gold-tint-2)",
                           color: "var(--color-gold-500)",
                         }}
                       >
@@ -569,7 +569,7 @@ export default function ClassDetailPage() {
                         padding: "10px 12px",
                         border: "1px solid var(--color-gold-500)",
                         borderRadius: 8,
-                        background: "rgba(181,138,60,0.06)",
+                        background: "var(--color-gold-tint-1)",
                         marginTop: 8,
                       }}
                     >
@@ -579,7 +579,7 @@ export default function ClassDetailPage() {
                             EXT.
                           </span>
                           <span style={{ fontSize: 13, fontWeight: 600 }}>{klass.lessonPlan.extension.title}</span>
-                          <span style={{ fontSize: 10, color: "var(--color-gold-500)", background: "rgba(181,138,60,0.10)", borderRadius: 999, padding: "2px 8px" }}>
+                          <span style={{ fontSize: 10, color: "var(--color-gold-500)", background: "var(--color-gold-tint-2)", borderRadius: 999, padding: "2px 8px" }}>
                             above syllabus
                           </span>
                         </div>

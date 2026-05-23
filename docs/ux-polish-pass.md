@@ -1,0 +1,66 @@
+# UI/UX polish pass
+
+Working notes for the visual-quality pass (goal P0). Within `BRAND.md` —
+calm classical register, navy/gold/crest/book-serif. Crest + motifs stay.
+
+## Done this pass
+
+### Gold-tint token discipline (closes ui-polish audit High #1 + #9)
+
+**Finding (audit ui-polish #1):** ~50 components hard-coded
+`rgba(181,138,60,0.0x)` gold tints instead of using brand tokens — and
+**(audit #9)** those literals don't change in dark mode, so gold surfaces
+were under-contrast on the dark teacher theme.
+
+**Fix:** `globals.css` already defines dark-mode-aware tint tokens
+(`--color-gold-tint-1/2/3`), so the soft-tint hard-codes were routed through
+them. Verified live in the preview:
+
+| token | light (was hard-coded) | dark (now correct) |
+|-------|------------------------|--------------------|
+| `--color-gold-tint-1` | `rgba(181,138,60,0.06)` | `rgba(181,138,60,0.14)` |
+| `--color-gold-tint-2` | `rgba(181,138,60,0.10)` | `rgba(181,138,60,0.20)` |
+| `--color-gold-tint-3` | `rgba(181,138,60,0.14)` | `rgba(181,138,60,0.28)` |
+
+Light mode is **byte-identical** (the token resolves to the same value it
+replaced) so there is zero light-mode visual risk; dark mode gains the
+intended contrast. Confirmed by reading the computed values in both themes
+and a dark-mode render of `/login`.
+
+**Caught + fixed in the same pass:** starting the dev server surfaced a real
+routing conflict — the new research-export route had been created under
+`api/classes/[classId]` while the existing routes use `api/classes/[id]`
+(Next refuses two slug names at one path level). `next build` did NOT flag
+it, but `next dev` did. Moved to `[id]/research-export`. (Lesson: a green
+`next build` is not sufficient for route-segment validation — boot the dev
+server.)
+
+## Remaining (prioritised for a focused, live-verified pass)
+
+These need a running app + visual judgement and `@axe-core/playwright` on the
+e2e pages; left for a dedicated pass rather than shipped unverified.
+
+1. **Higher-alpha gold literals** (0.08 / 0.12 / 0.13 / 0.18–0.55) — accent
+   strokes, gradients, hover states. Either add a small extended tint scale
+   (`-4`, `-5`) or map to the nearest token; each needs an eyeball in dark
+   mode (some are borders, not fills, where the contrast maths differs).
+2. **Spacing rhythm** (ui-polish #2) + **button padding** (#3) — normalise to
+   the brand spacing scale; several cards/buttons drift from the token grid.
+3. **Tutor message type scale** (#4) — tighten line-height/measure on long
+   coach turns.
+4. **Focus + error states** (#8) — give inputs a gold focus ring and a
+   consistent crimson error treatment (currently ad-hoc per surface).
+5. **Integrated a11y sweep** — run `@axe-core/playwright` across the pupil
+   session, teacher dashboard, class drill-down, and projector; fix contrast
+   / label / landmark findings inline.
+6. **Responsive** — iPad 1024×768 landscape (the pilot device) + a narrow
+   phone pass on the pupil surfaces; check the class-header control row
+   wraps cleanly now that it carries Whiteboard / Research-export / join
+   controls.
+
+## Verification method (for the remaining pass)
+
+Per the goal: claude-in-chrome / preview walkthrough of the demo flow +
+`@axe-core/playwright` on the e2e pages; iterate until the next change
+wouldn't move the "first-class vs prototype" judgement. Screenshot before/
+after each surface in both themes.

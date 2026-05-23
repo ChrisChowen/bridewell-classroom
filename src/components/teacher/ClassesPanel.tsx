@@ -98,7 +98,7 @@ export function ClassesPanel() {
                       style={{
                         fontSize: 10,
                         color: "var(--color-gold-500)",
-                        background: "rgba(181,138,60,0.10)",
+                        background: "var(--color-gold-tint-2)",
                         padding: "2px 8px",
                         borderRadius: 999,
                       }}

@@ -142,7 +142,7 @@ function FirstStepsCard() {
       className="bw-card bw-stack-md"
       style={{
         padding: 0,
-        background: "rgba(181,138,60,0.06)",
+        background: "var(--color-gold-tint-1)",
         borderLeft: "3px solid var(--color-gold-500)",
         display: "grid",
         gridTemplateColumns: "minmax(0, 1.5fr) minmax(0, 1fr)",

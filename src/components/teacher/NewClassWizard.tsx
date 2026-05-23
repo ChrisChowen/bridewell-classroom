@@ -634,7 +634,7 @@ function SyllabusCardGrid({
             style={{
               padding: 16,
               textAlign: "left",
-              background: selected ? "rgba(181,138,60,0.10)" : "var(--surface)",
+              background: selected ? "var(--color-gold-tint-2)" : "var(--surface)",
               border: `1px solid ${selected ? "var(--color-gold-500)" : "var(--line)"}`,
               boxShadow: selected ? "0 1px 0 var(--color-gold-500) inset" : "none",
               cursor: "pointer",
@@ -757,7 +757,7 @@ function FilterChip({
         padding: "6px 12px",
         borderRadius: 999,
         border: `1px solid ${active ? "var(--color-gold-500)" : "var(--line)"}`,
-        background: active ? "rgba(181,138,60,0.14)" : "var(--surface)",
+        background: active ? "var(--color-gold-tint-3)" : "var(--surface)",
         color: active ? "var(--text)" : isEmpty ? "var(--text-muted)" : "var(--text)",
         fontSize: 12.5,
         fontWeight: active ? 600 : 500,
@@ -876,7 +876,7 @@ function DescribeStep({
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
-      <div className="bw-card" style={{ padding: 12, background: "rgba(181,138,60,0.06)" }}>
+      <div className="bw-card" style={{ padding: 12, background: "var(--color-gold-tint-1)" }}>
         <div className="bw-section-label" style={{ marginBottom: 4 }}>Topic</div>
         <div style={{ fontWeight: 600, fontSize: 14 }}>{syllabus.topic}</div>
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
@@ -1022,7 +1022,7 @@ function DescribeStep({
                       padding: "10px 12px",
                       borderRadius: 8,
                       border: "1px solid var(--line)",
-                      background: intent === s ? "rgba(181,138,60,0.10)" : "var(--surface)",
+                      background: intent === s ? "var(--color-gold-tint-2)" : "var(--surface)",
                       color: "var(--text)",
                       fontSize: 13,
                       lineHeight: 1.5,
@@ -1562,7 +1562,7 @@ function ActivityBadge({
       value={value}
       onChange={(e) => onChange(e.target.value as ActivityType)}
       style={{
-        background: "rgba(181,138,60,0.10)",
+        background: "var(--color-gold-tint-2)",
         color: "var(--color-gold-500)",
         border: "1px solid rgba(181,138,60,0.35)",
         borderRadius: 999,
@@ -1682,7 +1682,7 @@ function ChallengeSelect({
               padding: "10px 12px",
               borderRadius: 8,
               cursor: "pointer",
-              background: active ? "rgba(181,138,60,0.10)" : "var(--surface)",
+              background: active ? "var(--color-gold-tint-2)" : "var(--surface)",
               border: `1px solid ${active ? "var(--color-gold-500)" : "var(--line)"}`,
               transition: "all 120ms ease",
             }}

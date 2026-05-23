@@ -1147,7 +1147,7 @@ function Banner({
   title: string;
   children: React.ReactNode;
 }) {
-  const bg = tone === "gold" ? "rgba(181,138,60,0.10)" : "rgba(15,26,46,0.04)";
+  const bg = tone === "gold" ? "var(--color-gold-tint-2)" : "rgba(15,26,46,0.04)";
   const border = tone === "gold" ? "var(--color-gold-500)" : "var(--text-muted)";
   const colour = tone === "gold" ? "var(--color-gold-500)" : "var(--text-muted)";
   return (

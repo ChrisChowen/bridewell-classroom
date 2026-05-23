@@ -243,7 +243,7 @@ function JoinInner() {
                     letterSpacing: "0.12em",
                     fontSize: 16,
                     textTransform: "uppercase",
-                    background: codeFromUrl ? "rgba(181,138,60,0.06)" : "var(--surface)",
+                    background: codeFromUrl ? "var(--color-gold-tint-1)" : "var(--surface)",
                   }}
                 />
               </label>

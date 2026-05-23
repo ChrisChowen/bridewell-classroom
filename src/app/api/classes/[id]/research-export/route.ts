@@ -16,9 +16,9 @@ import { logInfo } from "@/lib/log";
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ classId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { classId } = await params;
+  const { id: classId } = await params;
 
   const a = getAdmin();
   if (!a.ready) return NextResponse.json({ error: `Admin not ready: ${a.reason}` }, { status: 500 });

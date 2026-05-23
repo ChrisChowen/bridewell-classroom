@@ -71,7 +71,7 @@ export function AppraisalPanel({ classId }: { classId: string }) {
           padding: 18,
           marginBottom: 18,
           borderLeft: "3px solid var(--color-gold-500)",
-          background: "rgba(181,138,60,0.06)",
+          background: "var(--color-gold-tint-1)",
         }}
       >
         <div className="flex items-center justify-between gap-12">

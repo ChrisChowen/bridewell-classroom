@@ -39,7 +39,7 @@ export function ConnectionPill() {
         padding: "5px 10px",
         borderRadius: 999,
         color: "var(--text-muted)",
-        background: "rgba(181,138,60,0.10)",
+        background: "var(--color-gold-tint-2)",
         border: "1px solid var(--line)",
         whiteSpace: "nowrap",
       }}
