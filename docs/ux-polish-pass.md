@@ -56,6 +56,17 @@ all now fixed and verified (6/6 axe checks green):
 Authed-page a11y (session / dashboard / drill-down / projector) needs the
 emulator seeded — deferred with the full demo-flow specs (`reports/blocked.md`).
 
+### Responsive pass — public + pupil surfaces at mobile (done, verified)
+
+Checked landing / login / join / session at 375×812 (mobile) in the preview:
+**no horizontal overflow on any** (scrollWidth == clientWidth); the pupil chat
+fits the viewport with internal scroll + pinned composer. One real
+"reads-amateur" issue found + fixed: the **session topbar was overcrowded on
+phones** (wordmark + "Classroom" label + "Switch class" + user chip colliding).
+Hid the decorative "Classroom" sub-label and the "Switch class" link via
+`bw-hide-sm` (≤640px) — verified the topbar declutters at mobile and the items
+reappear at desktop (978px), no overflow either way.
+
 ## Remaining (prioritised for a focused, live-verified pass)
 
 These need a running app + visual judgement and `@axe-core/playwright` on the

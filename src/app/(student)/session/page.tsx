@@ -222,6 +222,7 @@ export default function SessionPage() {
           <Crest size={28} />
           <span className="bw-display" style={{ fontSize: 15 }}>Bridewell</span>
           <span
+            className="bw-hide-sm"
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: 9,
@@ -262,7 +263,7 @@ export default function SessionPage() {
           <span className="bw-hide-sm"><ThemeToggle /></span>
           <Link
             href="/join"
-            className="bw-btn-secondary"
+            className="bw-btn-secondary bw-hide-sm"
             style={{ fontSize: 11 }}
           >
             Switch class
