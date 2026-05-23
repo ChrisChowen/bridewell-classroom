@@ -8,7 +8,10 @@ import { getFirestore } from "firebase-admin/firestore";
 
 export const E2E = {
   classId: "e2e-class-1",
-  joinCode: "ABCDEF",
+  // Canonical dashed form — normaliseJoinCode() stores/looks up codes as
+  // XXX-XXX, so the joinCodes doc id and the class's joinCode field must
+  // both use the dash (a plain "ABCDEF" doc id is never matched).
+  joinCode: "ABC-DEF",
   className: "E2E Biology",
   subject: "Biology",
   teacherId: "e2e-teacher",
