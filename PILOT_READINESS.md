@@ -99,7 +99,7 @@ once added)._
 | Student accounts (not just join-code) | 🔴 | Today pupils are anonymous + join-code. SEND/longitudinal identity wants real per-pupil accounts; needs a roster/identity model + migration from anonymous UIDs. |
 | Microsoft Entra SSO + email/password toggle | 🔴 | School-standard login; email/password kept as a toggleable fallback for testing. Depends on the auth seam. |
 | Superadmin / admin surface (account CRUD, profiles, permissions, roles) | 🔴 | Production-ready admin: create/delete accounts, manage profiles + SEND, assign roles/permissions (teacher/co-teacher/DSL/admin), multi-teacher within a school. Currently only the allowlist API exists. |
-| Final UI/UX polish pass (responsive desktop/tablet/mobile) | 🔴 | Dedicated end-phase: every page responsive across mobile/tablet/desktop; no z-index/stacking issues, clipping menus, broken scrolling, or elements blocking interaction/scaling. Audit + fix sweep with live device checks. |
+| Final UI/UX polish pass (responsive desktop/tablet/mobile) | 🟡 | **Started.** Both High ui-polish findings closed: gold-tint **token discipline** (#1) + **dark-mode contrast** (#9) — ~22 hard-coded gold tints routed through the dark-aware `--color-gold-tint-*` tokens (light byte-identical, dark fixed; verified live). Notes + prioritised remaining work in `docs/ux-polish-pass.md` (higher-alpha literals, spacing/padding rhythm, type scale, focus/error states, `@axe-core/playwright` a11y sweep, iPad/phone responsive). The broader subjective pass + live device checks remain. |
 
 ---
 
