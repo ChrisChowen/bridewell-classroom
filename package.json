@@ -17,7 +17,8 @@
     "test:emulator": "firebase emulators:exec --only firestore,database --project bridewell-classroom \"vitest run -c vitest.emulator.config.ts\"",
     "eval:adversarial": "export $(grep -E '^GEMINI_API_KEY=' .env.local | xargs) && RUN_LIVE_EVAL=1 vitest run src/lib/ai/adversarial-eval.live.test.ts",
     "test:a11y": "playwright test",
-    "test:e2e": "firebase emulators:exec --only auth,firestore,database --project bridewell-classroom \"playwright test -c playwright.emulator.config.ts\""
+    "test:e2e": "firebase emulators:exec --only auth,firestore,database --project bridewell-classroom \"playwright test -c playwright.emulator.config.ts\"",
+    "bench": "node scripts/benchmark.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.5.0",

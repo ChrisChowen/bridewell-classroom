@@ -16,7 +16,10 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.ts"],
     // Emulator-backed tests run under vitest.emulator.config.ts so the
     // default suite stays fast + emulator-free.
-    exclude: ["**/node_modules/**", "src/**/*.emulator.test.ts"],
+    // Perf bench runs ISOLATED (vitest.perf.config.ts via `npm run bench`) —
+    // timing under the shared 27-file suite's CPU contention is too noisy for
+    // a 30% gate, so keep it out of the fast/deterministic unit suite.
+    exclude: ["**/node_modules/**", "src/**/*.emulator.test.ts", "src/**/*.bench.test.ts"],
     environment: "node",
     globals: false,
     coverage: {

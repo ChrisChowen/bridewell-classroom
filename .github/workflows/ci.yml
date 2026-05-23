@@ -37,6 +37,11 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Perf gate (≥30% p95 regression fails)
+        # Isolated, ratio-normalised microbenchmark of the pure hot paths
+        # (vitest.perf.config.ts) — see scripts/perf-baseline.json.
+        run: npm run bench
+
       - name: Production build
         # The build statically renders the public routes. Real secrets are
         # never needed here (API routes don't execute at build time); we

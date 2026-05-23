@@ -1,0 +1,12 @@
+{
+  "note": "Machine-independent op:calibration time ratios. Regenerate with WRITE_PERF_BASELINE=1.",
+  "tolerance": 1.3,
+  "ratios": {
+    "escapeCsvCell": 3.523700990321509,
+    "toCsv": 6.554226155915836,
+    "createZip": 3.891389440947557,
+    "normaliseJoinCode": 26.660979339141168,
+    "formatLogLine": 19.853384271607265,
+    "buildTutorSystemPrompt": 7.626962855221515
+  }
+}
