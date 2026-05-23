@@ -120,12 +120,19 @@ report. Calibration: single bucket [0.8–1.0), n=34, acc=100%, meanConf=91.8%.
 
 ## Update — cross-subject + multi-rater machinery (this run)
 
-**Cross-subject (done).** The real classifier was graded per subject through a
-dev-only `/api/engagement/classify` seam: Biology / English / History / Maths
-all 100% accuracy on the labelled windows (n = 34 total), all ≥ 0.85. Full
-table + caveats in `docs/cross-subject-evidence.md` — the headline caveat is
-unchanged: a **ceiling on clean archetypal windows**, not a research claim;
-all confidence still fell in [0.8–1.0) (no mid-band).
+**Classifier vs gold on the harder 124-window set (incl. 30 ambiguous).** The
+real Gemini classifier was graded over all 124 windows via the dev-only
+`/api/engagement/classify` seam: **92.7% accuracy, macro-F1 93.5%**, and —
+the goal's "iterate classifier to per-state F1 ≥ 0.75 or document why not" —
+**every per-state F1 clears 0.75 with no iteration needed**: flowing 0.92,
+productive_struggle 0.88, wheel_spinning 0.92, disengaged 0.98, off_task 0.97.
+The named pairwise claim (productive_struggle vs wheel_spinning) holds at
+F1 0.88 / 0.92 on the harder set — far more credible than the 34-window PoC's
+100% on trivial archetypes. **Cross-subject all ≥ 0.85** (Biology 97 / English
+97 / History 90 / Maths 88; `docs/cross-subject-evidence.md`). The classifier's
+own confidence is well-calibrated but high (ECE 1.0%, all in [0.8–1.0)); the
+mid-confidence band is populated by the multi-rater study below, not the
+classifier.
 
 **Multi-rater bootstrap (RUN — via Claude agents, not the Gemini classifier).**
 The window set was expanded to **N=124** (incl. 30 deliberately ambiguous

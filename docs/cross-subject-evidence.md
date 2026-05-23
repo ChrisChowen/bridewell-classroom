@@ -24,19 +24,32 @@ no-persistence, **dev-only** seam that runs the exact production classifier —
 no re-implementation drift) and computes per-subject accuracy + macro-F1. The
 maths is in `scripts/reason-eval-metrics.mjs` (unit-tested).
 
-## Result (run 2026-05-23, N = 34)
+## Result (run 2026-05-23, N = 124, incl. 30 ambiguous windows)
+
+The set was expanded from 34 clean archetypes to **124 windows including 30
+deliberately ambiguous/borderline cases**, so this is a harder, more credible
+test than the original 100%-on-trivial-windows PoC.
 
 | Subject | n | Accuracy | Macro-F1 | ≥ 0.85? |
 |---------|---|----------|----------|---------|
-| Biology | 10 | 100.0% | 100.0% | ✅ |
-| English | 7 | 100.0% | 100.0% | ✅ |
-| History | 7 | 100.0% | 100.0% | ✅ |
-| Maths | 10 | 100.0% | 100.0% | ✅ |
-| **Overall** | **34** | **100.0%** | **100.0%** | ✅ |
+| Biology | 33 | 97.0% | 96.9% | ✅ |
+| English | 29 | 96.6% | 95.8% | ✅ |
+| History | 29 | 89.7% | 90.9% | ✅ |
+| Maths | 33 | 87.9% | 88.9% | ✅ |
+| **Overall** | **124** | **92.7%** | **93.5%** | ✅ |
 
-Calibration: ECE 8.5%, but **all 34 predictions fell in the [0.8–1.0)
-confidence band** (mean 91.5%) — zero mid-band, so calibration across the
-middle of the curve is not exercised here.
+Per-state F1 (all ≥ 0.75): flowing 0.92 · productive_struggle 0.88 ·
+wheel_spinning 0.92 · disengaged 0.98 · off_task 0.97. The named pairwise
+claim (productive_struggle vs wheel_spinning) holds at F1 0.88 / 0.92 on the
+harder set.
+
+Earlier 34-window PoC (clean archetypes only): 100% / 100% all subjects —
+retained for reference but superseded by the harder run above.
+
+Classifier calibration: ECE 1.0% with all *classifier* confidences in
+[0.8–1.0) — the Gemini classifier is confidently correct; the populated
+mid-confidence band (`docs/reason-evidence.md`) comes from the multi-rater
+study, not the classifier's own confidence.
 
 ## Threats to validity (read this before citing the table)
 
