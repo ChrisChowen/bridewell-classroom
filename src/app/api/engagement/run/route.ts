@@ -6,6 +6,7 @@ import { resolveDataStore } from "@/lib/data";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { classifyEngagement, type ClassifierInput } from "@/layers/classifier";
 import { anonKey } from "@/lib/live-keys";
+import { runWithCostContext } from "@/lib/cost/context";
 import { logInfo } from "@/lib/log";
 import type { EngagementSnapshot } from "@/types";
 
@@ -67,8 +68,8 @@ export async function POST(req: Request) {
 
   // Audit #10: verify the class hasn't been deleted mid-session before
   // we write the live mirror — otherwise we'd resurrect a stale class.
-  const classExists = (await store.getClass(pupil.classId)) !== null;
-  if (!classExists) {
+  const ownerClass = await store.getClass(pupil.classId);
+  if (!ownerClass) {
     return NextResponse.json({ error: "Class no longer exists" }, { status: 404 });
   }
 
@@ -87,15 +88,20 @@ export async function POST(req: Request) {
     pupilProfile: clean(body.pupilProfile, 600),
   };
 
-  // Run the classifier with sanitised inputs.
-  const result = await classifyEngagement({
-    turns: body.turns,
-    signals: body.signals,
-    lessonTitle: sanitised.lessonTitle,
-    lessonSubject: sanitised.lessonSubject,
-    criticalConcepts: sanitised.criticalConcepts,
-    pupilProfile: sanitised.pupilProfile,
-  });
+  // Run the classifier with sanitised inputs, inside the cost-attribution
+  // context so the Pro-tier spend is booked to this class + teacher.
+  const result = await runWithCostContext(
+    { classId: pupil.classId, teacherUid: ownerClass.teacherId },
+    () =>
+      classifyEngagement({
+        turns: body.turns,
+        signals: body.signals,
+        lessonTitle: sanitised.lessonTitle,
+        lessonSubject: sanitised.lessonSubject,
+        criticalConcepts: sanitised.criticalConcepts,
+        pupilProfile: sanitised.pupilProfile,
+      })
+  );
 
   const now = Date.now();
 

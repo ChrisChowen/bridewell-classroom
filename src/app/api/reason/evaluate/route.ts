@@ -9,6 +9,7 @@ import "@/lib/cost/recorder"; // best-effort LLM usage recorder (nodejs side-eff
 import { getAdmin } from "@/lib/firebase/admin";
 import { verifyAuthToken } from "@/lib/auth";
 import { resolveDataStore } from "@/lib/data";
+import { runWithCostContext } from "@/lib/cost/context";
 import { enforceRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 // POST /api/reason/evaluate
@@ -49,7 +50,15 @@ export async function POST(req: Request) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const uid = auth.user.uid;
 
-  const evaluation = await evaluateReasonResponse(body);
+  // Resolve the class up-front so the Pro-tier evaluator spend is booked to
+  // it (cost attribution). Reused below for the persisted event + trajectory.
+  const pupil = await resolveDataStore().getPupil(uid);
+  const classId = pupil?.classId ?? null;
+
+  const evaluation = await runWithCostContext(
+    { classId: classId ?? undefined },
+    () => evaluateReasonResponse(body)
+  );
   const response = shapeResponse({ evaluation, concept: body.concept });
 
   // Same text-only defence-in-depth as /api/chat: the Reason soft-challenge
@@ -59,10 +68,7 @@ export async function POST(req: Request) {
     console.warn(`tutor output guard: reason ${evaluation.branch} follow-up promised an unsupported visual`);
   }
 
-  // Persist onto the reasonEvent doc.
-  const pupil = await resolveDataStore().getPupil(uid);
-  const classId = pupil?.classId ?? null;
-
+  // Persist onto the reasonEvent doc (pupil/classId resolved above).
   const eventPayload = {
     pupilId: uid,
     classId,

@@ -30,5 +30,38 @@ export async function GET(req: Request) {
   const totalCostUSD = Math.round(days.reduce((s, d) => s + (Number(d.costUSD) || 0), 0) * 1e4) / 1e4;
   const totalCalls = days.reduce((s, d) => s + (Number(d.calls) || 0), 0);
 
-  return NextResponse.json({ days, totals: { costUSD: totalCostUSD, calls: totalCalls }, estimate: true });
+  // Roll up the per-class / per-teacher attribution across the window so the
+  // admin widget can show where spend is concentrated. Estimate only.
+  const byClass = rollup(days, "byClass");
+  const byTeacher = rollup(days, "byTeacher");
+
+  return NextResponse.json({
+    days,
+    totals: { costUSD: totalCostUSD, calls: totalCalls },
+    byClass,
+    byTeacher,
+    estimate: true,
+  });
+}
+
+// Sum a `byClass`/`byTeacher` breakdown across day docs into a sorted
+// [{ id, calls, costUSD }] list (highest cost first, top 20).
+function rollup(
+  days: Array<Record<string, unknown>>,
+  field: "byClass" | "byTeacher"
+): Array<{ id: string; calls: number; costUSD: number }> {
+  const acc = new Map<string, { calls: number; costUSD: number }>();
+  for (const d of days) {
+    const bucket = (d[field] ?? {}) as Record<string, { calls?: number; costUSD?: number }>;
+    for (const [id, v] of Object.entries(bucket)) {
+      const cur = acc.get(id) ?? { calls: 0, costUSD: 0 };
+      cur.calls += Number(v.calls) || 0;
+      cur.costUSD += Number(v.costUSD) || 0;
+      acc.set(id, cur);
+    }
+  }
+  return [...acc.entries()]
+    .map(([id, v]) => ({ id, calls: v.calls, costUSD: Math.round(v.costUSD * 1e4) / 1e4 }))
+    .sort((a, b) => b.costUSD - a.costUSD)
+    .slice(0, 20);
 }

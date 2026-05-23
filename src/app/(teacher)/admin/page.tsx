@@ -51,7 +51,12 @@ export default function AdminPage() {
   const [gate, setGate] = useState<Gate>("loading");
   const [entries, setEntries] = useState<AllowEntry[]>([]);
   const [teachers, setTeachers] = useState<TeacherRow[]>([]);
-  const [cost, setCost] = useState<{ days: CostDay[]; totals: { costUSD: number; calls: number } } | null>(null);
+  const [cost, setCost] = useState<{
+    days: CostDay[];
+    totals: { costUSD: number; calls: number };
+    byClass: Array<{ id: string; calls: number; costUSD: number }>;
+    byTeacher: Array<{ id: string; calls: number; costUSD: number }>;
+  } | null>(null);
   const [myEmail, setMyEmail] = useState<string>("");
   const [myUid, setMyUid] = useState<string>("");
   const [newEmail, setNewEmail] = useState("");
@@ -93,7 +98,12 @@ export default function AdminPage() {
     }
     if (cRes.ok) {
       const cData = await cRes.json();
-      setCost({ days: (cData.days ?? []) as CostDay[], totals: cData.totals ?? { costUSD: 0, calls: 0 } });
+      setCost({
+        days: (cData.days ?? []) as CostDay[],
+        totals: cData.totals ?? { costUSD: 0, calls: 0 },
+        byClass: cData.byClass ?? [],
+        byTeacher: cData.byTeacher ?? [],
+      });
     }
     setGate("ok");
   }, [token]);
@@ -529,6 +539,14 @@ export default function AdminPage() {
                       </div>
                     ))}
                   </div>
+
+                  {/* Per-class / per-teacher attribution (estimate). */}
+                  {(cost.byClass.length > 0 || cost.byTeacher.length > 0) && (
+                    <div style={{ display: "grid", gap: 18, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", marginTop: 18 }}>
+                      <AttributionList title="By class" rows={cost.byClass} />
+                      <AttributionList title="By teacher" rows={cost.byTeacher} />
+                    </div>
+                  )}
                 </>
               )}
             </section>
@@ -536,6 +554,33 @@ export default function AdminPage() {
         )}
       </div>
     </main>
+  );
+}
+
+function AttributionList({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: Array<{ id: string; calls: number; costUSD: number }>;
+}) {
+  return (
+    <div className="bw-card" style={{ padding: 0, overflow: "hidden" }}>
+      <div style={{ ...costHead, gridTemplateColumns: "1.6fr 0.6fr 0.8fr" }}>
+        <span>{title}</span><span>Calls</span><span>Est. $</span>
+      </div>
+      {rows.length === 0 ? (
+        <div style={{ padding: 12, fontSize: 12, color: "var(--text-muted)" }}>No attributed spend yet.</div>
+      ) : (
+        rows.map((r) => (
+          <div key={r.id} style={{ ...costRow, gridTemplateColumns: "1.6fr 0.6fr 0.8fr" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.id}</span>
+            <span style={mutedCell}>{r.calls.toLocaleString()}</span>
+            <span style={{ fontSize: 12 }}>${r.costUSD.toFixed(4)}</span>
+          </div>
+        ))
+      )}
+    </div>
   );
 }
 

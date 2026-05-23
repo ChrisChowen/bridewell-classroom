@@ -9,8 +9,12 @@ import "server-only";
 import { setUsageRecorder, type LLMUsageRecord } from "@/lib/ai/llm";
 import { getAdmin } from "@/lib/firebase/admin";
 import { recordUsage } from "./record";
+import { getCostContext } from "./context";
 
 setUsageRecorder((u: LLMUsageRecord) => {
   const a = getAdmin();
-  if (a.ready) void recordUsage(a.db, u); // fire-and-forget; never blocks the turn
+  // Read the request-scoped attribution (classId/teacherUid) if the route
+  // established one. The callback runs synchronously inside the awaited
+  // callLLM, so the request's AsyncLocalStorage store is still active here.
+  if (a.ready) void recordUsage(a.db, u, getCostContext()); // fire-and-forget
 });
