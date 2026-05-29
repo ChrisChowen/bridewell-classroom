@@ -19,8 +19,12 @@ export function StatePill({
   state: EngagementState;
   size?: "default" | "small";
 }) {
-  const variant = statePill[state];
-  const IconCmp = Icon[state];
+  // A live node can reach us before its first classifier snapshot, with an
+  // absent/unknown state. Fall back to the calm "flowing" variant rather than
+  // dereferencing undefined and crashing the whole dashboard render.
+  const key: EngagementState = state && state in statePill ? state : "flowing";
+  const variant = statePill[key];
+  const IconCmp = Icon[key];
   const isSmall = size === "small";
   return (
     <span

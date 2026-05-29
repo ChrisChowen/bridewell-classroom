@@ -1027,29 +1027,57 @@ interface MergedPupil {
   name: string;
   isLive: boolean;
   live: LivePupil;
-  rosterRecord: PupilRecord;
+}
+
+// A live RTDB node can arrive partially populated: the pupil client writes
+// only `liveMessageCount` + `lastMessageAt` on every message (the optimistic
+// "movement" bump), which lands BEFORE the first classifier snapshot fills in
+// state/displayName/trajectory. Rendering that raw partial crashes the card
+// (StatePill / initials dereference undefined). Normalise every node to a
+// fully-shaped LivePupil so the UI always has a known state + name to render.
+function normaliseLive(
+  partial: Partial<LivePupil> | undefined,
+  id: string,
+  name: string,
+  fallbackTs: number
+): LivePupil {
+  const p = partial ?? {};
+  const state = p.state && p.state in statePill ? p.state : "flowing";
+  return {
+    ...p,
+    pupilId: p.pupilId ?? id,
+    displayName: p.displayName ?? name,
+    state,
+    confidence: typeof p.confidence === "number" ? p.confidence : 0,
+    lastActive: p.lastActive ?? p.lastMessageAt ?? fallbackTs,
+    trajectory: Array.isArray(p.trajectory) ? p.trajectory.filter(Boolean) : [],
+    safeguarding: p.safeguarding ?? null,
+  };
 }
 
 function mergeRosterWithLive(roster: PupilRecord[], live: Record<string, LivePupil>): MergedPupil[] {
-  return roster.map((r) => {
+  const rosterIds = new Set(roster.map((r) => r.id));
+  const fromRoster = roster.map((r) => {
     const l = live[r.id];
     return {
       id: r.id,
       name: r.displayName,
       isLive: !!l,
-      live:
-        l ??
-        ({
-          pupilId: r.id,
-          displayName: r.displayName,
-          state: "flowing",
-          confidence: 0,
-          lastActive: r.joinedAt,
-          trajectory: [],
-        } as LivePupil),
-      rosterRecord: r,
+      live: normaliseLive(l, r.id, r.displayName, r.joinedAt),
     };
   });
+  // Pupils who became active AFTER the (one-time) roster fetch are present in
+  // the live RTDB stream but absent from the stale roster — without this they
+  // wouldn't appear until the teacher reloaded. Surface them straight away.
+  const liveOnly = Object.entries(live)
+    .filter(([id]) => !rosterIds.has(id))
+    .map(([id, l]) => ({
+      id,
+      name: l.displayName ?? "Pupil",
+      isLive: true,
+      live: normaliseLive(l, id, l.displayName ?? "Pupil", Date.now()),
+    }));
+  return [...fromRoster, ...liveOnly];
 }
 
 function sortPupils(items: MergedPupil[], sort: SortKey): MergedPupil[] {

@@ -50,7 +50,7 @@ export function EngagementLane({
         role="img"
         aria-label={
           path
-            ? `Engagement trajectory — currently ${statePill[state].label.toLowerCase()}, ${word.label}`
+            ? `Engagement trajectory — currently ${(statePill[state]?.label ?? "reading").toLowerCase()}, ${word.label}`
             : "No engagement reading yet"
         }
       >
@@ -83,13 +83,13 @@ export function EngagementLane({
               return isHead ? (
                 <g key="head">
                   {/* pulsing halo at "now" */}
-                  <circle cx={p.x} cy={p.y} r={3.2} fill={statePill[p.state].colour} opacity={0.25}>
+                  <circle cx={p.x} cy={p.y} r={3.2} fill={statePill[p.state]?.colour ?? "var(--text-muted)"} opacity={0.25}>
                     <animate attributeName="r" values="3.2;7;3.2" dur="2s" repeatCount="indefinite" />
                     <animate attributeName="opacity" values="0.25;0;0.25" dur="2s" repeatCount="indefinite" />
                   </circle>
                   <motion.circle
                     initial={false}
-                    animate={{ cx: p.x, cy: p.y, fill: statePill[p.state].colour }}
+                    animate={{ cx: p.x, cy: p.y, fill: statePill[p.state]?.colour ?? "var(--text-muted)" }}
                     r={3}
                     transition={GLIDE}
                   />
@@ -98,7 +98,7 @@ export function EngagementLane({
                 <motion.circle
                   key={i}
                   initial={false}
-                  animate={{ cx: p.x, cy: p.y, fill: statePill[p.state].colour }}
+                  animate={{ cx: p.x, cy: p.y, fill: statePill[p.state]?.colour ?? "var(--text-muted)" }}
                   r={1.6}
                   opacity={0.85}
                   transition={GLIDE}
