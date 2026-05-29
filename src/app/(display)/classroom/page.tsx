@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Crest } from "@/components/shared/Crest";
+import { JoinQR } from "@/components/shared/JoinQR";
 import { ClassField } from "@/components/teacher/ClassField";
 import { statePill, type EngagementState } from "@/lib/brand";
 import { subscribeToLiveAggregate, type AggregatePupil, type LivePupil } from "@/lib/firebase/live";
@@ -296,6 +297,9 @@ function JoinPanel({
   connected: number;
 }) {
   if (!joinCode) return null;
+  const scanUrl = origin
+    ? `${typeof window !== "undefined" ? window.location.protocol : "https:"}//${origin}/j/${joinCode}`
+    : "";
   return (
     <div
       style={{
@@ -342,6 +346,11 @@ function JoinPanel({
           }}
         >
           {origin}/j/{joinCode}
+        </div>
+      )}
+      {scanUrl && (
+        <div style={{ marginTop: 16 }}>
+          <JoinQR url={scanUrl} size={128} label="Scan to join" />
         </div>
       )}
       <div

@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/firebase/auth-context";
 import { getFirebase } from "@/lib/firebase/client";
 import { getCleanIdToken } from "@/lib/firebase/auth-fetch";
 import { useModalDialog } from "@/lib/useModalDialog";
+import { JoinQR } from "@/components/shared/JoinQR";
 import { SYLLABUS_LIBRARY } from "@/lib/syllabi";
 import type { SyllabusEntry } from "@/lib/syllabi/types";
 import { ACTIVITIES, ALL_ACTIVITY_TYPES } from "@/lib/ai/activities";
@@ -1861,63 +1862,67 @@ function ShareJoinLink({ joinCode }: { joinCode: string }) {
     return `${window.location.origin}/j/${joinCode}`;
   })();
   return (
-    <div
-      style={{
-        marginTop: 14,
-        padding: "10px 12px",
-        background: "var(--surface-elev)",
-        border: "1px solid var(--line)",
-        borderRadius: 8,
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-      }}
-    >
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          color: "var(--text-muted)",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-          flex: 1,
-          textAlign: "left",
-        }}
-        title={url}
-      >
-        {url}
+    <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 12 }}>
+      <JoinQR url={url} size={84} label="Scan to join" />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            padding: "10px 12px",
+            background: "var(--surface-elev)",
+            border: "1px solid var(--line)",
+            borderRadius: 8,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--text-muted)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              flex: 1,
+              textAlign: "left",
+            }}
+            title={url}
+          >
+            {url}
+          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(url);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              } catch {
+                /* noop */
+              }
+            }}
+            className="bw-btn-secondary"
+            style={{
+              fontSize: 12,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              color: copied ? "var(--color-gold-text)" : undefined,
+              borderColor: copied ? "var(--color-gold-500)" : undefined,
+              transition: "color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard)",
+            }}
+          >
+            {copied ? (
+              <>
+                <Check size={12} color="var(--color-gold-500)" /> Copied
+              </>
+            ) : (
+              "Copy link"
+            )}
+          </button>
+        </div>
       </div>
-      <button
-        type="button"
-        onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(url);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
-          } catch {
-            /* noop */
-          }
-        }}
-        className="bw-btn-secondary"
-        style={{
-          fontSize: 12,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          color: copied ? "var(--color-gold-text)" : undefined,
-          borderColor: copied ? "var(--color-gold-500)" : undefined,
-          transition: "color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard)",
-        }}
-      >
-        {copied ? (
-          <>
-            <Check size={12} color="var(--color-gold-500)" /> Copied
-          </>
-        ) : (
-          "Copy link"
-        )}
-      </button>
     </div>
   );
 }
