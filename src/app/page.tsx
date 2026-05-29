@@ -74,6 +74,7 @@ function Hero() {
           width={240}
           height={240}
           priority
+          unoptimized
           style={{ width: 240, height: "auto", display: "block" }}
         />
       </div>
