@@ -65,20 +65,27 @@ function Inner() {
 
   useEffect(() => {
     if (!classId) return;
-    // RTDB rules require auth != null. The whiteboard view is open in
-    // the classroom (no teacher login), so we sign in anonymously before
-    // subscribing. We read the names-stripped `aggregate` node only — the
-    // per-pupil node is teacher-scoped by the rules AND carries PII the
-    // projector must never show. Read-only; we never write.
+    // RTDB rules require auth != null to read the names-stripped `aggregate`
+    // node. Two ways in: a teacher opening this from their dashboard (already
+    // signed in), or a bare projector with no login. We must NOT clobber an
+    // existing session: signInAnonymously replaces the global currentUser, and
+    // because auth persistence is shared across same-origin tabs, signing in
+    // anonymously here would log the teacher out of their dashboard and demote
+    // them to a student. So wait for the persisted session to settle
+    // (authStateReady) and reuse it when present; only fall back to anonymous
+    // when there is genuinely no user. Read-only; we never write.
     let unsub: (() => void) | undefined;
     (async () => {
       const fb = getFirebase();
-      if (fb.ready && !fb.auth.currentUser) {
-        try {
-          await signInAnonymously(fb.auth);
-        } catch {
-          /* If anon sign-in is disabled the subscription will silently
-             return empty — better than crashing the projector. */
+      if (fb.ready) {
+        await fb.auth.authStateReady();
+        if (!fb.auth.currentUser) {
+          try {
+            await signInAnonymously(fb.auth);
+          } catch {
+            /* If anon sign-in is disabled the subscription will silently
+               return empty — better than crashing the projector. */
+          }
         }
       }
       unsub = subscribeToLiveAggregate(classId, setAgg);
