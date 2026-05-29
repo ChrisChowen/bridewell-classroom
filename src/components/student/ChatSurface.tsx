@@ -177,8 +177,13 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
   // (which is meant to stay exercisable) is permanently disabled.
   const sessionNotStarted =
     klass != null && (!sessionStatus || sessionStatus.value === "not_started");
+  // While a Reason prompt is open the pupil answers IN the gold card, which
+  // has its own input. Lock the main reply box so there aren't two places to
+  // type — otherwise pupils start typing here and their answer never reaches
+  // the Reason evaluator.
+  const reasonActive = reasonCard != null;
   const inputDisabled =
-    pending || pausedByTeacher || sessionEnded || sessionPaused || sessionNotStarted;
+    pending || pausedByTeacher || sessionEnded || sessionPaused || sessionNotStarted || reasonActive;
   // Whether any teacher-driven banner is currently showing — drives the
   // banner bar's enter/exit so it slides in/out rather than popping (and
   // never renders as an empty bordered strip when the class is merely active).
@@ -1101,19 +1106,19 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
                   icon={<Lightbulb size={14} />}
                   label="I need a hint"
                   onClick={() => scaffold("hint")}
-                  disabled={pending || remaining === 0}
+                  disabled={pending || remaining === 0 || reasonActive}
                 />
                 <ScaffoldButton
                   icon={<RefreshCw size={14} />}
                   label="Say that differently"
                   onClick={() => scaffold("rephrase")}
-                  disabled={pending || remaining === 0}
+                  disabled={pending || remaining === 0 || reasonActive}
                 />
                 <ScaffoldButton
                   icon={<TypeIcon size={14} />}
                   label="Use simpler words"
                   onClick={() => scaffold("simplify")}
-                  disabled={pending || remaining === 0}
+                  disabled={pending || remaining === 0 || reasonActive}
                 />
                 <motion.span
                   // One-shot scale pulse the moment the ceiling is hit, so the
@@ -1156,6 +1161,8 @@ export function ChatSurface({ klass, effectiveChallengeLevel, pupilProfile }: Ch
                 ? "Lesson paused…"
                 : pausedByTeacher
                 ? "Paused by your teacher…"
+                : reasonActive
+                ? "Answer in the gold box above…"
                 : pending
                 ? "Tutor is thinking…"
                 : "Reply to the tutor…"
@@ -1463,6 +1470,19 @@ function ReasonInline({
       transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
     >
       <div className="bw-reason-label">Reason · {REASON_TYPE_LABEL[promptType]}</div>
+      <p
+        style={{
+          margin: 0,
+          marginBottom: 10,
+          fontSize: 13,
+          lineHeight: 1.5,
+          color: "var(--text-muted)",
+        }}
+      >
+        A quick pause to think it through in your own words — this is how the
+        idea sticks. There&apos;s no marking here; answer in this box, then carry
+        on with the tutor.
+      </p>
       <p className="bw-tutor" style={{ margin: 0, marginBottom: 12, fontSize: 16 }}>
         {promptText}
       </p>
@@ -1470,6 +1490,7 @@ function ReasonInline({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         rows={3}
+        autoFocus
         placeholder="A sentence or two in your own words is plenty."
         aria-label="Your response"
         style={{
